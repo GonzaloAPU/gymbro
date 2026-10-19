@@ -1,7 +1,10 @@
 {
   "name": "smartgymbro",
   "private": true,
-  "workspaces": ["frontend", "backend"],
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
     "dev": "concurrently \"npm:dev:backend\" \"npm:dev:frontend\"",
     "dev:frontend": "npm run start --workspace frontend",
@@ -10,9 +13,12 @@
     "test": "npm run test --workspace backend",
     "db:generate": "npm run db:generate --workspace backend",
     "db:migrate": "npm run db:migrate --workspace backend --",
-    "db:seed": "npm run db:seed --workspace backend"
+    "db:seed": "npm run db:seed --workspace backend",
+    "firebase:emulators": "node --use-system-ca node_modules/firebase-tools/lib/bin/firebase.js emulators:start --only dataconnect --project demo-gymbro-local --import=.firebase/local-data --export-on-exit=.firebase/local-data",
+    "firebase:test": "node tools/firebase-smoke.mjs"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "firebase-tools": "^15.34.0"
   }
 }

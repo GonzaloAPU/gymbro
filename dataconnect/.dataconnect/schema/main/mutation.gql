@@ -1,0 +1,450 @@
+extend type Mutation {
+  """
+  ✨ Insert a single `Exercise` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  exercise_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: Exercise_Data!
+  ): Exercise_KeyOutput! @fdc_generated(from: "Exercise", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert a single `Routine` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  routine_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: Routine_Data!
+  ): Routine_KeyOutput! @fdc_generated(from: "Routine", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert a single `RoutineItem` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  routineItem_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: RoutineItem_Data!
+  ): RoutineItem_KeyOutput! @fdc_generated(from: "RoutineItem", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert a single `RoutineSchedule` into the table and return its key. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  routineSchedule_insert(
+    """
+    Data object to insert into the table.
+    """
+    data: RoutineSchedule_Data!
+  ): RoutineSchedule_KeyOutput! @fdc_generated(from: "RoutineSchedule", purpose: INSERT_SINGLE)
+  """
+  ✨ Insert `Exercise` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  exercise_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [Exercise_Data!]!
+  ): [Exercise_KeyOutput!]! @fdc_generated(from: "Exercise", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `Routine` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  routine_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [Routine_Data!]!
+  ): [Routine_KeyOutput!]! @fdc_generated(from: "Routine", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `RoutineItem` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  routineItem_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [RoutineItem_Data!]!
+  ): [RoutineItem_KeyOutput!]! @fdc_generated(from: "RoutineItem", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert `RoutineSchedule` objects into the table and return their keys. Columns not specified in `data` will receive defaults (e.g. `null`).
+  """
+  routineSchedule_insertMany(
+    """
+    List of data objects to insert into the table.
+    """
+    data: [RoutineSchedule_Data!]!
+  ): [RoutineSchedule_KeyOutput!]! @fdc_generated(from: "RoutineSchedule", purpose: INSERT_MULTIPLE)
+  """
+  ✨ Insert or update a single `Exercise` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Exercise`.
+  """
+  exercise_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: Exercise_Data!
+  ): Exercise_KeyOutput! @fdc_generated(from: "Exercise", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update a single `Routine` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Routine`.
+  """
+  routine_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: Routine_Data!
+  ): Routine_KeyOutput! @fdc_generated(from: "Routine", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update a single `RoutineItem` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `RoutineItem`.
+  """
+  routineItem_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: RoutineItem_Data!
+  ): RoutineItem_KeyOutput! @fdc_generated(from: "RoutineItem", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update a single `RoutineSchedule` into the table, based on the primary key. Returns the key of the newly inserted or existing updated `RoutineSchedule`.
+  """
+  routineSchedule_upsert(
+    """
+    Data object to insert or update if it already exists.
+    """
+    data: RoutineSchedule_Data!
+  ): RoutineSchedule_KeyOutput! @fdc_generated(from: "RoutineSchedule", purpose: UPSERT_SINGLE)
+  """
+  ✨ Insert or update `Exercise` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Exercise`.
+  """
+  exercise_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [Exercise_Data!]!
+  ): [Exercise_KeyOutput!]! @fdc_generated(from: "Exercise", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `Routine` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `Routine`.
+  """
+  routine_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [Routine_Data!]!
+  ): [Routine_KeyOutput!]! @fdc_generated(from: "Routine", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `RoutineItem` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `RoutineItem`.
+  """
+  routineItem_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [RoutineItem_Data!]!
+  ): [RoutineItem_KeyOutput!]! @fdc_generated(from: "RoutineItem", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Insert or update `RoutineSchedule` objects into the table, based on the primary key. Returns the key of the newly inserted or existing updated `RoutineSchedule`.
+  """
+  routineSchedule_upsertMany(
+    """
+    List of data objects to insert or update if it already exists.
+    """
+    data: [RoutineSchedule_Data!]!
+  ): [RoutineSchedule_KeyOutput!]! @fdc_generated(from: "RoutineSchedule", purpose: UPSERT_MULTIPLE)
+  """
+  ✨ Update a single `Exercise` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `Exercise` or `null` if not found.
+  """
+  exercise_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: Exercise_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: Exercise_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: Exercise_Data!
+  ): Exercise_KeyOutput @fdc_generated(from: "Exercise", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `Routine` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `Routine` or `null` if not found.
+  """
+  routine_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: Routine_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: Routine_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: Routine_Data!
+  ): Routine_KeyOutput @fdc_generated(from: "Routine", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `RoutineItem` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `RoutineItem` or `null` if not found.
+  """
+  routineItem_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: RoutineItem_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: RoutineItem_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: RoutineItem_Data!
+  ): RoutineItem_KeyOutput @fdc_generated(from: "RoutineItem", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update a single `RoutineSchedule` based on `id`, `key` or `first`, setting columns specified in `data`. Returns the key of the updated `RoutineSchedule` or `null` if not found.
+  """
+  routineSchedule_update(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: RoutineSchedule_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: RoutineSchedule_FirstRow
+
+    """
+    Data object containing fields to be updated.
+    """
+    data: RoutineSchedule_Data!
+  ): RoutineSchedule_KeyOutput @fdc_generated(from: "RoutineSchedule", purpose: UPDATE_SINGLE)
+  """
+  ✨ Update `Exercise` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  exercise_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: Exercise_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: Exercise_Data!
+  ): Int! @fdc_generated(from: "Exercise", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Update `Routine` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  routine_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: Routine_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: Routine_Data!
+  ): Int! @fdc_generated(from: "Routine", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Update `RoutineItem` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  routineItem_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: RoutineItem_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: RoutineItem_Data!
+  ): Int! @fdc_generated(from: "RoutineItem", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Update `RoutineSchedule` objects matching `where` conditions (or `all`, if true) according to `data`. Returns the number of rows updated.
+  """
+  routineSchedule_updateMany(
+    """
+    Filter condition to specify which rows to update.
+    """
+    where: RoutineSchedule_Filter
+
+    """
+    Set to true to update all rows.
+    """
+    all: Boolean = false
+
+    """
+    Data object containing fields to update.
+    """
+    data: RoutineSchedule_Data!
+  ): Int! @fdc_generated(from: "RoutineSchedule", purpose: UPDATE_MULTIPLE)
+  """
+  ✨ Delete a single `Exercise` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  exercise_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: Exercise_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: Exercise_FirstRow
+  ): Exercise_KeyOutput @fdc_generated(from: "Exercise", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete a single `Routine` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  routine_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: Routine_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: Routine_FirstRow
+  ): Routine_KeyOutput @fdc_generated(from: "Routine", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete a single `RoutineItem` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  routineItem_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: RoutineItem_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: RoutineItem_FirstRow
+  ): RoutineItem_KeyOutput @fdc_generated(from: "RoutineItem", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete a single `RoutineSchedule` based on `id`, `key` or `first` and return its key (or `null` if not found).
+  """
+  routineSchedule_delete(
+    """
+    The unique ID of the object.
+    """
+    id: UUID
+
+    """
+    The key used to identify the object.
+    """
+    key: RoutineSchedule_Key
+
+    """
+    Fetch the first row based on the filters and ordering.
+    """
+    first: RoutineSchedule_FirstRow
+  ): RoutineSchedule_KeyOutput @fdc_generated(from: "RoutineSchedule", purpose: DELETE_SINGLE)
+  """
+  ✨ Delete `Exercise` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  exercise_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: Exercise_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "Exercise", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `Routine` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  routine_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: Routine_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "Routine", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `RoutineItem` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  routineItem_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: RoutineItem_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "RoutineItem", purpose: DELETE_MULTIPLE)
+  """
+  ✨ Delete `RoutineSchedule` objects matching `where` conditions (or `all`, if true). Returns the number of rows deleted.
+  """
+  routineSchedule_deleteMany(
+    """
+    Filter condition to specify which rows to delete.
+    """
+    where: RoutineSchedule_Filter
+
+    """
+    Set to true to delete all rows.
+    """
+    all: Boolean = false
+  ): Int! @fdc_generated(from: "RoutineSchedule", purpose: DELETE_MULTIPLE)
+}

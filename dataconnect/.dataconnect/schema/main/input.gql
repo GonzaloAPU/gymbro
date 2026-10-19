@@ -1,0 +1,1148 @@
+"""
+✨ `Exercise_KeyOutput` returns the primary key fields of table type `Exercise`.
+
+It has the same format as `Exercise_Key`, but is only used as mutation return value.
+"""
+scalar Exercise_KeyOutput
+"""
+✨ `Routine_KeyOutput` returns the primary key fields of table type `Routine`.
+
+It has the same format as `Routine_Key`, but is only used as mutation return value.
+"""
+scalar Routine_KeyOutput
+"""
+✨ `RoutineItem_KeyOutput` returns the primary key fields of table type `RoutineItem`.
+
+It has the same format as `RoutineItem_Key`, but is only used as mutation return value.
+"""
+scalar RoutineItem_KeyOutput
+"""
+✨ `RoutineSchedule_KeyOutput` returns the primary key fields of table type `RoutineSchedule`.
+
+It has the same format as `RoutineSchedule_Key`, but is only used as mutation return value.
+"""
+scalar RoutineSchedule_KeyOutput
+"""
+✨ Generated data input type for table 'Exercise'. It includes all necessary fields for creating or upserting rows into table.
+"""
+input Exercise_Data {
+  """
+  ✨ Generated from Field `Exercise`.`id` of type `UUID!`
+  """
+  id: UUID
+  """
+  ✨ `_expr` server value variant of `id` (✨ Generated from Field `Exercise`.`id` of type `UUID!`)
+  """
+  id_expr: UUID_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Exercise`.`equipment` of type `String!`
+  """
+  equipment: String
+  """
+  ✨ `_expr` server value variant of `equipment` (✨ Generated from Field `Exercise`.`equipment` of type `String!`)
+  """
+  equipment_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Exercise`.`movementPattern` of type `String`
+  """
+  movementPattern: String
+  """
+  ✨ `_expr` server value variant of `movementPattern` (✨ Generated from Field `Exercise`.`movementPattern` of type `String`)
+  """
+  movementPattern_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Exercise`.`muscleGroup` of type `String!`
+  """
+  muscleGroup: String
+  """
+  ✨ `_expr` server value variant of `muscleGroup` (✨ Generated from Field `Exercise`.`muscleGroup` of type `String!`)
+  """
+  muscleGroup_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Exercise`.`name` of type `String!`
+  """
+  name: String
+  """
+  ✨ `_expr` server value variant of `name` (✨ Generated from Field `Exercise`.`name` of type `String!`)
+  """
+  name_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Exercise`.`trainingType` of type `String!`
+  """
+  trainingType: String
+  """
+  ✨ `_expr` server value variant of `trainingType` (✨ Generated from Field `Exercise`.`trainingType` of type `String!`)
+  """
+  trainingType_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Exercise`.`routineItems_on_exercise` of type `[RoutineItem!]!`
+  """
+  routineItems_on_exercise: [RoutineItem_Data!]
+}
+"""
+✨ Generated filter input type for table 'Exercise'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input Exercise_Filter {
+  """
+  Apply multiple filter conditions using `AND` logic.
+  """
+  _and: [Exercise_Filter!]
+  """
+  Negate the result of the provided filter condition.
+  """
+  _not: Exercise_Filter
+  """
+  Apply multiple filter conditions using `OR` logic.
+  """
+  _or: [Exercise_Filter!]
+  """
+  ✨ Generated from Field `Exercise`.`id` of type `UUID!`
+  """
+  id: UUID_Filter
+  """
+  ✨ Generated from Field `Exercise`.`equipment` of type `String!`
+  """
+  equipment: String_Filter
+  """
+  ✨ Generated from Field `Exercise`.`movementPattern` of type `String`
+  """
+  movementPattern: String_Filter
+  """
+  ✨ Generated from Field `Exercise`.`muscleGroup` of type `String!`
+  """
+  muscleGroup: String_Filter
+  """
+  ✨ Generated from Field `Exercise`.`name` of type `String!`
+  """
+  name: String_Filter
+  """
+  ✨ Generated from Field `Exercise`.`trainingType` of type `String!`
+  """
+  trainingType: String_Filter
+  """
+  ✨ Generated from Field `Exercise`.`routineItems_on_exercise` of type `[RoutineItem!]!`
+  """
+  routineItems_on_exercise: RoutineItem_ListFilter
+}
+"""
+✨ Generated first-row input type for table 'Exercise'. This input selects the first row matching the filter criteria, ordered according to the specified conditions.
+"""
+input Exercise_FirstRow {
+  """
+  Order the result by the specified fields.
+  """
+  orderBy: [Exercise_Order!]
+  """
+  Filters rows based on the specified conditions.
+  """
+  where: Exercise_Filter
+}
+"""
+✨ Generated having input type for table 'Exercise'. This input allows you to filter groups during aggregate queries using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input Exercise_Having {
+  """
+  Apply multiple Having conditions using `AND` logic.
+  """
+  _and: [Exercise_Having!]
+  """
+  Whether to apply DISTINCT to the aggregate function.
+  """
+  _distinct: Boolean
+  """
+  Negate the result of the provided Having condition.
+  """
+  _not: Exercise_Having
+  """
+  Apply multiple Having conditions using `OR` logic.
+  """
+  _or: [Exercise_Having!]
+  """
+  ✨ Generated from Field `Exercise`.`_count` of type `Int!`
+  """
+  _count: Int_Filter
+  """
+  ✨ Generated from Field `Exercise`.`equipment_count` of type `Int!`
+  """
+  equipment_count: Int_Filter
+  """
+  ✨ Generated from Field `Exercise`.`id_count` of type `Int!`
+  """
+  id_count: Int_Filter
+  """
+  ✨ Generated from Field `Exercise`.`movementPattern_count` of type `Int!`
+  """
+  movementPattern_count: Int_Filter
+  """
+  ✨ Generated from Field `Exercise`.`muscleGroup_count` of type `Int!`
+  """
+  muscleGroup_count: Int_Filter
+  """
+  ✨ Generated from Field `Exercise`.`name_count` of type `Int!`
+  """
+  name_count: Int_Filter
+  """
+  ✨ Generated from Field `Exercise`.`trainingType_count` of type `Int!`
+  """
+  trainingType_count: Int_Filter
+}
+"""
+✨ Generated key input type for table 'Exercise'. It represents the primary key fields used to uniquely identify a row in the table.
+"""
+input Exercise_Key {
+  """
+  ✨ Generated from Field `Exercise`.`id` of type `UUID!`
+  """
+  id: UUID
+  """
+  ✨ `_expr` server value variant of `id` (✨ Generated from Field `Exercise`.`id` of type `UUID!`)
+  """
+  id_expr: UUID_Expr @fdc_forbiddenInVariables
+}
+"""
+✨ Generated list filter input type for table 'Exercise'. This input applies filtering logic based on the count or existence of related objects that matches certain criteria.
+"""
+input Exercise_ListFilter {
+  """
+  The desired number of objects that match the condition (defaults to at least one).
+  """
+  count: Int_Filter = {gt:0}
+  """
+  Condition of the related objects to filter for.
+  """
+  exist: Exercise_Filter
+}
+"""
+✨ Generated order input type for table 'Exercise'. This input defines the sorting order of rows in query results based on one or more fields.
+"""
+input Exercise_Order {
+  """
+  ✨ Generated from Field `Exercise`.`id` of type `UUID!`
+  """
+  id: OrderDirection
+  """
+  ✨ Generated from Field `Exercise`.`equipment` of type `String!`
+  """
+  equipment: OrderDirection
+  """
+  ✨ Generated from Field `Exercise`.`movementPattern` of type `String`
+  """
+  movementPattern: OrderDirection
+  """
+  ✨ Generated from Field `Exercise`.`muscleGroup` of type `String!`
+  """
+  muscleGroup: OrderDirection
+  """
+  ✨ Generated from Field `Exercise`.`name` of type `String!`
+  """
+  name: OrderDirection
+  """
+  ✨ Generated from Field `Exercise`.`trainingType` of type `String!`
+  """
+  trainingType: OrderDirection
+  """
+  ✨ Generated from Field `Exercise`.`_count` of type `Int!`
+  """
+  _count: OrderDirection
+  """
+  ✨ Generated from Field `Exercise`.`equipment_count` of type `Int!`
+  """
+  equipment_count: OrderDirection
+  """
+  ✨ Generated from Field `Exercise`.`id_count` of type `Int!`
+  """
+  id_count: OrderDirection
+  """
+  ✨ Generated from Field `Exercise`.`movementPattern_count` of type `Int!`
+  """
+  movementPattern_count: OrderDirection
+  """
+  ✨ Generated from Field `Exercise`.`muscleGroup_count` of type `Int!`
+  """
+  muscleGroup_count: OrderDirection
+  """
+  ✨ Generated from Field `Exercise`.`name_count` of type `Int!`
+  """
+  name_count: OrderDirection
+  """
+  ✨ Generated from Field `Exercise`.`trainingType_count` of type `Int!`
+  """
+  trainingType_count: OrderDirection
+}
+"""
+✨ Generated data input type for table 'Routine'. It includes all necessary fields for creating or upserting rows into table.
+"""
+input Routine_Data {
+  """
+  ✨ Generated from Field `Routine`.`id` of type `UUID!`
+  """
+  id: UUID
+  """
+  ✨ `_expr` server value variant of `id` (✨ Generated from Field `Routine`.`id` of type `UUID!`)
+  """
+  id_expr: UUID_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Routine`.`goal` of type `String!`
+  """
+  goal: String
+  """
+  ✨ `_expr` server value variant of `goal` (✨ Generated from Field `Routine`.`goal` of type `String!`)
+  """
+  goal_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Routine`.`name` of type `String!`
+  """
+  name: String
+  """
+  ✨ `_expr` server value variant of `name` (✨ Generated from Field `Routine`.`name` of type `String!`)
+  """
+  name_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `Routine`.`routineItems_on_routine` of type `[RoutineItem!]!`
+  """
+  routineItems_on_routine: [RoutineItem_Data!]
+  """
+  ✨ Generated from Field `Routine`.`routineSchedules_on_routine` of type `[RoutineSchedule!]!`
+  """
+  routineSchedules_on_routine: [RoutineSchedule_Data!]
+}
+"""
+✨ Generated filter input type for table 'Routine'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input Routine_Filter {
+  """
+  Apply multiple filter conditions using `AND` logic.
+  """
+  _and: [Routine_Filter!]
+  """
+  Negate the result of the provided filter condition.
+  """
+  _not: Routine_Filter
+  """
+  Apply multiple filter conditions using `OR` logic.
+  """
+  _or: [Routine_Filter!]
+  """
+  ✨ Generated from Field `Routine`.`id` of type `UUID!`
+  """
+  id: UUID_Filter
+  """
+  ✨ Generated from Field `Routine`.`goal` of type `String!`
+  """
+  goal: String_Filter
+  """
+  ✨ Generated from Field `Routine`.`name` of type `String!`
+  """
+  name: String_Filter
+  """
+  ✨ Generated from Field `Routine`.`routineItems_on_routine` of type `[RoutineItem!]!`
+  """
+  routineItems_on_routine: RoutineItem_ListFilter
+  """
+  ✨ Generated from Field `Routine`.`routineSchedules_on_routine` of type `[RoutineSchedule!]!`
+  """
+  routineSchedules_on_routine: RoutineSchedule_ListFilter
+}
+"""
+✨ Generated first-row input type for table 'Routine'. This input selects the first row matching the filter criteria, ordered according to the specified conditions.
+"""
+input Routine_FirstRow {
+  """
+  Order the result by the specified fields.
+  """
+  orderBy: [Routine_Order!]
+  """
+  Filters rows based on the specified conditions.
+  """
+  where: Routine_Filter
+}
+"""
+✨ Generated having input type for table 'Routine'. This input allows you to filter groups during aggregate queries using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input Routine_Having {
+  """
+  Apply multiple Having conditions using `AND` logic.
+  """
+  _and: [Routine_Having!]
+  """
+  Whether to apply DISTINCT to the aggregate function.
+  """
+  _distinct: Boolean
+  """
+  Negate the result of the provided Having condition.
+  """
+  _not: Routine_Having
+  """
+  Apply multiple Having conditions using `OR` logic.
+  """
+  _or: [Routine_Having!]
+  """
+  ✨ Generated from Field `Routine`.`_count` of type `Int!`
+  """
+  _count: Int_Filter
+  """
+  ✨ Generated from Field `Routine`.`goal_count` of type `Int!`
+  """
+  goal_count: Int_Filter
+  """
+  ✨ Generated from Field `Routine`.`id_count` of type `Int!`
+  """
+  id_count: Int_Filter
+  """
+  ✨ Generated from Field `Routine`.`name_count` of type `Int!`
+  """
+  name_count: Int_Filter
+}
+"""
+✨ Generated key input type for table 'Routine'. It represents the primary key fields used to uniquely identify a row in the table.
+"""
+input Routine_Key {
+  """
+  ✨ Generated from Field `Routine`.`id` of type `UUID!`
+  """
+  id: UUID
+  """
+  ✨ `_expr` server value variant of `id` (✨ Generated from Field `Routine`.`id` of type `UUID!`)
+  """
+  id_expr: UUID_Expr @fdc_forbiddenInVariables
+}
+"""
+✨ Generated list filter input type for table 'Routine'. This input applies filtering logic based on the count or existence of related objects that matches certain criteria.
+"""
+input Routine_ListFilter {
+  """
+  The desired number of objects that match the condition (defaults to at least one).
+  """
+  count: Int_Filter = {gt:0}
+  """
+  Condition of the related objects to filter for.
+  """
+  exist: Routine_Filter
+}
+"""
+✨ Generated order input type for table 'Routine'. This input defines the sorting order of rows in query results based on one or more fields.
+"""
+input Routine_Order {
+  """
+  ✨ Generated from Field `Routine`.`id` of type `UUID!`
+  """
+  id: OrderDirection
+  """
+  ✨ Generated from Field `Routine`.`goal` of type `String!`
+  """
+  goal: OrderDirection
+  """
+  ✨ Generated from Field `Routine`.`name` of type `String!`
+  """
+  name: OrderDirection
+  """
+  ✨ Generated from Field `Routine`.`_count` of type `Int!`
+  """
+  _count: OrderDirection
+  """
+  ✨ Generated from Field `Routine`.`goal_count` of type `Int!`
+  """
+  goal_count: OrderDirection
+  """
+  ✨ Generated from Field `Routine`.`id_count` of type `Int!`
+  """
+  id_count: OrderDirection
+  """
+  ✨ Generated from Field `Routine`.`name_count` of type `Int!`
+  """
+  name_count: OrderDirection
+}
+"""
+✨ Generated data input type for table 'RoutineItem'. It includes all necessary fields for creating or upserting rows into table.
+"""
+input RoutineItem_Data {
+  """
+  ✨ Generated from Field `RoutineItem`.`id` of type `UUID!`
+  """
+  id: UUID
+  """
+  ✨ `_expr` server value variant of `id` (✨ Generated from Field `RoutineItem`.`id` of type `UUID!`)
+  """
+  id_expr: UUID_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `RoutineItem`.`exerciseId` of type `UUID!`
+  """
+  exerciseId: UUID
+  """
+  ✨ `_expr` server value variant of `exerciseId` (✨ Generated from Field `RoutineItem`.`exerciseId` of type `UUID!`)
+  """
+  exerciseId_expr: UUID_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `RoutineItem`.`routineId` of type `UUID!`
+  """
+  routineId: UUID
+  """
+  ✨ `_expr` server value variant of `routineId` (✨ Generated from Field `RoutineItem`.`routineId` of type `UUID!`)
+  """
+  routineId_expr: UUID_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `RoutineItem`.`exercise` of type `Exercise!`
+  """
+  exercise: Exercise_Key @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `RoutineItem`.`routine` of type `Routine!`
+  """
+  routine: Routine_Key @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `RoutineItem`.`maxReps` of type `Int!`
+  """
+  maxReps: Int
+  """
+  ✨ `_expr` server value variant of `maxReps` (✨ Generated from Field `RoutineItem`.`maxReps` of type `Int!`)
+  """
+  maxReps_expr: Int_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `maxReps` (✨ Generated from Field `RoutineItem`.`maxReps` of type `Int!`)
+  """
+  maxReps_update: [Int_Update!] @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `RoutineItem`.`minReps` of type `Int!`
+  """
+  minReps: Int
+  """
+  ✨ `_expr` server value variant of `minReps` (✨ Generated from Field `RoutineItem`.`minReps` of type `Int!`)
+  """
+  minReps_expr: Int_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `minReps` (✨ Generated from Field `RoutineItem`.`minReps` of type `Int!`)
+  """
+  minReps_update: [Int_Update!] @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `RoutineItem`.`position` of type `Int!`
+  """
+  position: Int
+  """
+  ✨ `_expr` server value variant of `position` (✨ Generated from Field `RoutineItem`.`position` of type `Int!`)
+  """
+  position_expr: Int_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `position` (✨ Generated from Field `RoutineItem`.`position` of type `Int!`)
+  """
+  position_update: [Int_Update!] @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `RoutineItem`.`sets` of type `Int!`
+  """
+  sets: Int
+  """
+  ✨ `_expr` server value variant of `sets` (✨ Generated from Field `RoutineItem`.`sets` of type `Int!`)
+  """
+  sets_expr: Int_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `sets` (✨ Generated from Field `RoutineItem`.`sets` of type `Int!`)
+  """
+  sets_update: [Int_Update!] @fdc_forbiddenInVariables
+}
+"""
+✨ Generated filter input type for table 'RoutineItem'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input RoutineItem_Filter {
+  """
+  Apply multiple filter conditions using `AND` logic.
+  """
+  _and: [RoutineItem_Filter!]
+  """
+  Negate the result of the provided filter condition.
+  """
+  _not: RoutineItem_Filter
+  """
+  Apply multiple filter conditions using `OR` logic.
+  """
+  _or: [RoutineItem_Filter!]
+  """
+  ✨ Generated from Field `RoutineItem`.`id` of type `UUID!`
+  """
+  id: UUID_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`exerciseId` of type `UUID!`
+  """
+  exerciseId: UUID_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`routineId` of type `UUID!`
+  """
+  routineId: UUID_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`exercise` of type `Exercise!`
+  """
+  exercise: Exercise_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`routine` of type `Routine!`
+  """
+  routine: Routine_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`maxReps` of type `Int!`
+  """
+  maxReps: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`minReps` of type `Int!`
+  """
+  minReps: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`position` of type `Int!`
+  """
+  position: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`sets` of type `Int!`
+  """
+  sets: Int_Filter
+}
+"""
+✨ Generated first-row input type for table 'RoutineItem'. This input selects the first row matching the filter criteria, ordered according to the specified conditions.
+"""
+input RoutineItem_FirstRow {
+  """
+  Order the result by the specified fields.
+  """
+  orderBy: [RoutineItem_Order!]
+  """
+  Filters rows based on the specified conditions.
+  """
+  where: RoutineItem_Filter
+}
+"""
+✨ Generated having input type for table 'RoutineItem'. This input allows you to filter groups during aggregate queries using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input RoutineItem_Having {
+  """
+  Apply multiple Having conditions using `AND` logic.
+  """
+  _and: [RoutineItem_Having!]
+  """
+  Whether to apply DISTINCT to the aggregate function.
+  """
+  _distinct: Boolean
+  """
+  Negate the result of the provided Having condition.
+  """
+  _not: RoutineItem_Having
+  """
+  Apply multiple Having conditions using `OR` logic.
+  """
+  _or: [RoutineItem_Having!]
+  """
+  ✨ Generated from Field `RoutineItem`.`_count` of type `Int!`
+  """
+  _count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`exerciseId_count` of type `Int!`
+  """
+  exerciseId_count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`id_count` of type `Int!`
+  """
+  id_count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`maxReps_count` of type `Int!`
+  """
+  maxReps_count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`minReps_count` of type `Int!`
+  """
+  minReps_count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`position_count` of type `Int!`
+  """
+  position_count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`routineId_count` of type `Int!`
+  """
+  routineId_count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`sets_count` of type `Int!`
+  """
+  sets_count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`maxReps_sum` of type `Int`
+  """
+  maxReps_sum: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`minReps_sum` of type `Int`
+  """
+  minReps_sum: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`position_sum` of type `Int`
+  """
+  position_sum: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`sets_sum` of type `Int`
+  """
+  sets_sum: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`maxReps_avg` of type `Float`
+  """
+  maxReps_avg: Float_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`minReps_avg` of type `Float`
+  """
+  minReps_avg: Float_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`position_avg` of type `Float`
+  """
+  position_avg: Float_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`sets_avg` of type `Float`
+  """
+  sets_avg: Float_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`maxReps_min` of type `Int`
+  """
+  maxReps_min: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`minReps_min` of type `Int`
+  """
+  minReps_min: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`position_min` of type `Int`
+  """
+  position_min: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`sets_min` of type `Int`
+  """
+  sets_min: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`maxReps_max` of type `Int`
+  """
+  maxReps_max: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`minReps_max` of type `Int`
+  """
+  minReps_max: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`position_max` of type `Int`
+  """
+  position_max: Int_Filter
+  """
+  ✨ Generated from Field `RoutineItem`.`sets_max` of type `Int`
+  """
+  sets_max: Int_Filter
+}
+"""
+✨ Generated key input type for table 'RoutineItem'. It represents the primary key fields used to uniquely identify a row in the table.
+"""
+input RoutineItem_Key {
+  """
+  ✨ Generated from Field `RoutineItem`.`id` of type `UUID!`
+  """
+  id: UUID
+  """
+  ✨ `_expr` server value variant of `id` (✨ Generated from Field `RoutineItem`.`id` of type `UUID!`)
+  """
+  id_expr: UUID_Expr @fdc_forbiddenInVariables
+}
+"""
+✨ Generated list filter input type for table 'RoutineItem'. This input applies filtering logic based on the count or existence of related objects that matches certain criteria.
+"""
+input RoutineItem_ListFilter {
+  """
+  The desired number of objects that match the condition (defaults to at least one).
+  """
+  count: Int_Filter = {gt:0}
+  """
+  Condition of the related objects to filter for.
+  """
+  exist: RoutineItem_Filter
+}
+"""
+✨ Generated order input type for table 'RoutineItem'. This input defines the sorting order of rows in query results based on one or more fields.
+"""
+input RoutineItem_Order {
+  """
+  ✨ Generated from Field `RoutineItem`.`id` of type `UUID!`
+  """
+  id: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`exerciseId` of type `UUID!`
+  """
+  exerciseId: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`routineId` of type `UUID!`
+  """
+  routineId: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`exercise` of type `Exercise!`
+  """
+  exercise: Exercise_Order
+  """
+  ✨ Generated from Field `RoutineItem`.`routine` of type `Routine!`
+  """
+  routine: Routine_Order
+  """
+  ✨ Generated from Field `RoutineItem`.`maxReps` of type `Int!`
+  """
+  maxReps: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`minReps` of type `Int!`
+  """
+  minReps: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`position` of type `Int!`
+  """
+  position: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`sets` of type `Int!`
+  """
+  sets: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`_count` of type `Int!`
+  """
+  _count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`exerciseId_count` of type `Int!`
+  """
+  exerciseId_count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`id_count` of type `Int!`
+  """
+  id_count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`maxReps_count` of type `Int!`
+  """
+  maxReps_count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`minReps_count` of type `Int!`
+  """
+  minReps_count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`position_count` of type `Int!`
+  """
+  position_count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`routineId_count` of type `Int!`
+  """
+  routineId_count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`sets_count` of type `Int!`
+  """
+  sets_count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`maxReps_sum` of type `Int`
+  """
+  maxReps_sum: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`minReps_sum` of type `Int`
+  """
+  minReps_sum: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`position_sum` of type `Int`
+  """
+  position_sum: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`sets_sum` of type `Int`
+  """
+  sets_sum: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`maxReps_avg` of type `Float`
+  """
+  maxReps_avg: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`minReps_avg` of type `Float`
+  """
+  minReps_avg: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`position_avg` of type `Float`
+  """
+  position_avg: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`sets_avg` of type `Float`
+  """
+  sets_avg: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`maxReps_min` of type `Int`
+  """
+  maxReps_min: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`minReps_min` of type `Int`
+  """
+  minReps_min: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`position_min` of type `Int`
+  """
+  position_min: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`sets_min` of type `Int`
+  """
+  sets_min: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`maxReps_max` of type `Int`
+  """
+  maxReps_max: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`minReps_max` of type `Int`
+  """
+  minReps_max: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`position_max` of type `Int`
+  """
+  position_max: OrderDirection
+  """
+  ✨ Generated from Field `RoutineItem`.`sets_max` of type `Int`
+  """
+  sets_max: OrderDirection
+}
+"""
+✨ Generated data input type for table 'RoutineSchedule'. It includes all necessary fields for creating or upserting rows into table.
+"""
+input RoutineSchedule_Data {
+  """
+  ✨ Generated from Field `RoutineSchedule`.`id` of type `UUID!`
+  """
+  id: UUID
+  """
+  ✨ `_expr` server value variant of `id` (✨ Generated from Field `RoutineSchedule`.`id` of type `UUID!`)
+  """
+  id_expr: UUID_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `RoutineSchedule`.`routineId` of type `UUID!`
+  """
+  routineId: UUID
+  """
+  ✨ `_expr` server value variant of `routineId` (✨ Generated from Field `RoutineSchedule`.`routineId` of type `UUID!`)
+  """
+  routineId_expr: UUID_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `RoutineSchedule`.`routine` of type `Routine!`
+  """
+  routine: Routine_Key @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `RoutineSchedule`.`end` of type `String!`
+  """
+  end: String
+  """
+  ✨ `_expr` server value variant of `end` (✨ Generated from Field `RoutineSchedule`.`end` of type `String!`)
+  """
+  end_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `RoutineSchedule`.`start` of type `String!`
+  """
+  start: String
+  """
+  ✨ `_expr` server value variant of `start` (✨ Generated from Field `RoutineSchedule`.`start` of type `String!`)
+  """
+  start_expr: String_Expr @fdc_forbiddenInVariables
+  """
+  ✨ Generated from Field `RoutineSchedule`.`weekday` of type `Int!`
+  """
+  weekday: Int
+  """
+  ✨ `_expr` server value variant of `weekday` (✨ Generated from Field `RoutineSchedule`.`weekday` of type `Int!`)
+  """
+  weekday_expr: Int_Expr @fdc_forbiddenInVariables
+  """
+  ✨ `_update` server value variant of `weekday` (✨ Generated from Field `RoutineSchedule`.`weekday` of type `Int!`)
+  """
+  weekday_update: [Int_Update!] @fdc_forbiddenInVariables
+}
+"""
+✨ Generated filter input type for table 'RoutineSchedule'. This input allows filtering objects using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input RoutineSchedule_Filter {
+  """
+  Apply multiple filter conditions using `AND` logic.
+  """
+  _and: [RoutineSchedule_Filter!]
+  """
+  Negate the result of the provided filter condition.
+  """
+  _not: RoutineSchedule_Filter
+  """
+  Apply multiple filter conditions using `OR` logic.
+  """
+  _or: [RoutineSchedule_Filter!]
+  """
+  ✨ Generated from Field `RoutineSchedule`.`id` of type `UUID!`
+  """
+  id: UUID_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`routineId` of type `UUID!`
+  """
+  routineId: UUID_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`routine` of type `Routine!`
+  """
+  routine: Routine_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`end` of type `String!`
+  """
+  end: String_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`start` of type `String!`
+  """
+  start: String_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`weekday` of type `Int!`
+  """
+  weekday: Int_Filter
+}
+"""
+✨ Generated first-row input type for table 'RoutineSchedule'. This input selects the first row matching the filter criteria, ordered according to the specified conditions.
+"""
+input RoutineSchedule_FirstRow {
+  """
+  Order the result by the specified fields.
+  """
+  orderBy: [RoutineSchedule_Order!]
+  """
+  Filters rows based on the specified conditions.
+  """
+  where: RoutineSchedule_Filter
+}
+"""
+✨ Generated having input type for table 'RoutineSchedule'. This input allows you to filter groups during aggregate queries using various conditions. Use `_or`, `_and`, and `_not` to compose complex filters.
+"""
+input RoutineSchedule_Having {
+  """
+  Apply multiple Having conditions using `AND` logic.
+  """
+  _and: [RoutineSchedule_Having!]
+  """
+  Whether to apply DISTINCT to the aggregate function.
+  """
+  _distinct: Boolean
+  """
+  Negate the result of the provided Having condition.
+  """
+  _not: RoutineSchedule_Having
+  """
+  Apply multiple Having conditions using `OR` logic.
+  """
+  _or: [RoutineSchedule_Having!]
+  """
+  ✨ Generated from Field `RoutineSchedule`.`_count` of type `Int!`
+  """
+  _count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`end_count` of type `Int!`
+  """
+  end_count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`id_count` of type `Int!`
+  """
+  id_count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`routineId_count` of type `Int!`
+  """
+  routineId_count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`start_count` of type `Int!`
+  """
+  start_count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`weekday_count` of type `Int!`
+  """
+  weekday_count: Int_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`weekday_sum` of type `Int`
+  """
+  weekday_sum: Int_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`weekday_avg` of type `Float`
+  """
+  weekday_avg: Float_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`weekday_min` of type `Int`
+  """
+  weekday_min: Int_Filter
+  """
+  ✨ Generated from Field `RoutineSchedule`.`weekday_max` of type `Int`
+  """
+  weekday_max: Int_Filter
+}
+"""
+✨ Generated key input type for table 'RoutineSchedule'. It represents the primary key fields used to uniquely identify a row in the table.
+"""
+input RoutineSchedule_Key {
+  """
+  ✨ Generated from Field `RoutineSchedule`.`id` of type `UUID!`
+  """
+  id: UUID
+  """
+  ✨ `_expr` server value variant of `id` (✨ Generated from Field `RoutineSchedule`.`id` of type `UUID!`)
+  """
+  id_expr: UUID_Expr @fdc_forbiddenInVariables
+}
+"""
+✨ Generated list filter input type for table 'RoutineSchedule'. This input applies filtering logic based on the count or existence of related objects that matches certain criteria.
+"""
+input RoutineSchedule_ListFilter {
+  """
+  The desired number of objects that match the condition (defaults to at least one).
+  """
+  count: Int_Filter = {gt:0}
+  """
+  Condition of the related objects to filter for.
+  """
+  exist: RoutineSchedule_Filter
+}
+"""
+✨ Generated order input type for table 'RoutineSchedule'. This input defines the sorting order of rows in query results based on one or more fields.
+"""
+input RoutineSchedule_Order {
+  """
+  ✨ Generated from Field `RoutineSchedule`.`id` of type `UUID!`
+  """
+  id: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`routineId` of type `UUID!`
+  """
+  routineId: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`routine` of type `Routine!`
+  """
+  routine: Routine_Order
+  """
+  ✨ Generated from Field `RoutineSchedule`.`end` of type `String!`
+  """
+  end: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`start` of type `String!`
+  """
+  start: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`weekday` of type `Int!`
+  """
+  weekday: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`_count` of type `Int!`
+  """
+  _count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`end_count` of type `Int!`
+  """
+  end_count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`id_count` of type `Int!`
+  """
+  id_count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`routineId_count` of type `Int!`
+  """
+  routineId_count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`start_count` of type `Int!`
+  """
+  start_count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`weekday_count` of type `Int!`
+  """
+  weekday_count: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`weekday_sum` of type `Int`
+  """
+  weekday_sum: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`weekday_avg` of type `Float`
+  """
+  weekday_avg: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`weekday_min` of type `Int`
+  """
+  weekday_min: OrderDirection
+  """
+  ✨ Generated from Field `RoutineSchedule`.`weekday_max` of type `Int`
+  """
+  weekday_max: OrderDirection
+}

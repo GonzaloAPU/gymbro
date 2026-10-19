@@ -1,0 +1,33 @@
+# Isolated proof of concept: no real accounts, passwords, photos or existing data.
+type Exercise @table {
+  id: UUID! @default(expr: "uuidV4()")
+  name: String!
+  muscleGroup: String!
+  equipment: String!
+  movementPattern: String
+  trainingType: String!
+}
+
+type Routine @table {
+  id: UUID! @default(expr: "uuidV4()")
+  name: String!
+  goal: String!
+}
+
+type RoutineItem @table {
+  id: UUID! @default(expr: "uuidV4()")
+  routine: Routine!
+  exercise: Exercise!
+  position: Int!
+  sets: Int!
+  minReps: Int!
+  maxReps: Int!
+}
+
+type RoutineSchedule @table {
+  id: UUID! @default(expr: "uuidV4()")
+  routine: Routine!
+  weekday: Int!
+  start: String!
+  end: String!
+}

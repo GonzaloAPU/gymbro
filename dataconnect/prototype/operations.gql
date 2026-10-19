@@ -1,0 +1,12 @@
+# No public client access. The local lab calls the emulator administrative API only.
+query ListExercises @auth(level: NO_ACCESS) {
+  exercises { id name muscleGroup equipment movementPattern trainingType }
+}
+
+query ListRoutines @auth(level: NO_ACCESS) {
+  routines {
+    id name goal
+    routineItems_on_routine { id position sets minReps maxReps exercise { id name } }
+    routineSchedules_on_routine { id weekday start end }
+  }
+}

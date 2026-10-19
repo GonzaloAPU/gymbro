@@ -1,0 +1,12 @@
+specVersion: "v1beta"
+serviceId: "gymbro-local"
+location: "us-central1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "gymbro_firebase_local"
+      schemaValidation: "COMPATIBLE"
+      cloudSql:
+        instanceId: "local-only-do-not-deploy"
+connectorDirs: ["./prototype"]
