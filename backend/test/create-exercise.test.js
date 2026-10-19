@@ -1,0 +1,29 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import jwt from 'jsonwebtoken';
+import { app } from '../src/app.js';
+import { config } from '../src/config.js';
+import { Exercise } from '../src/models/index.js';
+
+test('exercise creation validates table fields and rejects duplicate names', async t => {
+  const originals = [Exercise.findOne, Exercise.create];
+  let duplicate = false;
+  let created;
+  Exercise.findOne = async () => duplicate ? { id: 'existing' } : null;
+  Exercise.create = async data => { created = data; return { id: 'new-exercise', ...data }; };
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise(resolve => server.once('listening', resolve));
+  t.after(() => { [Exercise.findOne, Exercise.create] = originals; server.close(); });
+  const url = `http://127.0.0.1:${server.address().port}/api/exercises`;
+  const headers = { 'content-type': 'application/json', Authorization: `Bearer ${jwt.sign({sub:'owner'},config.jwtSecret)}` };
+  const input = { name:' Sentadilla búlgara ', muscleGroup:'Piernas', equipment:'Mancuernas', movementPattern:'Sentadilla unilateral', trainingType:'POWER' };
+  const response = await fetch(url, {method:'POST',headers,body:JSON.stringify(input)});
+  assert.equal(response.status,201);
+  assert.equal(created.name,'Sentadilla búlgara');
+  assert.equal((await response.json()).movementPattern,'Sentadilla unilateral');
+  duplicate = true;
+  assert.equal((await fetch(url,{method:'POST',headers,body:JSON.stringify(input)})).status,409);
+  assert.equal((await fetch(url,{method:'POST',headers,body:JSON.stringify({...input,name:' '})})).status,400);
+  assert.equal((await fetch(url,{method:'POST',headers,body:JSON.stringify({...input,trainingType:'INVALID'})})).status,400);
+  assert.equal((await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(input)})).status,401);
+});

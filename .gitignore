@@ -1,0 +1,12 @@
+node_modules/
+.npm-cache/
+dist/
+.angular/
+.env
+coverage/
+*.log
+.DS_Store
+backups/
+.firebase/
+firebase-debug.log*
+dataconnect-debug.log*
