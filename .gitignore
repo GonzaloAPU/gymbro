@@ -10,3 +10,4 @@ backups/
 .firebase/
 firebase-debug.log*
 dataconnect-debug.log*
+dataconnect/.dataconnect/
