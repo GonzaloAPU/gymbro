@@ -7,8 +7,9 @@ schema:
   datasource:
     postgresql:
       database: "gymbro-569e3-database"
-      # Conserva las tablas de Sequelize que no se exponen mediante GraphQL.
-      schemaValidation: "COMPATIBLE"
+      # Base existente administrada por Sequelize. publish-cloud-schema.cjs
+      # utiliza schemaValidation=NONE en la API para no migrar estas tablas.
+      # La CLI no admite escribir NONE en YAML; publicar con ese script.
       cloudSql:
         instanceId: "gymbro-569e3-instance"
 connectorDirs: ["./admin"]

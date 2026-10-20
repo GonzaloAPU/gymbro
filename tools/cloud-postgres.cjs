@@ -43,7 +43,7 @@ async function fingerprint(connection) {
 function exportSnapshot(snapshot, expected) {
   const dump = execFileSync('docker', ['compose', 'exec', '-T', 'postgres', 'pg_dump',
     '-U', 'smartgymbro', '-d', 'smartgymbro', '--no-owner', '--no-privileges',
-    '--inserts', '--snapshot', snapshot], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+    '--inserts', '--rows-per-insert=1000', '--snapshot', snapshot], { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (!dump.includes('PostgreSQL database dump complete')) throw Error('Dump incompleto.');
   const backup = path.join(root, 'backups', 'firebase-migration-' + new Date().toISOString().replace(/[:.]/g, '-'));
   fs.mkdirSync(backup, { recursive: true });
@@ -158,4 +158,5 @@ async function main() {
     if (local) await local.end();
   }
 }
-main().catch(error => { console.error(error.message); process.exitCode = 1; });
+module.exports = { localSnapshot, exportSnapshot, tables };
+if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });

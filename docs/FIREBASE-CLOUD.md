@@ -13,6 +13,58 @@
 - La consola indica que debe actualizarse el plan antes del **17 de enero de 2027**
   para evitar el archivado de la prueba.
 
+## Resultado de la migración
+
+La instancia está RUNNABLE. Se copiaron y verificaron las once tablas completas:
+
+| Tabla | Filas |
+| --- | ---: |
+| users | 6 |
+| exercises | 7 |
+| routines | 8 |
+| routine_days | 15 |
+| routine_exercises | 45 |
+| routine_schedules | 2 |
+| training_sessions | 101 |
+| performed_exercises | 273 |
+| performed_sets | 960 |
+| body_weight_histories | 42 |
+| strength_records | 31 |
+
+El respaldo utilizado se encuentra en
+`backups/firebase-migration-2026-10-20T00-56-56-209Z/`. El nombre contiene la hora UTC;
+el despliegue se realizó el 19 de octubre de 2026 en Argentina.
+Una comprobación posterior en otra conexión confirmó la persistencia y la igualdad
+del contenido. Las cantidades describen esa instantánea, no son métricas fijas.
+
+## Conexión HTTPS utilizada en esta PC
+
+AVG sustituye el certificado del socket del conector por uno emitido como
+`AVG Web/Mail Shield Untrusted Root`. El conector lo rechaza correctamente.
+No se desactivaron el antivirus ni las verificaciones de TLS para continuar.
+
+Se habilitó la **Cloud SQL Data API** y se utilizó su endpoint HTTPS oficial con
+autenticación IAM. Fue necesario conservar las mayúsculas del identificador de
+cuenta devuelto por Google para que esa API autenticara correctamente al propietario.
+Los roles de SQL Connect se configuraron para la misma cuenta y su agente de servicio.
+No se crearon claves JSON de cuentas de servicio ni contraseñas de ejecución.
+
+El script efectivo de migración es `tools/cloud-sql-https.cjs`:
+
+```powershell
+# Consulta las tablas, sin escribir.
+npm.cmd run firebase:cloud:tables
+# Compara todas las tablas con una instantánea del PostgreSQL local.
+npm.cmd run firebase:cloud:verify
+```
+
+Los modos `--setup` y `--clone` se usaron una sola vez sobre el destino vacío.
+Ahora rechazan un destino que ya contiene tablas. Cada importación se envía como
+una única transacción, con una comprobación del contenido antes del COMMIT.
+La API limita cada solicitud a 0,5 MB: se agruparon las inserciones del dump y el
+script comprueba el tamaño antes de enviarlo. No se usa como capa de datos habitual
+del backend; es una herramienta administrativa para esta migración pequeña.
+
 ## Separación del experimento local
 
 `firebase.json` y `dataconnect/` conservan la prueba local. La configuración de nube
@@ -35,8 +87,19 @@ existentes. No se exponen usuarios, hashes de contraseña, fotografías ni histo
 mediante operaciones cliente. `ListExercises` usa `NO_ACCESS`, por lo que requiere
 acceso administrativo autenticado. Esto no sustituye la autorización del backend.
 
-`schemaValidation: COMPATIBLE` evita que el esquema GraphQL exija borrar las tablas
-que no describe. No cambiar a STRICT en esta configuración.
+Las tablas se administran con Sequelize, no con migraciones de SQL Connect.
+Se utiliza `schemaValidation: NONE` en la API al publicar la interfaz GraphQL sobre la base
+importada. La prueba con COMPATIBLE pidió eliminar el enum existente de estados
+de sesiones, por lo que no se aplicó esa migración. NONE no cambia la autenticación:
+el conector conserva NO_ACCESS. La publicación comprueba las once tablas por
+separado y luego ejecuta una consulta real del catálogo. No cambiar a STRICT ni
+aplicar automáticamente las migraciones sugeridas por SQL Connect. La CLI solo
+admite STRICT/COMPATIBLE en YAML; por eso el archivo omite ese campo y el script
+de publicación establece NONE explícitamente en la solicitud a la API.
+
+La interfaz del catálogo y el conector `admin` ya fueron publicados y se consultaron
+los siete ejercicios. El resto de las tablas está en PostgreSQL, aunque no aparezca
+en el explorador GraphQL de SQL Connect. La aplicación continúa usando su API Express.
 
 ## Operaciones
 
@@ -79,12 +142,24 @@ diferencia de contenido, rechaza la operación; no borra tablas para continuar.
 Una verificación posterior de solo lectura es:
 
 ```powershell
-node --use-system-ca tools/cloud-postgres.cjs --verify
+node --use-system-ca tools/cloud-sql-https.cjs --verify
 ```
 
 La herramienta reutiliza módulos de `firebase-tools` instalados en el proyecto;
 puede necesitar adaptación si cambia su API interna en una actualización de la CLI.
 No guardar tokens de la CLI dentro del repositorio.
+
+En esta PC se publica con:
+
+```powershell
+npm.cmd run firebase:cloud:compile
+node --use-system-ca tools/publish-cloud-schema.cjs
+```
+
+El segundo comando valida la igualdad de las tablas, publica esquema y conector
+por HTTPS y consulta el catálogo. El comando genérico `firebase deploy --only
+dataconnect` intenta inspeccionar la base por el socket interceptado por AVG y falla
+en esta máquina; no es necesario desactivar certificados para publicar.
 
 ## Próximo paso: backend
 
@@ -110,6 +185,7 @@ Cloud SQL en una base gratuita permanente.
 
 - [Precios y prueba Spark de SQL Connect](https://firebase.google.com/docs/sql-connect/pricing)
 - [Administración de servicios y bases](https://firebase.google.com/docs/sql-connect/manage-services-and-databases)
+- [Cloud SQL Data API](https://docs.cloud.google.com/sql/docs/postgres/executesql-instance)
 - [Conexión desde Cloud Run](https://docs.cloud.google.com/sql/docs/postgres/connect-run)
 - [Precios de Cloud Run](https://cloud.google.com/run/pricing)
 - [Límites de Render Free](https://render.com/docs/free)
