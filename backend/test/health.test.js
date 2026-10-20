@@ -13,4 +13,9 @@ test("health endpoint responds without database access", async (t) => {
   const response = await fetch(`http://127.0.0.1:${port}/api/health`);
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { status: "ok", service: "smartgymbro-api" });
+  // Android usa este origen aunque el backend esté en otra máquina de la red.
+  const native = await fetch(`http://127.0.0.1:${port}/api/health`, { headers: { Origin: 'https://localhost' } });
+  assert.equal(native.headers.get('access-control-allow-origin'), 'https://localhost');
+  const external = await fetch(`http://127.0.0.1:${port}/api/health`, { headers: { Origin: 'https://untrusted.example' } });
+  assert.equal(external.headers.get('access-control-allow-origin'), null);
 });

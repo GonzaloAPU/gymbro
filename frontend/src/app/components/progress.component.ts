@@ -4,18 +4,20 @@
  */
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { ExerciseLeaderboard, ProgressService } from '../services/progress.service';
+import { ExerciseLeaderboard, ProgressService, WeightEntry, StrengthRecord } from '../services/progress.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   standalone: true,
   imports: [DatePipe, DecimalPipe],
-  // La curva y algunos indicadores de la plantilla todavía son ilustrativos; el resumen y los rankings sí vienen de la API.
+  // Todas las métricas y mediciones se obtienen de la API; no se muestran gráficas de ejemplo.
   // HTML Angular: {{ }} muestra datos, [propiedad] enlaza valores y (evento) llama métodos.
   // @if y @for controlan bloques visibles y listas; #nombre referencia un elemento del formulario.
   template: `
-    <section class="page progress"><span class="kicker">TU EVOLUCIÓN</span><h1>Progreso que se ve.</h1><p class="lead">Cada serie suma. Estas son las señales principales de las últimas ocho semanas.</p>
-      <div class="metrics"><article><span>PESO CORPORAL</span><strong>{{ weight() }}<small>kg</small></strong><em>último registro</em></article><article><span>VOLUMEN TOTAL</span><strong>{{ volume() }}<small>t</small></strong><em>sesiones recientes</em></article><article><span>ENTRENAMIENTOS</span><strong>{{ sessions() }}</strong><em>completados</em></article></div>
-      <div class="content"><article class="chart"><div class="chart-head"><div><span class="kicker">FUERZA ESTIMADA</span><h2>Press banca · 1RM</h2></div><strong>91.2 <small>kg</small></strong></div><svg viewBox="0 0 700 240" preserveAspectRatio="none"><defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a3e635" stop-opacity=".3"/><stop offset="1" stop-color="#a3e635" stop-opacity="0"/></linearGradient></defs><path class="area" d="M0,190 C80,185 110,165 175,170 S260,140 340,145 S440,98 520,112 S620,58 700,44 L700,240 L0,240Z"/><path class="line" d="M0,190 C80,185 110,165 175,170 S260,140 340,145 S440,98 520,112 S620,58 700,44"/></svg><div class="months"><span>ENE</span><span>FEB</span><span>MAR</span><span>ABR</span><span>MAY</span><span>JUN</span></div></article>
+    <section class="page progress"><span class="kicker">TU EVOLUCIÓN</span><h1>Progreso que se ve.</h1><p class="lead">Tus calorías, entrenamientos y mejores marcas, en un solo lugar.</p>
+      @if(summaryLoading()) {<p role="status">Cargando tu progreso…</p>} @if(summaryError()) {<p class="summary-error" role="alert">{{summaryError()}}</p><button class="button ghost" type="button" (click)="loadSummary()">Reintentar</button>}
+      <div class="metrics"><article><span>CALORÍAS QUEMADAS</span><strong>{{calories() | number:'1.0-0'}}<small> kcal</small></strong><em>Estimadas · todas tus sesiones completadas</em></article><article><span>PESO CORPORAL</span><strong>{{showWeight() ? weight() : '•••'}}<small> kg</small></strong><button class="weight-toggle" type="button" (click)="toggleWeight()" [attr.aria-pressed]="showWeight()">{{showWeight() ? 'Ocultar peso' : 'Mostrar peso'}}</button></article><article><span>VOLUMEN TOTAL</span><strong>{{ volume() }}<small>t</small></strong><em>sesiones recientes</em></article><article><span>ENTRENAMIENTOS</span><strong>{{ sessions() }}</strong><em>completados</em></article></div>
+      <div class="content"><article class="chart"><span class="kicker">TUS MEDICIONES</span><h2>Historial de peso</h2><p class="history-help">Se muestra cuando elegís hacer visible tu peso.</p>@for(entry of weights(); track entry.id) {<div class="weight-entry"><time>{{entry.recordedAt | date:'dd/MM/yyyy'}}</time><strong>@if(showWeight()) {{{entry.weightKg | number:'1.1-1'}}} @else {•••}<small> kg</small></strong></div>} @empty {<p class="empty">Todavía no tenés mediciones de peso registradas.</p>}</article>
       <article class="records"><span class="kicker">RÉCORDS RECIENTES</span><h2>Mejores marcas</h2>@for(record of records();track record.name){<div><span>{{record.name}}<small>{{record.date}}</small></span><strong>{{record.value}} <i>kg</i></strong></div>} @empty {<p class="empty">Todavía no hay récords registrados.</p>}</article></div>
       <section class="leaderboard" aria-labelledby="ranking-title"><div class="ranking-head"><div><span class="kicker">LA COMUNIDAD LEVANTA</span><h2 id="ranking-title">Ranking de fuerza</h2></div><button type="button" (click)="loadLeaderboard()" [disabled]="rankingLoading()">↻ Actualizar</button></div>
         <p>Mayor carga de cada usuario en una serie registrada de una sesión completada. Los empates en peso comparten posición.</p>
@@ -29,12 +31,21 @@ import { ExerciseLeaderboard, ProgressService } from '../services/progress.servi
   `,
   // CSS de este componente: disposición, colores y estados; @media adapta la vista a pantallas pequeñas.
   styles:[`
+    .progress .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.weight-toggle{border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:transparent;color:var(--muted);cursor:pointer}.weight-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 0;border-top:1px solid var(--line)}.weight-entry time,.history-help{font-size:13px;color:var(--muted)}.weight-entry strong{font-size:20px}.weight-entry small{font-size:12px;color:var(--muted)}.summary-error{color:#fca5a5}.metrics em{line-height:1.6}.progress h1{font-size:clamp(34px,5vw,54px)}@media(max-width:550px){.progress .metrics{grid-template-columns:1fr}}
     .leaderboard{margin-top:24px;padding:28px;background:var(--surface);border:1px solid var(--line);border-radius:20px}.ranking-head{display:flex;align-items:center;justify-content:space-between;gap:15px}.ranking-head h2{margin:8px 0;font-size:28px}.ranking-head>button{border:1px solid var(--line);background:var(--surface-2);color:var(--text);border-radius:9px;padding:10px 13px;cursor:pointer;font-size:12px}.leaderboard>p{font-size:12px;line-height:1.7;color:var(--muted)}.ranking-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0}.ranking-tabs button{padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);cursor:pointer;font-size:12px}.ranking-tabs button.active{background:var(--lime);border-color:var(--lime);color:#0b130d;font-weight:800}.ranking-scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:500px;text-align:left}caption{text-align:left;font-size:13px;font-weight:700;margin-bottom:16px}th{font-size:9px;letter-spacing:.1em;color:var(--muted);padding:12px 10px}td{padding:15px 10px;border-top:1px solid var(--line);font-size:12px}td strong{color:var(--lime);font-size:19px}td small{font-size:11px;color:var(--muted)}.rank-number{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--surface-2);color:var(--muted);font-weight:800}.rank-number.podium{background:#fbbf2415;color:#fbbf24}.my-rank{background:#a3e63508}.you-label{display:inline-block;color:var(--lime);font-size:9px;padding:4px 6px;margin-left:8px;border:1px solid #a3e63540;border-radius:5px}.empty-ranking{text-align:center;color:var(--muted);padding:30px}.leaderboard .ranking-error{color:#fca5a5}.leaderboard .ranking-note{font-size:10px;margin:18px 0 0}@media(max-width:550px){.leaderboard{padding:18px}.ranking-head h2{font-size:23px}}.progress{padding-top:58px;padding-bottom:80px}.kicker{color:var(--lime);font-size:11px;letter-spacing:.18em;font-weight:800}.progress>h1{font-size:clamp(46px,6vw,72px);letter-spacing:-.05em;margin:12px 0}.lead{color:var(--muted);font-size:17px;max-width:580px}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:20px;overflow:hidden;margin:44px 0 20px}.metrics article{background:var(--surface);padding:28px}.metrics article>span{display:block;color:var(--muted);font-size:10px;letter-spacing:.13em}.metrics strong{font-size:42px;display:block;margin:14px 0 7px}.metrics small{font-size:16px;color:var(--muted)}.metrics em{font-size:12px;color:var(--lime);font-style:normal}.content{display:grid;grid-template-columns:1.65fr 1fr;gap:20px}.chart,.records{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:28px}.chart-head{display:flex;justify-content:space-between}.chart h2,.records h2{font-size:23px;margin:8px 0}.chart-head>strong{font-size:30px}.chart-head small{font-size:13px;color:var(--muted)}svg{width:100%;height:240px;margin-top:12px;overflow:visible}.area{fill:url(#area)}.line{fill:none;stroke:var(--lime);stroke-width:4;stroke-linecap:round}.months{display:flex;justify-content:space-between;color:var(--muted);font-size:9px}.records>div{display:flex;justify-content:space-between;align-items:center;padding:20px 0;border-top:1px solid var(--line)}.records>div span{display:flex;flex-direction:column;font-weight:700}.records>div small{color:var(--muted);margin-top:5px;font-weight:400}.records>div strong{font-size:21px}.records i{font-size:11px;color:var(--muted);font-style:normal}.empty{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:20px}@media(max-width:750px){.metrics{grid-template-columns:1fr}.content{grid-template-columns:1fr}.progress{padding-top:38px}.metrics article{padding:20px}.chart{padding:20px}}
   `]
 })
 export class ProgressComponent implements OnInit {
   // Dependencias y estado de la clase: inject obtiene servicios; signal conserva valores reactivos.
   private readonly progress = inject(ProgressService);
+  private readonly auth = inject(AuthService);
+  readonly calories = signal(0);
+  readonly weights = signal<WeightEntry[]>([]);
+  readonly summaryLoading = signal(true);
+  readonly summaryError = signal('');
+  readonly showWeight = signal(localStorage.getItem(this.weightKey) === 'true');
+  private get weightKey(): string { return `smartgymbro_show_weight_${this.auth.user()?.id || 'guest'}`; }
+  toggleWeight(): void { this.showWeight.update(value => !value); localStorage.setItem(this.weightKey, String(this.showWeight())); }
   readonly weight = signal('—'); readonly volume = signal('0.0'); readonly sessions = signal(0);
   readonly records = signal<Array<{name:string;date:string;value:number}>>([]);
   readonly leaderboards = signal<ExerciseLeaderboard[]>([]);
@@ -51,11 +62,23 @@ export class ProgressComponent implements OnInit {
   /** Carga ranking y resumen; transforma mediciones y registros al formato que muestra la pantalla. */
   ngOnInit(): void {
     this.loadLeaderboard();
-    this.progress.getSummary().subscribe((summary) => {
-      const latestWeight = summary.weights.at(-1); this.weight.set(latestWeight ? Number(latestWeight.weightKg).toFixed(1) : '—');
+    this.loadSummary();
+  }
+  /** Reúne las métricas antes repartidas en Inicio y conserva una mejor marca por ejercicio. */
+  loadSummary(): void {
+    this.summaryLoading.set(true); this.summaryError.set('');
+    this.progress.getSummary().subscribe({next: summary => {
+      const weights = [...summary.weights].sort((a,b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
+      this.weights.set([...weights].reverse());
+      const latestWeight = weights.at(-1); const currentWeight = latestWeight?.weightKg ?? this.auth.user()?.currentKg;
+      this.weight.set(currentWeight != null ? Number(currentWeight).toFixed(1) : '—');
+      this.calories.set(summary.totalCalories);
       this.volume.set((summary.sessions.reduce((sum, session) => sum + Number(session.totalVolumeKg || 0), 0) / 1000).toFixed(1));
-      this.sessions.set(summary.sessions.length);
-      this.records.set(summary.records.map(record => ({ name:record.exercise.name, date:new Date(record.achievedAt).toLocaleDateString('es-AR',{day:'2-digit',month:'short'}).toUpperCase(), value:Number(record.maxWeightKg) })));
-    });
+      this.sessions.set(summary.completedSessions);
+      const best = new Map<string, StrengthRecord>();
+      for (const record of summary.records) if (!best.has(record.exercise.name) || Number(best.get(record.exercise.name)!.estimatedOneRm) < Number(record.estimatedOneRm)) best.set(record.exercise.name, record);
+      this.records.set([...best.values()].map(record => ({ name:record.exercise.name, date:new Date(record.achievedAt).toLocaleDateString('es-AR',{day:'2-digit',month:'short'}).toUpperCase(), value:Number(record.maxWeightKg) })));
+      this.summaryLoading.set(false);
+    }, error: () => { this.summaryLoading.set(false); this.summaryError.set('No pudimos cargar tu progreso. Intentá nuevamente.'); }});
   }
 }

@@ -6,6 +6,9 @@
     "backend"
   ],
   "scripts": {
+    "android:sync": "npm run android:sync --workspace frontend",
+    "android:open": "npm run android:open --workspace frontend",
+    "android:apk": "npm run android:apk --workspace frontend",
     "dev": "concurrently \"npm:dev:backend\" \"npm:dev:frontend\"",
     "dev:frontend": "npm run start --workspace frontend",
     "dev:backend": "npm run dev --workspace backend",

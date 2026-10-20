@@ -36,7 +36,9 @@ vm.runInNewContext(compiled, {
     if (name.includes('session.service')) return { SessionService: 'session' };
     return require(name);
   },
-  performance: { now: () => now },
+  // Simula el paso del tiempo real aunque Android suspenda los intervalos en segundo plano.
+  Date: class extends Date { static now() { return now; } },
+  performance: { now: () => 0 },
   window: { setInterval: tick => { ticks.add(tick); return tick; }, clearInterval: tick => ticks.delete(tick) },
 });
 const workout = new exportsObject.WorkoutComponent();
@@ -94,11 +96,15 @@ assert.equal(series.phaseElapsed(), 8, 'Work timer excludes pauses');
 failSet = true;
 series.completeSet(0, '20', '8');
 assert.equal(series.completed().size, 0, 'Failed save must not complete a set');
+assert.equal(series.completedSeries().length,0,'Una serie fallida no aparece como guardada');
 assert.equal(series.phase(), 'work', 'Failed save must not start rest');
 now += 2000;
 failSet = false;
 series.completeSet(0, '20', '8');
 assert.equal(savedSets[0].durationSeconds, 8, 'Retry must preserve stopped duration');
+assert.equal(series.completedSeries()[0].durationSeconds,8);
+assert.equal(series.completedSeries()[0].weightKg,20);
+assert.equal(series.completedSeries()[0].repetitions,8);
 assert.equal(series.completed().has(0), true);
 assert.equal(series.phase(), 'rest', 'Stop must automatically start rest');
 series.startSeries(1);
@@ -186,6 +192,10 @@ failSet = false;
 controls.completeSet(0, '35', '10');
 assert.equal(controls.completed().has(0), true);
 assert.equal(savedSets.length, countBeforeRepeat, 'Repeated series must replace, never append');
+assert.equal(controls.completedSeries().length,1,'Repetir una serie no duplica su fila en la lista');
+assert.equal(controls.completedSeries()[0].weightKg,35);
+assert.equal(controls.completedSeries()[0].repetitions,10);
+assert.equal(controls.completedSeries()[0].durationSeconds,5);
 assert.equal(savedSets.find(row => row.setNumber === 1).weightKg, 35);
 assert.equal(controls.phase(), 'rest');
 controls.ngOnDestroy();
@@ -240,6 +250,38 @@ assert.equal(planCheck.exercises.length,0,'Unassigned old routine must not be lo
 assert.equal(planCheck.todayPlan().length,0);
 assert.equal(planCheck.sessionId(),null);
 routineService.getAll = originalGetAll;
+// Los controles principales y la tabla comparten un borrador por ejercicio y serie.
+const card = new exportsObject.WorkoutComponent();
+card.ngOnInit();
+card.updateSetDraft(0,'weight','32.5'); card.updateSetDraft(0,'reps','10');
+card.startSeries(0);
+const originalDuration = card.current().workSeconds;
+card.configureTimer('work','120');
+assert.equal(card.current().workSeconds,originalDuration,'No editar el reloj activo sin pausarlo');
+card.toggleSeriesPause(0);
+assert.equal(card.seriesPaused(),true);
+card.configureTimer('work','60');
+assert.equal(card.current().workSeconds,60,'La duración se puede editar con la serie pausada');
+assert.equal(card.setDraft(0).weight,'32.5');
+card.resumeSeries();
+assert.equal(card.seriesPaused(),false);
+card.restartSeries(0);
+assert.equal(card.seriesPaused(),true);
+assert.equal(card.setDraft(0).reps,'10','Reiniciar el reloj no borra las repeticiones');
+card.resumeSeries();
+card.completeSet(0,'','10');
+assert.equal(card.phase(),'work','Un campo vacío no guarda la serie');
+card.completeSet(0,card.setDraft(0).weight,card.setDraft(0).reps);
+assert.equal(card.phase(),'rest','Terminar desde la tarjeta inicia el descanso');
+assert.equal(savedSets.at(-1).weightKg,32.5);
+assert.equal(savedSets.at(-1).repetitions,10);
+card.pause();
+card.configureTimer('rest','120');
+assert.equal(card.current().rest,120,'El descanso se puede editar estando pausado');
+card.configureTimer('rest','');
+assert.equal(card.current().rest,120,'Un campo vacío no cambia el descanso a cero');
+card.ngOnDestroy();
+console.log('OK: controles en tarjeta, valores compartidos, pausa/reanudación, reinicio y guardado con descanso.');
 planCheck.ngOnChanges({visible:{currentValue:true,firstChange:false}});
 assert.equal(planCheck.todayPlan().length,1,'Returning to Train refreshes the plan');
 assert.equal(planCheck.exercises.length,1);
@@ -258,3 +300,102 @@ console.log('OK: inicio manual, pausa, reanudación, stop, formato digital y err
 console.log('OK: plan de hoy, sin rutinas antiguas de respaldo, actualización al volver y sesión en curso preservada.');
 console.log('OK: Play por serie, Stop y guardado, descanso automático configurable, pausas, reintento y duración real.');
 console.log('OK: pausa individual, Play para reanudar, reinicio sin guardar, pausa global y descanso posterior.');
+// Grupos: una serie por ejercicio, sin descanso intermedio ni inicio automático del siguiente reloj.
+function groupedWorkout(sets) {
+  routineService.getAll = () => of([{id:'group-routine',name:'Grupo',days:[{id:'group-day',name:'Grupo',schedule:[{weekday:new Date().getDay(),start:'08:00',end:'09:00'}],exercises:sets.map((count,index)=>({exercise:{id:`group-${index}`,name:`Ejercicio ${index+1}`,muscleGroup:'General'},targetSets:count,minReps:8,maxReps:12,restSeconds:90}))}]}]);
+  const instance = new exportsObject.WorkoutComponent(); instance.ngOnInit(); return instance;
+}
+const linked = groupedWorkout([2,1,1]);
+linked.chooseExercise(2);
+assert.equal(linked.active(),2,'El selector elige ejercicios');
+linked.chooseExercise(0);
+linked.toggleLinkedExercise(0); linked.toggleLinkedExercise(1); linked.configureLinkedRest('75');
+linked.startSeries(0);
+now+=1500; ticks.forEach(tick=>tick());
+linked.completeSet(0,'20','8');
+assert.equal(linked.active(),1,'Después de A se prepara B');
+assert.equal(linked.phase(),'idle','No hay descanso entre A y B');
+assert.equal(linked.seriesIndex(),null,'B no arranca automáticamente');
+linked.toggleLinkedExercise(2);
+assert.equal(linked.linkedExercises().length,2,'El grupo se conserva durante la ronda');
+linked.startSeries(0); failSet=true;
+linked.completeSet(0,'25','10');
+assert.equal(linked.phase(),'work','Un fallo al guardar B no inicia el descanso');
+assert.equal(linked.completedSeries().length,1);
+failSet=false; linked.completeSet(0,'25','10');
+assert.equal(linked.phase(),'rest'); assert.equal(linked.restSeconds(),75);
+now+=5000; ticks.forEach(tick=>tick()); linked.endRest();
+assert.equal(linked.active(),0);
+assert.equal(linked.nextSetIndex(),1,'La siguiente ronda usa la serie pendiente de A');
+linked.startSeries(1); linked.completeSet(1,'22','8');
+assert.equal(linked.phase(),'rest','B ya terminado se omite en las rondas siguientes');
+linked.endRest();
+assert.equal(linked.nextActionLabel(),'Siguiente ejercicio →');
+linked.nextExercise();
+assert.equal(linked.active(),2,'Al cerrar el grupo se puede continuar con un ejercicio fuera del grupo');
+assert.equal(linked.linkedExercises().length,0);
+linked.ngOnDestroy();
+const four = groupedWorkout([2,2,2,2,1]);
+for (let index=0;index<5;index++) four.toggleLinkedExercise(index);
+assert.equal(four.linkedExercises().length,4,'Máximo cuatro ejercicios');
+four.configureLinkedRest('0');
+for (let index=0;index<4;index++) {
+  assert.equal(four.active(),index);
+  four.startSeries(0); four.completeSet(0,String(30+index),'8');
+  assert.equal(four.phase(),'idle');
+}
+assert.equal(four.active(),0,'Al cerrar D vuelve a A para la próxima ronda');
+assert.equal(four.nextSetIndex(),1);
+assert.equal(four.completedSeries().length,4,'Cada ejercicio conserva su propio registro');
+four.ngOnDestroy();
+routineService.getAll = originalGetAll;
+console.log('OK: selector de ejercicio, grupos de 2 y 4, descanso por ronda, reintentos y series desiguales.');
+
+// Elegir el último primero debe conservar los anteriores pendientes.
+const reordered = groupedWorkout([1,1,1]);
+reordered.updateSetDraft(0,'weight','42'); reordered.chooseExercise(2); reordered.startSeries(0);
+reordered.chooseExercise(0); assert.equal(reordered.active(),2,'Bloqueado durante una serie');
+reordered.completeSet(0,'30','9'); reordered.endRest();
+assert.equal(reordered.nextActionLabel(),'Siguiente ejercicio →'); reordered.nextExercise();
+assert.equal(reordered.active(),0,'Vuelve al primer pendiente');
+assert.equal(reordered.setDraft(0).weight,'42','Conserva borradores');
+reordered.chooseExercise(2); assert.equal(reordered.nextSetIndex(),-1,'Conserva series guardadas');
+reordered.chooseExercise(0); reordered.startSeries(0); reordered.completeSet(0,'42','8'); reordered.endRest();
+reordered.nextExercise(); assert.equal(reordered.active(),1);
+reordered.startSeries(0); reordered.completeSet(0,'35','8'); reordered.endRest();
+assert.equal(reordered.nextActionLabel(),'Guardar y finalizar sesión');
+assert.equal(reordered.completedSeries().length,3);
+reordered.ngOnDestroy(); routineService.getAll = originalGetAll;
+console.log('OK: ejercicios fuera de orden, retorno a pendientes y conservación de datos.');
+
+// Reiniciar el total pausa sin perder series guardadas ni el tiempo de la serie actual.
+const resetTotal = groupedWorkout([2]);
+resetTotal.startSeries(0); now+=2200; ticks.forEach(tick=>tick());
+resetTotal.completeSet(0,'40','8'); resetTotal.endRest();
+resetTotal.startSeries(1); now+=1700; ticks.forEach(tick=>tick());
+const phaseBeforeReset = resetTotal.phaseMilliseconds();
+resetTotal.restartTotalTimer();
+assert.equal(resetTotal.elapsedMilliseconds(),0);
+assert.equal(resetTotal.running(),false);
+assert.equal(resetTotal.phase(),'work');
+assert.equal(resetTotal.phaseMilliseconds(),phaseBeforeReset);
+assert.equal(resetTotal.completedSeries().length,1);
+resetTotal.play(); now+=500; ticks.forEach(tick=>tick());
+assert.equal(resetTotal.elapsedMilliseconds(),500);
+assert.equal(resetTotal.phaseMilliseconds(),phaseBeforeReset+500);
+resetTotal.ngOnDestroy(); routineService.getAll=originalGetAll;
+console.log('OK: reiniciar total conserva series y fase, pausa y reanuda desde cero.');
+
+const resetRest = groupedWorkout([2]);
+resetRest.startSeries(0); now+=1200; ticks.forEach(tick=>tick());
+resetRest.completeSet(0,'30','8'); now+=5000; ticks.forEach(tick=>tick());
+const totalBeforeRestReset=resetRest.elapsedMilliseconds();
+resetRest.restartRest();
+assert.equal(resetRest.phase(),'rest'); assert.equal(resetRest.running(),false);
+assert.equal(resetRest.phaseMilliseconds(),0);
+assert.equal(resetRest.elapsedMilliseconds(),totalBeforeRestReset);
+assert.equal(resetRest.completedSeries().length,1);
+resetRest.play(); now+=1000; ticks.forEach(tick=>tick());
+assert.equal(resetRest.phaseMilliseconds(),1000);
+resetRest.ngOnDestroy(); routineService.getAll=originalGetAll;
+console.log('OK: reiniciar descanso conserva total y series, queda pausado y permite reanudar.');

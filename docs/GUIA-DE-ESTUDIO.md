@@ -190,8 +190,16 @@ fecha. `dense_rank` comparte la posición entre usuarios que empatan en peso.
 Peso muerto rumano y convencional se muestran por separado. La clasificación
 reconoce una lista concreta de nombres, no todas las variantes posibles.
 
-En Progreso la curva y algunos indicadores de la plantilla siguen siendo
-ilustrativos; no hay que interpretarlos como una serie calculada del historial.
+Progreso reúne las calorías estimadas, el total de sesiones, el volumen de sesiones
+recientes, el historial de peso y una mejor marca por ejercicio. Se retiró la curva
+ilustrativa: todas las mediciones que se muestran proceden de la API.
+
+`profile-view.component.ts` presenta `/perfil` como una vista de lectura.
+«Modificar perfil» abre `/perfil/editar`, que utiliza `profile.component.ts`.
+El editor conserva la foto comprimida en un borrador y envía todos los cambios
+al guardar; solo después de la confirmación vuelve a `/perfil`. Cancelar no guarda.
+La preferencia del ojo para ocultar el peso se conserva por usuario y se comparte
+entre Perfil y Progreso. Inicio mantiene el calendario y la biblioteca de rutinas.
 
 ## 9. Configuraciones que no admiten comentarios JSON
 

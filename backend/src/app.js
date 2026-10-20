@@ -13,7 +13,9 @@ import { exercisesRouter } from "./routes/exercises.js";
 import { errorHandler } from "./middleware/error-handler.js";
 
 export const app = express();
-app.use(cors({ origin: config.frontendUrl }));
+// Capacitor sirve los archivos instalados desde https://localhost dentro de Android.
+// Conservamos una lista explícita para no abrir la API a cualquier sitio.
+app.use(cors({ origin: [config.frontendUrl, 'https://localhost'] }));
 // Las fotos se comprimen en el navegador a un máximo de 650.000 caracteres Base64.
 // El límite de 1 MB deja margen para el resto de los campos del perfil en el JSON.
 app.use(express.json({ limit: '1mb' }));

@@ -3,12 +3,23 @@
  * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
  */
 import { Component, Input, inject, OnChanges, OnDestroy, OnInit, SimpleChanges, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { map, of, switchMap } from 'rxjs';
 import { Routine, RoutineDay, ScheduleSlot, RoutineService } from '../services/routine.service';
 import { SessionService } from '../services/session.service';
 
 // Contrato de datos: describe campos y tipos para detectar errores durante la compilación.
+interface CompletedSeries {
+  key: string;
+  exerciseId: string;
+  exerciseName: string;
+  exerciseIndex: number;
+  setNumber: number;
+  weightKg: number;
+  repetitions: number;
+  durationSeconds: number;
+}
+
 interface WorkoutExercise {
   id: string;
   name: string;
@@ -23,51 +34,75 @@ interface WorkoutExercise {
 @Component({
   selector: 'app-workout',
   standalone: true,
+  imports: [RouterLink],
   // HTML Angular: {{ }} muestra datos, [propiedad] enlaza valores y (evento) llama métodos.
   // @if y @for controlan bloques visibles y listas; #nombre referencia un elemento del formulario.
   template: `
     <section class="page workout">
-      <div class="workout-head"><div><span class="kicker">{{ sessionFinished() ? 'SESIÓN GUARDADA' : running() ? 'SESIÓN EN CURSO' : sessionId() ? 'SESIÓN EN PAUSA' : 'PREPARÁ TU SESIÓN' }}</span><h1>{{ routineName() }}</h1></div>
-        <div class="stopwatch" aria-label="Cronómetro de entrenamiento">
-          <div class="watch-crown" aria-hidden="true"></div>
-          <div class="watch-body">
-            <div class="watch-top"><span>SMARTGYMBRO</span><span class="watch-status">{{ sessionFinished() ? 'FINALIZADO' : running() ? '● EN MARCHA' : sessionId() ? 'EN PAUSA' : 'LISTO' }}</span></div>
-            <div class="timer" role="timer" aria-label="Tiempo activo">{{format(elapsed())}}<span class="milliseconds">.{{millisecondDigits(elapsedMilliseconds())}}</span></div>
-            <div class="watch-units">HORAS <span>MINUTOS</span> SEGUNDOS <span>MS</span></div>
-            <div class="timer-controls">
-              <button type="button" class="play-control" (click)="play()" [disabled]="running() || saving() || !exercises.length" [attr.aria-label]="sessionFinished() ? 'Iniciar nueva sesión' : sessionId() ? 'Reanudar cronómetro' : 'Iniciar entrenamiento'"><span aria-hidden="true">▶</span>{{ sessionFinished() ? 'Nueva sesión' : sessionId() ? 'Reanudar' : 'Iniciar' }}</button>
-              <button type="button" (click)="pause()" [disabled]="!running() || saving()" aria-label="Pausar cronómetro"><span aria-hidden="true">Ⅱ</span>Pausa</button>
-              <button type="button" class="stop-control" (click)="stopTimer()" [disabled]="!running() || saving() || sessionFinished()" aria-label="Detener cronómetros sin finalizar la sesión"><span aria-hidden="true">■</span>Stop</button>
-            </div>
-            <small>Stop detiene los relojes. Play permite continuar.</small>
-            <button type="button" class="save-session" (click)="finishSession(true)" [disabled]="!sessionId() || saving() || sessionFinished() || phase() === 'work'">Guardar y finalizar sesión</button>
+      @if(exercises.length) {
+        <div class="total-clock-row">
+          <strong class="total-clock-value" role="timer" aria-label="Tiempo total de entrenamiento">{{formatMilliseconds(elapsedMilliseconds())}}</strong>
+          <div class="total-clock-controls">
+          <button type="button" class="total-clock-toggle" (click)="running() ? pause() : play()" [disabled]="saving()" [attr.aria-label]="running() ? 'Pausar cronómetro total' : sessionFinished() ? 'Iniciar nueva sesión' : 'Iniciar o reanudar cronómetro total'"><span aria-hidden="true">{{running() ? 'Ⅱ' : '▶'}}</span></button>
+          <button type="button" class="total-clock-secondary" (click)="stopTimer()" [disabled]="!running() || saving() || sessionFinished()" aria-label="Detener cronómetros" title="Stop"><span aria-hidden="true">■</span></button>
+          <button type="button" class="total-clock-secondary" (click)="restartTotalTimer()" [disabled]="saving() || sessionFinished()" aria-label="Reiniciar cronómetro total" title="Reiniciar tiempo total"><span aria-hidden="true">↺</span></button>
           </div>
         </div>
-      </div>
+      }
+      @if (exercises.length && !sessionFinished()) {
+        <div class="next-action" aria-label="Siguiente paso del entrenamiento"><span class="kicker">{{phase() === 'rest' ? 'AHORA DESCANSÁ' : phase() === 'work' ? 'SERIE EN CURSO' : 'EMPEZÁ POR ACÁ'}}</span><h2>{{phase() === 'rest' ? 'Recuperá para la próxima serie' : phase() === 'work' ? current().name : nextSetIndex() >= 0 ? current().name + ' · Serie ' + (nextSetIndex()+1) : 'Ejercicio completo'}}</h2>
+          @if(exercises.length > 1) {<label class="exercise-picker">Ejercicio<select [value]="active()" (change)="chooseExercise(+$any($event.target).value)" [disabled]="phase() !== 'idle' || saving() || chainRoundActive()">@for(exercise of exercises; track exercise.id; let i=$index) {<option [value]="i">{{exercise.name}} · {{exercise.done}}/{{exercise.sets}} series</option>}</select></label><p class="exercise-hint">Podés cambiar el orden y volver después a los ejercicios pendientes.</p>}
+          @if(linkedExercises().length >= 2) {<p class="linked-label">{{linkedLabel()}}<br>Sin descanso entre ejercicios · {{linkedRestSeconds()}} s al terminar la ronda.</p>}
+          @if (phase() === 'idle' && nextSetIndex() >= 0) {<p>Prepará el peso. Tocá el botón cuando estés listo.</p><div class="active-series-fields"><label>Peso (kg)<input type="number" min="0" step="0.5" [value]="setDraft(nextSetIndex()).weight" (input)="updateSetDraft(nextSetIndex(), 'weight', $any($event.target).value)" [disabled]="saving()"></label><label>Repeticiones<input type="number" min="1" step="1" [value]="setDraft(nextSetIndex()).reps" (input)="updateSetDraft(nextSetIndex(), 'reps', $any($event.target).value)" [disabled]="saving()"></label></div><button type="button" class="start-next" (click)="startSeries(nextSetIndex())" [disabled]="saving()">▶ Iniciar serie {{nextSetIndex()+1}}</button>}
+          @else if (phase() === 'work') {
+            <p>Serie {{seriesIndex()! + 1}} de {{current().sets}} · {{chainRoundActive() && hasLinkedNext() ? 'Al terminar continuás con el siguiente ejercicio de la ronda.' : 'Al terminar empieza el descanso.'}}</p>
+            <div class="series-clock-row"><strong class="active-series-clock" role="timer" aria-label="Tiempo de la serie">{{formatMilliseconds(current().workSeconds * 1000 - phaseMilliseconds())}}</strong><div class="active-series-controls series-icon-controls"><button type="button" class="total-clock-toggle" (click)="seriesPaused() || !running() ? resumeSeries() : toggleSeriesPause(seriesIndex()!)" [disabled]="saving()" [attr.aria-label]="seriesPaused() || !running() ? 'Reanudar serie' : 'Pausar serie'" [title]="seriesPaused() || !running() ? 'Reanudar serie' : 'Pausar serie'"><span aria-hidden="true">{{seriesPaused() || !running() ? '▶' : 'Ⅱ'}}</span></button><button type="button" class="total-clock-secondary" (click)="restartSeries(seriesIndex()!)" [disabled]="saving()" aria-label="Reiniciar serie" title="Reiniciar serie"><span aria-hidden="true">↺</span></button></div></div>
+            <div class="active-series-fields"><label>Peso (kg)<input type="number" min="0" step="0.5" [value]="setDraft(seriesIndex()!).weight" (input)="updateSetDraft(seriesIndex()!, 'weight', $any($event.target).value)" [disabled]="saving()"></label><label>Repeticiones<input type="number" min="1" step="1" [value]="setDraft(seriesIndex()!).reps" (input)="updateSetDraft(seriesIndex()!, 'reps', $any($event.target).value)" [disabled]="saving()"></label></div>
+            @if(error()) {<p class="error" role="alert">{{error()}}</p>}
+            <button type="button" class="start-next" (click)="completeSet(seriesIndex()!, setDraft(seriesIndex()!).weight, setDraft(seriesIndex()!).reps)" [disabled]="saving() || !running()">{{saving() ? 'Guardando serie…' : '■ Terminar serie'}}</button>
+          }
+          @else if (phase() === 'rest') {
+            <div class="series-clock-row"><strong class="rest-remaining" role="timer" aria-label="Tiempo de descanso">{{formatMilliseconds(restSeconds() * 1000 - phaseMilliseconds())}}</strong><div class="active-series-controls series-icon-controls"><button type="button" class="total-clock-toggle" (click)="running() ? pause() : play()" [disabled]="saving()" [attr.aria-label]="running() ? 'Pausar descanso' : 'Reanudar descanso'" [title]="running() ? 'Pausar descanso' : 'Reanudar descanso'"><span aria-hidden="true">{{running() ? 'Ⅱ' : '▶'}}</span></button><button type="button" class="total-clock-secondary" (click)="restartRest()" [disabled]="saving()" aria-label="Reiniciar descanso" title="Reiniciar descanso"><span aria-hidden="true">↺</span></button></div></div>
+            <p>{{running() ? 'La próxima serie empieza cuando vos toques Iniciar.' : 'Descanso en pausa. Reanudalo cuando estés listo.'}}</p>
+            <button type="button" class="start-next" (click)="endRest()" [disabled]="saving()">Terminar descanso</button>
+          }
+          @else {<p>Completaste este ejercicio. Continuá cuando estés listo.</p><button type="button" class="start-next" (click)="nextExercise()" [disabled]="saving()">{{nextActionLabel()}}</button>}
+          <details class="timer-settings"><summary>Editar tiempos de serie y descanso</summary><p>Pausá el reloj en curso para cambiar su duración. El tiempo transcurrido se conserva.</p><div class="active-series-fields"><label>Serie (segundos)<input type="number" min="1" max="3600" step="1" [value]="current().workSeconds" [disabled]="saving() || (phase() === 'work' && running() && !seriesPaused())" (change)="configureTimer('work', $any($event.target).value)"></label><label>Descanso (segundos)<input type="number" min="0" max="3600" step="1" [value]="restSeconds()" [disabled]="saving() || (phase() === 'rest' && running())" (change)="configureTimer('rest', $any($event.target).value)"></label></div></details>
+          @if(error() && phase() !== 'work') {<p class="error" role="alert">{{error()}}</p>}
+          <details class="linked-settings"><summary>Encadenar de 2 a 4 ejercicios</summary><p>Elegí el orden: una serie de A, después B (y C o D si los agregás). Descansás al cerrar la ronda. Cada serie empieza al tocar Iniciar.</p>@for(exercise of exercises; track exercise.id; let i=$index) {<label><input type="checkbox" [checked]="linkedExercises().includes(i)" [attr.aria-label]="exercise.name" (change)="toggleLinkedExercise(i)" [disabled]="phase() !== 'idle' || saving() || chainRoundActive() || (!linkedExercises().includes(i) && linkedExercises().length >= 4)">{{exercise.name}} @if(linkedExercises().includes(i)) {<b>{{linkedExercises().indexOf(i)+1}}</b>}</label>}<p>@if(linkedExercises().length === 1) {Elegí otro ejercicio para activar el grupo.} @else if(linkedExercises().length >= 2) {Se omiten los ejercicios que ya completaron todas sus series.}</p><label>Descanso entre rondas (segundos)<input type="number" min="0" max="3600" step="1" [value]="linkedRestSeconds()" (change)="configureLinkedRest($any($event.target).value)" [disabled]="phase() !== 'idle' || saving() || chainRoundActive()"></label><button type="button" class="repeat-record" (click)="clearLinkedExercises()" [disabled]="phase() !== 'idle' || saving() || chainRoundActive()">Quitar grupo</button></details>
+        </div>
+      }
       @if (sessionFinished()) {<p role="status" class="saved-message">Sesión guardada. Podés revisar tus series o iniciar una nueva sesión.</p>}
       @if (error()) {<div class="error" role="alert">{{error()}}</div>}
       @if (planNotice()) {<p class="plan-notice" role="status">{{planNotice()}}</p>}
       @if (todayPlan().length) {<div class="today-plan"><label>Tu plan de hoy<select [value]="selectedPlanKey" (change)="selectPlannedWorkout($any($event.target).value)" [disabled]="saving() || (!!sessionId() && !sessionFinished())">@for (entry of todayPlan(); track entry.key) {<option [value]="entry.key">{{entry.slot.start}} – {{entry.slot.end}} · {{entry.day.name}} · {{entry.routine.name}}</option>}</select></label></div>}
       @if (exercises.length) {
-        <div class="layout">
-          <aside>@for (exercise of exercises; track exercise.id; let i=$index) {<button [class.active]="i===active()" (click)="selectExercise(i)" [disabled]="phase() !== 'idle' || saving()"><span>0{{i+1}}</span><div><b>{{exercise.name}}</b><small>{{exercise.done}}/{{exercise.sets}} series</small></div></button>}</aside>
+        <div class="session-log">
+
           <article class="current">
-            <span class="muscle">{{current().muscle}}</span><h2>{{current().name}}</h2><p>{{current().sets}} series · {{current().reps}} repeticiones · {{current().rest}} s descanso</p>
-            <div class="series-timers">
-              <div class="phase-clock" [class.phase-active]="phase() === 'work'"><span>SERIE {{ seriesIndex() === null ? '' : seriesIndex()! + 1 }}</span><strong role="timer">{{formatMilliseconds(phase() === 'work' ? current().workSeconds * 1000 - phaseMilliseconds() : current().workSeconds * 1000)}}</strong><small>{{phase() === 'work' && phaseElapsed() >= current().workSeconds ? 'Tiempo cumplido · pulsá Stop al terminar' : seriesPaused() ? 'Serie en pausa · pulsá Play para continuar' : 'Cuenta regresiva · Stop guarda la serie'}}</small><label>Duración (segundos)<input type="number" min="1" max="3600" step="1" [value]="current().workSeconds" [disabled]="phase() !== 'idle' || saving()" (change)="configureTimer('work', $any($event.target).value)"></label></div>
-              <div class="phase-clock rest-clock" [class.phase-active]="phase() === 'rest'"><span>DESCANSO</span><strong role="timer">{{formatMilliseconds(phase() === 'rest' ? current().rest * 1000 - phaseMilliseconds() : current().rest * 1000)}}</strong><small aria-live="polite">{{phase() === 'rest' ? 'Recuperá · la próxima serie empieza con Play' : 'Empieza automáticamente al guardar la serie'}}</small><label>Duración (segundos)<input type="number" min="0" max="3600" step="1" [value]="current().rest" [disabled]="phase() !== 'idle' || saving()" (change)="configureTimer('rest', $any($event.target).value)"></label>@if (phase() === 'rest') {<button type="button" class="skip-rest" (click)="endRest()" [disabled]="saving()">Terminar descanso</button>}</div>
-            </div>
-            <div class="set-table"><div class="thead"><span>SERIE</span><span>KG</span><span>REPS</span><span>ESTADO</span></div>
-              @for (_ of setRange; track $index; let i=$index) {<div class="set-row" [class.series-active]="seriesIndex() === i"><strong>{{i+1}}</strong><input #weight type="number" value="60" min="0" [disabled]="completed().has(i) || saving()" aria-label="Peso en kilogramos"><input #reps type="number" value="8" min="1" [disabled]="completed().has(i) || saving()" aria-label="Repeticiones"><div class="series-buttons"><button type="button" class="series-play" (click)="startSeries(i)" [disabled]="saving() || sessionFinished() || completed().has(i) || i !== nextSetIndex() || (phase() !== 'idle' && !(phase() === 'work' && seriesIndex() === i && seriesPaused()))" [attr.aria-label]="'Iniciar serie ' + (i+1)">▶ <span>{{seriesPaused() && seriesIndex() === i ? 'Reanudar' : 'Play'}}</span></button><button type="button" (click)="toggleSeriesPause(i)" [disabled]="saving() || phase() !== 'work' || seriesIndex() !== i" [attr.aria-label]="(seriesPaused() ? 'Reanudar serie ' : 'Pausar serie ') + (i+1)">{{seriesPaused() && seriesIndex() === i ? '▶ Reanudar' : 'Ⅱ Pausa'}}</button><button type="button" (click)="restartSeries(i)" [disabled]="saving() || phase() !== 'work' || seriesIndex() !== i" [attr.aria-label]="'Reiniciar serie ' + (i+1)">↺ Reiniciar</button><button type="button" (click)="completeSet(i, weight.value, reps.value)" [disabled]="saving() || !running() || phase() !== 'work' || seriesIndex() !== i || completed().has(i)" [class.complete]="completed().has(i)">{{completed().has(i) ? '✓ Listo' : '■ Stop'}}</button>@if (completed().has(i)) {<button type="button" class="return-series" (click)="returnToSeries(i)" [disabled]="saving() || sessionFinished() || phase() === 'work'">↶ Volver a esta serie</button>}</div></div>}
-            </div>
-            <div class="actions"><span>{{ sessionFinished() ? 'Entrenamiento guardado' : running() ? 'Registrando tu entrenamiento' : sessionId() ? 'En pausa · pulsá Reanudar para continuar' : 'Pulsá Play en la primera serie para comenzar' }}</span><button class="button primary" (click)="nextExercise()" [disabled]="saving() || sessionFinished() || !sessionId() || phase() !== 'idle'">{{active() === exercises.length - 1 ? 'Guardar y finalizar sesión' : 'Siguiente ejercicio →'}}</button></div>
+            <h2 class="series-table-title">Series completadas · {{completedSeries().length}}</h2>
+            <ol class="completed-log" aria-label="Series guardadas">@for (record of completedSeries(); track record.key) {<li><span class="completed-tick" aria-label="Completada">✓</span><div><h3>{{record.exerciseName}} · Serie {{record.setNumber}}</h3><div class="completed-values"><span>{{record.weightKg}} kg</span><span>{{record.repetitions}} repeticiones</span><time>Tiempo: {{format(record.durationSeconds)}}</time></div><button class="repeat-record" type="button" (click)="repeatRecordedSeries(record)" [disabled]="saving() || sessionFinished() || phase() === 'work' || chainRoundActive()">↶ Volver a esta serie</button></div></li>} @empty {<li class="log-empty">Las series aparecerán acá cuando las termines y se guarden.</li>}</ol>
           </article>
         </div>
-      } @else { <div class="empty">{{loadingPlan() ? 'Consultando tu plan…' : 'Hoy no tenés entrenamientos asignados. Podés organizar tus días y horarios desde el Plan en Inicio.'}}</div> }
+      } @else { <div class="empty">@if(loadingPlan()) {<p>Consultando tu plan…</p>} @else if(error()) {<p>No pudimos consultar tus rutinas. Revisá la conexión.</p><button type="button" class="button primary" (click)="refreshPlan()">Reintentar</button>} @else {<h2>Elegí qué vas a entrenar hoy</h2><p>No hay una rutina asignada para hoy. Podés asignar una desde tu biblioteca.</p><a class="button primary" routerLink="/" fragment="library-title">Elegir una rutina</a><a class="button ghost" routerLink="/rutinas/nueva">Crear una rutina</a>}</div> }
+      @if(exercises.length) {<button type="button" class="save-session finish-session-bottom" (click)="finishSession(true)" [disabled]="!sessionId() || saving() || sessionFinished() || phase() === 'work'">Guardar y finalizar sesión</button>}
     </section>
   `,
   // CSS de este componente: disposición, colores y estados; @media adapta la vista a pantallas pequeñas.
   styles: [`
+    .exercise-hint{font-size:12px!important}.linked-settings{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}.linked-settings summary{font-size:14px;cursor:pointer}.linked-settings p,.linked-label{font-size:13px;line-height:1.6;color:var(--muted)}.linked-settings label{display:flex;align-items:center;gap:10px;margin:14px 0;font-size:14px}.linked-settings input[type=checkbox]{width:22px;min-height:22px;height:22px;accent-color:var(--lime)}.linked-settings input[type=number]{width:90px;min-width:0;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--text)}.linked-settings b{color:var(--lime)}
+    .completed-log .log-empty{display:block;background:transparent;border-color:var(--line)}
+    .exercise-picker{display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--muted);margin-bottom:18px}.exercise-picker select{width:100%;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text)}
+    .completed-log{list-style:none;padding:0;margin:20px 0 0;display:flex;flex-direction:column;gap:12px}.completed-log li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;padding:16px;border:1px solid #a3e63530;border-radius:14px;background:#a3e63508}.completed-tick{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--lime);color:#0b130d;font-weight:800}.completed-log h3{margin:0 0 9px;font-size:15px}.completed-values{display:flex;gap:8px 16px;flex-wrap:wrap;color:var(--text);font-size:13px}.completed-values time{font-variant-numeric:tabular-nums}.repeat-record{margin-top:12px;background:transparent;border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--muted);font-size:12px;cursor:pointer}.repeat-record:disabled{opacity:.4}.log-empty{color:var(--muted);font-size:14px;line-height:1.7}
+    .timer-settings{margin-top:18px;border-top:1px solid #a3e63530;padding-top:16px}.timer-settings summary{cursor:pointer;color:var(--text);font-size:14px;font-weight:600;min-height:32px}.timer-settings p{font-size:12px}.series-table-title{font-size:20px!important;margin-top:0!important}
+    .series-clock-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0}.series-clock-row .active-series-clock,.series-clock-row .rest-remaining{margin:0;font-size:clamp(22px,5.6vw,40px)}.series-clock-row .series-icon-controls{margin:0;flex-shrink:0}
+    .active-series-controls.series-icon-controls{display:flex;justify-content:flex-end;align-items:center;gap:6px}.active-series-controls.series-icon-controls .total-clock-toggle{width:48px;height:48px;min-height:48px;padding:0;border:0;border-radius:50%;background:var(--lime);color:#0b130d;font-size:24px}.active-series-controls.series-icon-controls .total-clock-secondary{width:40px;height:44px;min-height:44px;padding:0;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-size:24px}
+    .active-series-controls.rest-controls{grid-template-columns:1fr}.rest-remaining{margin-top:16px}
+    .active-series-clock{display:block;font:700 clamp(26px,6vw,40px)/1.3 monospace;color:var(--lime);margin:18px 0;font-variant-numeric:tabular-nums}.active-series-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}.active-series-fields label{display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text)}.active-series-fields input{width:100%;min-width:0;border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--surface-2);color:var(--text);font-size:18px}.active-series-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.active-series-controls button{min-height:48px;border:1px solid #a3e63555;border-radius:10px;background:var(--surface-2);color:var(--text);font-weight:600;font-size:13px;cursor:pointer}.series-state{color:var(--muted);font-size:12px}.series-state.done{color:var(--lime)}
+    .jump-to-set{text-align:center;box-sizing:border-box}.set-table{scroll-margin-top:100px}@media(max-width:750px){.workout aside{display:flex;flex-direction:row;overflow-x:auto;padding-bottom:6px}.workout aside button{min-width:160px;justify-content:flex-start}.workout aside button div{display:flex;text-align:left}.workout aside button b{font-size:13px}}
+    .total-clock-controls{display:flex;gap:6px;flex-shrink:0}.total-clock-secondary{width:40px;height:44px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text);font-size:24px;cursor:pointer}.total-clock-secondary:disabled{opacity:.35;cursor:default}.total-clock-secondary:focus-visible{outline:2px solid var(--lime);outline-offset:3px}.total-clock-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 24px}.total-clock-value{font:700 clamp(22px,6vw,36px)/1.2 monospace;font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap}.total-clock-toggle{display:grid;place-items:center;flex-shrink:0;width:48px;height:48px;border:0;border-radius:50%;background:var(--lime);color:#0b130d;font-size:24px;cursor:pointer}.total-clock-toggle:disabled{opacity:.4;cursor:default}.total-clock-toggle:focus-visible{outline:2px solid var(--lime);outline-offset:4px}.finish-session-bottom{margin-top:32px;min-height:48px}
+    .series-buttons .finish-set{grid-column:1/-1;background:var(--lime);color:#0b130d;font-weight:800}.series-buttons .finish-set:disabled{background:transparent;color:var(--muted)}
+    .next-action{padding:24px;border:1px solid #a3e63570;border-radius:20px;background:#a3e6350c;margin-bottom:24px}.next-action h2{font-size:26px;margin:10px 0}.next-action p{font-size:15px;color:var(--muted);line-height:1.6}.start-next{display:block;width:100%;border:0;border-radius:14px;background:var(--lime);color:#0b130d;padding:20px;font-size:19px;font-weight:800;cursor:pointer}.start-next:disabled{opacity:.5}.rest-remaining{font:700 34px monospace;color:#7dd3fc}.workout .save-session{background:transparent;color:var(--muted);border-color:var(--line)}
     .today-plan{margin-bottom:24px}.today-plan label{display:flex;flex-direction:column;gap:8px;color:var(--muted);font-size:12px}.today-plan select{width:100%;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text)}.plan-notice{padding:14px;border:1px solid #fb923c55;border-radius:12px;color:#fdba74;font-size:12px}.workout{padding-top:48px;padding-bottom:70px}.kicker{color:var(--lime);font-size:11px;letter-spacing:.18em;font-weight:800}.workout-head{display:flex;justify-content:space-between;align-items:end;margin-bottom:38px}.workout-head h1{font-size:44px;margin:8px 0 0}.timer{font:700 42px/1 monospace;color:var(--lime);text-align:right}.timer small{display:block;color:var(--muted);font:700 9px/1 sans-serif;letter-spacing:.14em;margin-top:9px}.layout{display:grid;grid-template-columns:280px 1fr;gap:22px}aside{display:flex;flex-direction:column;gap:8px}aside button{display:flex;gap:14px;align-items:center;text-align:left;border:1px solid transparent;background:transparent;color:var(--muted);padding:16px;border-radius:14px}aside button.active{background:var(--surface);border-color:var(--line);color:var(--text)}aside button>span{font-family:monospace;color:#52617a}aside div{display:flex;flex-direction:column;gap:4px}aside small{font-size:11px;color:var(--muted)}.current{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:clamp(24px,4vw,46px)}.muscle{color:var(--lime);font-size:12px;text-transform:uppercase;letter-spacing:.14em}.current h2{font-size:42px;margin:10px 0}.current>p{color:var(--muted)}.set-table{margin-top:38px}.thead,.set-row{display:grid;grid-template-columns:.6fr 1fr 1fr 1fr;gap:12px;align-items:center}.thead{color:var(--muted);font-size:10px;letter-spacing:.12em;padding:0 14px 12px}.set-row{border-top:1px solid var(--line);padding:14px}.set-row input{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:12px}.set-row button{border:1px solid var(--line);background:transparent;color:var(--muted);padding:10px;border-radius:10px}.set-row button.complete{background:rgba(163,230,53,.12);color:var(--lime);border-color:rgba(163,230,53,.35)}.set-row button:disabled{opacity:.6}.actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:32px}.actions>span{color:var(--muted);font-size:11px}.error{margin-top:16px;color:#fca5a5;font-size:12px}.empty{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:40px;color:var(--muted)}@media(max-width:750px){.layout{grid-template-columns:1fr}aside{display:grid;grid-template-columns:repeat(4,1fr)}aside button{padding:10px;justify-content:center}aside button div{display:none}.workout-head h1{font-size:32px}.timer{font-size:28px}.current h2{font-size:32px}.current{padding:20px}.set-row,.thead{grid-template-columns:.5fr 1fr 1fr 1fr;gap:6px}.set-row{padding:12px 4px}.set-row button{font-size:0}.set-row button:after{content:'✓';font-size:14px}}
     .series-timers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:25px 0}.phase-clock{background:#080f0c;border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:9px}.phase-clock>span{font-size:10px;letter-spacing:.15em;color:var(--muted)}.phase-clock strong{font:700 clamp(18px,2.2vw,27px)/1.2 'Courier New',monospace;font-variant-numeric:tabular-nums;color:var(--lime)}.rest-clock strong{color:#7dd3fc}.phase-clock small{font-size:11px;color:var(--muted);min-height:28px}.phase-clock label{display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--muted)}.phase-clock input{width:100%;padding:9px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;color:var(--text)}.phase-active{border-color:var(--lime);box-shadow:0 0 18px #a3e63512}.rest-clock.phase-active{border-color:#7dd3fc}.skip-rest{background:transparent;color:#7dd3fc;border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer}.series-buttons{display:grid;grid-template-columns:1fr 1fr;gap:6px}.series-buttons button{flex:1;font-size:11px;white-space:nowrap;padding:10px 7px}.series-buttons .return-series{grid-column:1/-1;white-space:normal;color:var(--lime)}.series-buttons .series-play{color:var(--lime)}.series-active{background:#a3e63508}.set-row,.thead{grid-template-columns:.45fr .8fr .8fr minmax(165px,1.4fr)}@media(max-width:600px){.series-timers{grid-template-columns:1fr}.set-row,.thead{grid-template-columns:30px minmax(45px,1fr) minmax(45px,1fr) minmax(110px,1.6fr);gap:5px}.series-buttons{gap:4px}.series-buttons button{font-size:11px;padding:10px 4px}.series-buttons button:after{content:none}.series-buttons .series-play span{display:none}.current{padding:16px}.set-row input{padding:10px 5px}}
     .milliseconds{font-size:.5em;letter-spacing:0;color:#d9f99d;vertical-align:baseline}.save-session{display:block;width:100%;margin-top:16px;padding:12px;border:1px solid #638833;border-radius:10px;background:var(--lime);color:#0b130d;font-size:12px;font-weight:700;cursor:pointer}.save-session:disabled{opacity:.4;cursor:default}.saved-message{padding:14px 18px;border:1px solid #638833;border-radius:12px;color:var(--lime);background:#a3e6350a;margin-bottom:24px}.workout-head{gap:32px;align-items:center}.stopwatch{width:340px;flex-shrink:0;position:relative;padding-top:15px}.watch-crown{position:absolute;top:0;left:calc(50% - 20px);width:40px;height:19px;border:2px solid #52617a;border-radius:7px 7px 0 0;background:linear-gradient(90deg,#263143,#52617a,#263143)}.watch-body{position:relative;border:3px solid #3b485c;border-radius:30px;background:linear-gradient(145deg,#263143,#111827 55%);padding:20px;box-shadow:0 12px 28px #0005,inset 0 1px 0 #ffffff18}.watch-top{display:flex;justify-content:space-between;font:700 9px/1.4 monospace;letter-spacing:.08em;color:var(--muted);margin-bottom:13px}.watch-status{color:var(--lime)}.timer{background:#080f0c;border:2px solid #35463a;border-radius:12px;padding:18px 8px 13px;text-align:center;font:700 35px/1.2 'Courier New',monospace;font-variant-numeric:tabular-nums;letter-spacing:.03em;text-shadow:0 0 14px #a3e63540;box-shadow:inset 0 3px 9px #0008}.watch-units{display:flex;justify-content:space-around;padding:7px 18px 13px;font:700 8px/1 monospace;letter-spacing:.12em;color:var(--muted)}.timer-controls{display:flex;gap:7px}.timer-controls button{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 5px;border:1px solid #41506a;border-radius:10px;background:#1a2333;color:var(--text);font-size:11px;cursor:pointer}.timer-controls button span{font-size:17px;line-height:1}.timer-controls .play-control{color:var(--lime);border-color:#638833}.timer-controls .stop-control{color:#fca5a5}.timer-controls button:disabled{opacity:.35;cursor:default}.timer-controls button:focus-visible{outline:2px solid var(--lime);outline-offset:3px}.watch-body>small{display:block;text-align:center;margin-top:12px;font-size:10px;color:var(--muted)}.workout>.error{margin:-15px 0 24px}@media(max-width:750px){.workout-head{flex-direction:column;align-items:stretch;gap:24px}.stopwatch{width:min(340px,100%);align-self:center}.timer{font-size:clamp(25px,7vw,35px)}}
@@ -89,6 +124,69 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
   readonly routineName = signal('Cargando rutina…'); readonly sessionId = signal<string | null>(null);
   readonly active = signal(0); readonly elapsed = signal(0); readonly completed = signal(new Set<number>());
   readonly saving = signal(false); readonly error = signal('');
+  readonly completedSeries = signal<CompletedSeries[]>([]);
+  readonly linkedExercises = signal<number[]>([]);
+  readonly linkedRestSeconds = signal(90);
+  private linkedRound = false;
+  private remainingLinked: number[] = [];
+  chainRoundActive(): boolean { return this.linkedRound; }
+  hasLinkedNext(): boolean { return this.remainingLinked.length > 0; }
+  linkedLabel(): string { return this.linkedExercises().map(index => this.exercises[index]?.name).join(' → '); }
+  /** Cambia el orden sin perder series. Elegir fuera del grupo vuelve al modo individual. */
+  chooseExercise(index: number): void {
+    if (this.phase() !== 'idle' || this.saving() || this.linkedRound || !Number.isInteger(index) || !this.exercises[index]) return;
+    if (!this.linkedExercises().includes(index)) this.linkedExercises.set([]);
+    this.selectExercise(index);
+  }
+  /** La selección conserva el orden elegido y se bloquea mientras se completa una ronda. */
+  toggleLinkedExercise(index: number): void {
+    if (this.phase() !== 'idle' || this.saving() || this.linkedRound || !this.exercises[index]) return;
+    const selected = [...this.linkedExercises()];
+    if (selected.includes(index)) selected.splice(selected.indexOf(index), 1);
+    else { if (selected.length >= 4) return; selected.push(index); }
+    this.linkedExercises.set(selected);
+    if (selected.length >= 2) this.selectExercise(selected[0]);
+  }
+  clearLinkedExercises(): void { if (this.phase() === 'idle' && !this.saving() && !this.linkedRound) this.linkedExercises.set([]); }
+  configureLinkedRest(raw: string): void {
+    if (this.phase() !== 'idle' || this.saving() || this.linkedRound) return;
+    const seconds = Number(raw);
+    if (!raw.trim() || !Number.isInteger(seconds) || seconds < 0 || seconds > 3600) { this.error.set('El descanso entre rondas debe ser de 0 a 3600 segundos.'); return; }
+    this.linkedRestSeconds.set(seconds); this.error.set('');
+  }
+  restSeconds(): number { return this.linkedExercises().length >= 2 && this.linkedExercises().includes(this.active()) ? this.linkedRestSeconds() : this.current()?.rest || 0; }
+  private exercisePending(index: number): boolean { return (this.completedByExercise.get(this.exercises[index].id)?.size || 0) < this.exercises[index].sets; }
+  nextActionLabel(): string {
+    return this.exercises.some((_,index) => this.exercisePending(index)) ? 'Siguiente ejercicio →' : 'Guardar y finalizar sesión';
+  }
+
+  /** Tras confirmar A, prepara B sin descanso ni inicio automático. Solo el último abre el descanso. */
+  private afterSavedSeries(): void {
+    this.seriesPaused.set(false); this.phaseMs = 0; this.phaseElapsed.set(0); this.phaseMilliseconds.set(0); this.phaseSince = Date.now(); this.seriesFrozen = false;
+    if (this.linkedRound) {
+      const next = this.remainingLinked.shift();
+      if (next !== undefined) { this.phase.set('idle'); this.seriesIndex.set(null); this.selectExercise(next); return; }
+    }
+    this.phase.set('rest');
+    if (this.restSeconds() === 0) this.endRest();
+  }
+  /** La lista refleja únicamente series confirmadas por la API. Repetir una actualiza su fila. */
+  private recordSeries(exercise: WorkoutExercise, data: {setNumber:number; weightKg:number; repetitions:number; durationSeconds:number}): void {
+    const key = `${exercise.id}:${data.setNumber}`;
+    const record: CompletedSeries = { key, exerciseId:exercise.id, exerciseName:exercise.name, exerciseIndex:this.active(), ...data };
+    const rows = [...this.completedSeries()];
+    const index = rows.findIndex(row => row.key === key);
+    if (index < 0) rows.push(record); else rows[index] = record;
+    this.completedSeries.set(rows);
+  }
+  /** Permite volver a una serie guardada, incluso si pertenece a otro ejercicio de la sesión. */
+  repeatRecordedSeries(record: CompletedSeries): void {
+    if (this.saving() || this.sessionFinished() || this.phase() === 'work' || this.linkedRound) return;
+    if (this.phase() === 'rest') this.endRest();
+    if (!this.linkedExercises().includes(record.exerciseIndex)) this.linkedExercises.set([]);
+    this.selectExercise(record.exerciseIndex);
+    this.returnToSeries(record.setNumber - 1);
+  }
   readonly running = signal(false);
   readonly sessionFinished = signal(false);
   // Fase de la serie; running es independiente y controla si avanzan los relojes.
@@ -114,6 +212,16 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
   // Map mantiene el ID devuelto por la API y las series completadas de cada ejercicio durante esta sesión.
   private readonly performedIds = new Map<string, string>();
   private readonly completedByExercise = new Map<string, Set<number>>();
+  private readonly setDrafts = signal(new Map<string, {weight:string; reps:string}>());
+  /** La tarjeta y la tabla comparten los mismos valores, sin perderlos al pausar o volver de otra pestaña. */
+  setDraft(index: number): {weight:string; reps:string} {
+    return this.setDrafts().get(`${this.current()?.id}:${index}`) || {weight:'60',reps:'8'};
+  }
+  updateSetDraft(index: number, field:'weight'|'reps', value:string): void {
+    const drafts = new Map(this.setDrafts());
+    drafts.set(`${this.current()?.id}:${index}`, {...this.setDraft(index), [field]:value});
+    this.setDrafts.set(drafts);
+  }
   private interval?: number;
 
   /** Carga el plan al crear el componente, sin iniciar ningún reloj. */
@@ -128,6 +236,7 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
   refreshPlan(): void {
     // Un contador identifica la solicitud más reciente para evitar que una respuesta lenta reemplace el plan nuevo.
     const request = ++this.planRequest;
+    this.error.set('');
     this.loadingPlan.set(true);
     this.routines.getAll().subscribe({
       next: (routines) => {
@@ -144,7 +253,7 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
         const selected = entries.find(entry => entry.key === this.selectedPlanKey) || entries.find(entry => entry.slot.start <= time && time < entry.slot.end) || entries.find(entry => entry.slot.start >= time) || entries[0];
         this.selectPlannedWorkout(selected.key);
       },
-      error: () => { if (request !== this.planRequest) return; this.loadingPlan.set(false); this.error.set('No pudimos actualizar el plan de hoy.'); },
+      error: () => { if (request !== this.planRequest) return; this.loadingPlan.set(false); if (!this.sessionId()) this.routineName.set('Revisá tu conexión'); this.error.set('No pudimos actualizar el plan de hoy.'); },
     });
   }
   /** Carga los ejercicios de una asignación y limpia el estado de la sesión anterior; no permite cambiar una sesión en curso. */
@@ -157,13 +266,11 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
     this.active.set(0); this.completed.set(new Set()); this.sessionFinished.set(false); this.sessionId.set(null);
     this.elapsed.set(0); this.elapsedMilliseconds.set(0); this.accumulatedMs = 0;
     this.phase.set('idle'); this.seriesIndex.set(null); this.phaseElapsed.set(0); this.phaseMilliseconds.set(0);
-    this.performedIds.clear(); this.completedByExercise.clear(); this.savedSeries.clear(); this.repeatByExercise.clear();
+    this.performedIds.clear(); this.completedByExercise.clear(); this.savedSeries.clear(); this.completedSeries.set([]); this.repeatByExercise.clear(); this.linkedExercises.set([]); this.linkedRound = false; this.remainingLinked = [];
   }
 
   /** Devuelve el ejercicio seleccionado por el índice activo. */
   current(): WorkoutExercise { return this.exercises[this.active()]; }
-  /** Genera tantas posiciones como series tiene el ejercicio para dibujar las filas de la tabla. */
-  get setRange(): unknown[] { return Array.from({ length: this.current()?.sets || 0 }); }
   /** Convierte segundos a horas:minutos:segundos con dos dígitos por parte. */
   format(seconds:number): string { return [Math.floor(seconds/3600), Math.floor(seconds/60)%60, seconds%60].map(value => String(value).padStart(2,'0')).join(':'); }
   /** Extrae la parte de milisegundos y la completa a tres dígitos. */
@@ -183,8 +290,10 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
       this.phaseElapsed.set(0); this.phaseMilliseconds.set(0); this.phaseMs = 0; this.seriesPaused.set(false);
       this.seriesFrozen = false; this.pendingSeries = null; this.lastRestSeconds = 0;
       this.performedIds.clear(); this.completedByExercise.clear(); this.savedSeries.clear();
+      this.completedSeries.set([]); this.linkedRound = false; this.remainingLinked = [];
       this.repeatByExercise.clear(); this.completed.set(new Set());
       for (const exercise of this.exercises) exercise.done = 0;
+      if (this.linkedExercises().length >= 2) this.active.set(this.linkedExercises()[0]);
     }
     this.error.set('');
     if (this.sessionId()) { this.startClock(); return; }
@@ -195,38 +304,42 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
-  /** Guarda el punto de inicio con performance.now y programa actualizaciones visuales aproximadamente cada 16 ms. */
+  /** Usa marcas de tiempo reales para contar también el tiempo con la pantalla bloqueada; el intervalo solo refresca la vista. */
   private startClock(): void {
-    this.runningSince = performance.now();
+    this.runningSince = Date.now();
     this.running.set(true);
-    this.phaseSince = performance.now();
+    this.phaseSince = Date.now();
     if (this.pendingSeries !== null) { this.beginSeries(this.pendingSeries); this.pendingSeries = null; }
     this.interval = window.setInterval(() => this.tick(), 16);
   }
 
   /** Recalcula tiempos a partir de marcas temporales, sin sumar intervalos fijos. Cierra el descanso cuando alcanza su duración. */
   private tick(): void {
-    const now = performance.now();
+    const now = Date.now();
     this.elapsedMilliseconds.set(Math.floor(this.accumulatedMs + now - this.runningSince));
     this.elapsed.set(Math.floor(this.elapsedMilliseconds() / 1000));
     if (this.phase() !== 'idle' && !this.seriesFrozen && !this.seriesPaused()) {
       this.phaseMilliseconds.set(Math.floor(this.phaseMs + now - this.phaseSince));
       this.phaseElapsed.set(Math.floor(this.phaseMilliseconds() / 1000));
-      if (this.phase() === 'rest' && this.phaseElapsed() >= this.current().rest) this.endRest();
+      if (this.phase() === 'rest' && this.phaseElapsed() >= this.restSeconds()) this.endRest();
     }
   }
 
-  /** Ajusta los segundos previstos de serie o descanso solo entre fases; el tiempo de trabajo sirve como referencia visual, no guarda la serie automáticamente. */
+  /** Edita el tiempo de una fase futura o pausada, conservando lo transcurrido. Cumplir el tiempo de serie no la guarda automáticamente. */
   configureTimer(kind: 'work' | 'rest', raw: string): void {
-    if (this.phase() !== 'idle' || this.saving()) return;
+    if (this.saving()) return;
+    if ((kind === 'work' && this.phase() === 'work' && this.running() && !this.seriesPaused()) ||
+        (kind === 'rest' && this.phase() === 'rest' && this.running())) return;
     const seconds = Number(raw);
-    if (!Number.isInteger(seconds) || seconds < (kind === 'work' ? 1 : 0) || seconds > 3600) { this.error.set('Usá segundos enteros: serie de 1 a 3600 y descanso de 0 a 3600.'); return; }
-    if (kind === 'work') this.current().workSeconds = seconds; else this.current().rest = seconds;
+    if (!raw.trim() || !Number.isInteger(seconds) || seconds < (kind === 'work' ? 1 : 0) || seconds > 3600) { this.error.set('Usá segundos enteros: serie de 1 a 3600 y descanso de 0 a 3600.'); return; }
+    if (kind === 'work') this.current().workSeconds = seconds; else if (this.linkedExercises().length >= 2 && this.linkedExercises().includes(this.active())) this.linkedRestSeconds.set(seconds); else this.current().rest = seconds;
     this.error.set('');
   }
 
   /** Prioriza la serie reabierta; de lo contrario devuelve la primera pendiente, o -1 si no quedan. */
-  nextSetIndex(): number { return this.repeatByExercise.get(this.current()?.id) ?? Array.from({ length: this.current()?.sets || 0 }, (_, i) => i).find(i => !this.completed().has(i)) ?? -1; }
+  nextSetIndex(): number {
+    return this.repeatByExercise.get(this.current()?.id) ?? Array.from({ length: this.current()?.sets || 0 }, (_, i) => i).find(i => !this.completed().has(i)) ?? -1;
+  }
 
   /** Reabre una serie completada para repetirla. Conserva su identidad guardada para actualizarla en lugar de duplicarla. */
   returnToSeries(index: number): void {
@@ -247,6 +360,7 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Comprueba que sea la siguiente serie disponible y solicita iniciar el reloj total si todavía está detenido. */
   startSeries(index: number): void {
+    if (index < 0 || index >= this.current().sets) return;
     if (this.sessionFinished()) return;
     if (this.phase() === 'work' && this.seriesIndex() === index && this.seriesPaused() && !this.saving()) { this.toggleSeriesPause(index); return; }
     if (this.saving() || this.phase() !== 'idle' || index !== this.nextSetIndex()) return;
@@ -254,11 +368,24 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
     this.beginSeries(index);
   }
 
+  /** El acceso principal reanuda la serie y el reloj total respetando ambas pausas. */
+  resumeSeries(): void {
+    const index = this.seriesIndex();
+    if (index === null || this.saving()) return;
+    if (this.seriesPaused()) this.toggleSeriesPause(index);
+    else this.play();
+  }
+
   /** Entra en fase de trabajo y reinicia únicamente el reloj de esa serie. */
   private beginSeries(index: number): void {
+    if (!this.linkedRound && this.linkedExercises().length >= 2 && this.linkedExercises().includes(this.active())) {
+      this.linkedRound = true;
+      const selected = this.linkedExercises(); const position = selected.indexOf(this.active());
+      this.remainingLinked = [...selected.slice(position+1), ...selected.slice(0,position)].filter(item => this.exercisePending(item));
+    }
     this.seriesPaused.set(false);
     this.seriesIndex.set(index); this.phase.set('work'); this.phaseElapsed.set(0); this.phaseMilliseconds.set(0);
-    this.phaseMs = 0; this.phaseSince = performance.now(); this.seriesFrozen = false;
+    this.phaseMs = 0; this.phaseSince = Date.now(); this.seriesFrozen = false;
   }
 
   /** Pausa o reanuda solo la serie conservando su tiempo acumulado; al reanudar también activa el reloj total si hace falta. */
@@ -266,12 +393,12 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
     if (this.saving() || this.phase() !== 'work' || this.seriesIndex() !== index) return;
     if (this.seriesPaused()) {
       if (!this.running()) this.play();
-      this.phaseSince = performance.now();
+      this.phaseSince = Date.now();
       this.seriesPaused.set(false);
     } else {
       if (this.running() && !this.seriesFrozen) {
         this.tick();
-        this.phaseMs += performance.now() - this.phaseSince;
+        this.phaseMs += Date.now() - this.phaseSince;
       }
       this.seriesPaused.set(true);
     }
@@ -280,16 +407,38 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
   /** Vuelve a cero el tiempo de la serie actual y la deja pausada para que el usuario decida cuándo arrancar. */
   restartSeries(index: number): void {
     if (this.saving() || this.phase() !== 'work' || this.seriesIndex() !== index) return;
-    this.phaseMs = 0; this.phaseElapsed.set(0); this.phaseMilliseconds.set(0); this.phaseSince = performance.now();
+    this.phaseMs = 0; this.phaseElapsed.set(0); this.phaseMilliseconds.set(0); this.phaseSince = Date.now();
     this.seriesFrozen = false; this.seriesPaused.set(true); this.error.set('');
+  }
+
+  /** Reinicia el descanso completo y lo deja pausado sin borrar series ni reiniciar el total. */
+  restartRest(): void {
+    if (this.saving() || this.phase() !== 'rest') return;
+    this.pause();
+    this.phase.set('rest'); this.phaseMs = 0; this.phaseElapsed.set(0); this.phaseMilliseconds.set(0);
+    this.phaseSince = Date.now(); this.seriesFrozen = false; this.seriesPaused.set(false);
   }
 
   /** Registra los segundos de descanso, sale de esa fase y deja disponible la siguiente serie. */
   endRest(): void {
     if (this.phase() !== 'rest') return;
-    const seconds = this.running() ? Math.floor((this.phaseMs + performance.now() - this.phaseSince) / 1000) : this.phaseElapsed();
-    this.lastRestSeconds = Math.min(this.current().rest, seconds);
+    const seconds = this.running() ? Math.floor((this.phaseMs + Date.now() - this.phaseSince) / 1000) : this.phaseElapsed();
+    this.lastRestSeconds = Math.min(this.restSeconds(), seconds);
     this.phase.set('idle'); this.seriesIndex.set(null); this.phaseElapsed.set(0); this.phaseMilliseconds.set(0); this.phaseMs = 0;
+    if (this.linkedRound) {
+      const restTaken = this.lastRestSeconds;
+      this.linkedRound = false; this.remainingLinked = [];
+      const next = this.linkedExercises().find(index => this.exercisePending(index));
+      if (next !== undefined) { this.selectExercise(next); this.lastRestSeconds = restTaken; }
+    }
+  }
+
+  /** Reinicia solo el total y deja los relojes pausados, conservando series y tiempo de la fase actual. */
+  restartTotalTimer(): void {
+    if (this.saving() || this.sessionFinished()) return;
+    this.pause();
+    this.accumulatedMs = 0; this.runningSince = Date.now();
+    this.elapsed.set(0); this.elapsedMilliseconds.set(0);
   }
 
   /** Detiene los relojes mediante pause; no finaliza la sesión, no guarda una serie y no cambia de página. */
@@ -302,8 +451,8 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
   pause(): void {
     if (!this.running()) return;
     this.tick();
-    if (this.phase() !== 'idle' && !this.seriesFrozen && !this.seriesPaused()) this.phaseMs += performance.now() - this.phaseSince;
-    this.accumulatedMs += performance.now() - this.runningSince;
+    if (this.phase() !== 'idle' && !this.seriesFrozen && !this.seriesPaused()) this.phaseMs += Date.now() - this.phaseSince;
+    this.accumulatedMs += Date.now() - this.runningSince;
     this.elapsedMilliseconds.set(Math.floor(this.accumulatedMs));
     this.elapsed.set(Math.floor(this.accumulatedMs / 1000));
     this.running.set(false);
@@ -311,12 +460,14 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
     this.interval = undefined;
   }
 
-  /** Valida peso y repeticiones, crea o reutiliza el ejercicio realizado y guarda o reemplaza la serie. Tras confirmarse el guardado empieza el descanso. */
+  /** Guarda cada serie por separado; después prepara el siguiente ejercicio del grupo o inicia el descanso. */
   completeSet(index:number, weightValue:string, repsValue:string): void {
+    if (!weightValue.trim() || !repsValue.trim()) { this.error.set('Completá el peso y las repeticiones.'); return; }
     if (!this.running() || this.saving() || this.completed().has(index) || this.phase() !== 'work' || this.seriesIndex() !== index) return;
     const sessionId = this.sessionId(); const exercise = this.current();
     const weightKg = Number(weightValue); const repetitions = Number(repsValue);
     if (!sessionId || !exercise || !Number.isFinite(weightKg) || weightKg < 0 || !Number.isInteger(repetitions) || repetitions < 1) { this.error.set('Revisá el peso y las repeticiones'); return; }
+    this.updateSetDraft(index, 'weight', weightValue); this.updateSetDraft(index, 'reps', repsValue);
     this.tick(); this.seriesFrozen = true;
     this.saving.set(true); this.error.set('');
     const existing = this.performedIds.get(exercise.id);
@@ -328,17 +479,25 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
     performedId$.pipe(switchMap(performedId => this.savedSeries.has(seriesKey)
       ? this.sessions.replaceSet(sessionId, performedId, data)
       : this.sessions.addSet(sessionId, performedId, data))).subscribe({
-      next: () => { this.savedSeries.add(seriesKey); this.repeatByExercise.delete(exercise.id); const next = new Set(this.completed()); next.add(index); this.completed.set(next); this.completedByExercise.set(exercise.id, next); exercise.done=next.size; this.saving.set(false); this.seriesPaused.set(false); this.phase.set('rest'); this.phaseMs = 0; this.phaseElapsed.set(0); this.phaseMilliseconds.set(0); this.phaseSince = performance.now(); this.seriesFrozen = false; if (exercise.rest === 0) this.endRest(); },
+      next: () => { this.savedSeries.add(seriesKey); this.recordSeries(exercise, data); this.repeatByExercise.delete(exercise.id); const next = new Set(this.completed()); next.add(index); this.completed.set(next); this.completedByExercise.set(exercise.id, next); exercise.done=next.size; this.saving.set(false); this.afterSavedSeries(); },
       error: () => { this.error.set('No pudimos guardar la serie'); this.saving.set(false); },
     });
   }
 
   /** Cambia el ejercicio solo entre fases y recupera cuáles de sus series están completadas. */
-  selectExercise(index:number): void { if (this.phase() !== 'idle' || this.saving()) return; this.active.set(index); this.lastRestSeconds = 0; this.completed.set(new Set(this.completedByExercise.get(this.current().id) || [])); }
-  /** Avanza al próximo ejercicio; si ya era el último, solicita finalizar la sesión permaneciendo en la pantalla. */
+  selectExercise(index:number): void { if (this.phase() !== 'idle' || this.saving() || !Number.isInteger(index) || !this.exercises[index]) return; this.active.set(index); this.lastRestSeconds = 0; this.completed.set(new Set(this.completedByExercise.get(this.current().id) || [])); }
+  /** Recorre los pendientes en círculo para poder dejar el primer ejercicio para el final. */
   nextExercise(): void {
     if (this.phase() !== 'idle' || this.saving()) return;
-    if (this.active() < this.exercises.length-1) { this.selectExercise(this.active()+1); return; }
+    if (this.linkedExercises().length >= 2) {
+      const linkedNext = this.linkedExercises().find(index => this.exercisePending(index));
+      if (linkedNext !== undefined) { this.selectExercise(linkedNext); return; }
+      const next = this.exercises.findIndex((_,index) => this.exercisePending(index));
+      if (next >= 0) { this.linkedExercises.set([]); this.selectExercise(next); return; }
+      this.finishSession(true); return;
+    }
+    const next = Array.from({length:this.exercises.length}, (_,offset) => (this.active()+offset+1) % this.exercises.length).find(index => this.exercisePending(index));
+    if (next !== undefined) { this.selectExercise(next); return; }
     this.finishSession(true);
   }
   /** Finaliza explícitamente la sesión en la API con su duración activa. No permite finalizar con una serie de trabajo abierta. */

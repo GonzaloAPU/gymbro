@@ -19,7 +19,7 @@
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [{ "glob": "**/*", "input": "public" }],
-            "styles": ["src/styles.scss"]
+            "styles": ["src/styles.scss", "src/mobile.scss"]
           },
           "configurations": {
             "production": { "outputHashing": "all", "budgets": [{ "type": "initial", "maximumWarning": "750kB", "maximumError": "1MB" }] },

@@ -2,6 +2,9 @@
 
 MVP full stack para planificar rutinas, registrar entrenamientos y medir progreso.
 
+La aplicación Android está en `frontend/android`, integrada con Capacitor. Consultar
+[la guía Android](docs/ANDROID.md) para compilar el APK y conectarlo al backend de pruebas.
+
 Para estudiar el código comentado en español, comenzar por la
 [guía de estudio](docs/GUIA-DE-ESTUDIO.md): incluye orden de lectura, conceptos,
 mapa de tablas y el recorrido de una acción desde Angular hasta PostgreSQL.

@@ -7,6 +7,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { finalize } from 'rxjs';
+import { ApiEndpointService } from '../services/api-endpoint.service';
 
 @Component({
   standalone: true,
@@ -31,6 +32,7 @@ import { finalize } from 'rxjs';
         <button class="button primary" type="submit" [disabled]="loading()">{{ loading() ? 'Ingresando…' : 'Ingresar' }} <span>→</span></button>
         <button class="demo" type="button" (click)="useDemo(email, password)">Usar cuenta demo</button>
         <div class="switch">¿No tenés cuenta? <a routerLink="/registro">Crear cuenta</a></div>
+        @if (endpoint.native) { <a class="demo" routerLink="/conexion">Configurar conexión al servidor</a> }
       </form>
     </section>
   `,
@@ -38,6 +40,7 @@ import { finalize } from 'rxjs';
   styles: [loginStyles()],
 })
 export class LoginComponent {
+  readonly endpoint = inject(ApiEndpointService);
   // Dependencias y estado de la clase: inject obtiene servicios; signal conserva valores reactivos.
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
