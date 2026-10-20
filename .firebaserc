@@ -1,1 +1,1 @@
-{ "projects": { "default": "demo-gymbro-local" } }
+{ "projects": { "default": "demo-gymbro-local", "cloud": "gymbro-569e3" } }

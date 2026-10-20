@@ -1,0 +1,5 @@
+# Solo el entorno administrativo autenticado puede ejecutar esta consulta.
+# No se publican operaciones de lectura sobre perfiles o contraseñas.
+query ListExercises @auth(level: NO_ACCESS) {
+  exercises { id name muscleGroup equipment movementPattern trainingType }
+}

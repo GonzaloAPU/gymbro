@@ -15,7 +15,10 @@
     "db:migrate": "npm run db:migrate --workspace backend --",
     "db:seed": "npm run db:seed --workspace backend",
     "firebase:emulators": "node --use-system-ca node_modules/firebase-tools/lib/bin/firebase.js emulators:start --only dataconnect --project demo-gymbro-local --import=.firebase/local-data --export-on-exit=.firebase/local-data",
-    "firebase:test": "node tools/firebase-smoke.mjs"
+    "firebase:test": "node tools/firebase-smoke.mjs",
+    "firebase:cloud:status": "node --use-system-ca tools/cloud-postgres.cjs --status",
+    "firebase:cloud:verify": "node --use-system-ca tools/cloud-postgres.cjs --verify",
+    "firebase:cloud:compile": "node --use-system-ca node_modules/firebase-tools/lib/bin/firebase.js dataconnect:compile --config firebase.cloud.json --project gymbro-569e3 --non-interactive"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

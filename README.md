@@ -6,6 +6,9 @@ Para estudiar el código comentado en español, comenzar por la
 [guía de estudio](docs/GUIA-DE-ESTUDIO.md): incluye orden de lectura, conceptos,
 mapa de tablas y el recorrido de una acción desde Angular hasta PostgreSQL.
 
+La configuración de la base en la nube y las opciones de backend se documentan en
+[Firebase Cloud](docs/FIREBASE-CLOUD.md). La prueba local sigue separada del destino real.
+
 ## Stack
 
 - Frontend: Angular 19.2 standalone + TypeScript + SCSS

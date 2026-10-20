@@ -1,0 +1,14 @@
+# Servicio real. La prueba local conserva su configuración en dataconnect/.
+specVersion: "v1beta"
+serviceId: "gymbro-569e3-service"
+location: "southamerica-east1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "gymbro-569e3-database"
+      # Conserva las tablas de Sequelize que no se exponen mediante GraphQL.
+      schemaValidation: "COMPATIBLE"
+      cloudSql:
+        instanceId: "gymbro-569e3-instance"
+connectorDirs: ["./admin"]
