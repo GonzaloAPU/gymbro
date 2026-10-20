@@ -1,3 +1,8 @@
+/** Devuelve códigos 400/409 para validaciones o conflictos y usa el estado del error para los demás fallos. */
+/**
+ * Traduce errores de validación, restricciones SQL y errores de negocio a respuestas HTTP JSON. Los cuatro parámetros identifican a este middleware como manejador de errores de Express.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 export function errorHandler(error, _req, res, _next) {
   console.error(error);
   if (error?.name === "SequelizeUniqueConstraintError") {

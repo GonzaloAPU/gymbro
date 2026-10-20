@@ -1,3 +1,4 @@
+# Configuración del prototipo SQL Connect. El proyecto demo usa el emulador; el nombre Cloud SQL es solo un marcador y no debe desplegarse.
 specVersion: "v1beta"
 serviceId: "gymbro-local"
 location: "us-central1"

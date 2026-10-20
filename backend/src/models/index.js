@@ -1,6 +1,11 @@
+/**
+ * Mapa de tablas Sequelize y sus relaciones. define declara columnas; hasMany/belongsTo unen entidades mediante claves foráneas. Los modelos son usados por rutas, migración y semillas.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import { DataTypes } from "sequelize";
 import { sequelize } from "../db.js";
 
+// Cuenta y perfil: el email es único, passwordHash guarda el hash y restDays almacena números de día. photoUrl contiene la imagen comprimida como texto Base64.
 export const User = sequelize.define("User", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
@@ -15,6 +20,7 @@ export const User = sequelize.define("User", {
   restDays: { type: DataTypes.JSON, allowNull: false, defaultValue: [] },
 });
 
+// Catálogo reutilizable. No incluye series realizadas: estas se registran por separado para cada sesión.
 export const Exercise = sequelize.define("Exercise", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   name: { type: DataTypes.STRING, allowNull: false, unique: true },
@@ -24,6 +30,7 @@ export const Exercise = sequelize.define("Exercise", {
   trainingType: { type: DataTypes.STRING, allowNull: false, defaultValue: "POWER" },
 }, { timestamps: false });
 
+// Contenedor de rutinas de un usuario. active indica la última rutina creada; el plan semanal utiliza asignaciones, no esta bandera.
 export const Routine = sequelize.define("Routine", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   name: { type: DataTypes.STRING, allowNull: false },
@@ -31,6 +38,7 @@ export const Routine = sequelize.define("Routine", {
   active: { type: DataTypes.BOOLEAN, defaultValue: true },
 }, { updatedAt: false });
 
+// Bloque de ejercicios heredado del diseño por días. dayNumber es un orden interno, no un día de semana. schedule es el JSON antiguo; la API usa la tabla RoutineSchedule.
 export const RoutineDay = sequelize.define("RoutineDay", {
   favorite: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   schedule: { type: DataTypes.JSON, allowNull: false, defaultValue: [] },
@@ -39,6 +47,7 @@ export const RoutineDay = sequelize.define("RoutineDay", {
   dayNumber: { type: DataTypes.INTEGER, allowNull: false },
 }, { timestamps: false, indexes: [{ unique: true, fields: ["routine_id", "day_number"] }] });
 
+// Prescripción: vincula un ejercicio del catálogo con un bloque y define orden, series, repeticiones, descanso y objetivos de cardio.
 export const RoutineExercise = sequelize.define("RoutineExercise", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   order: { type: DataTypes.INTEGER, allowNull: false },
@@ -51,6 +60,7 @@ export const RoutineExercise = sequelize.define("RoutineExercise", {
   intensity: DataTypes.STRING,
 }, { timestamps: false, indexes: [{ unique: true, fields: ["routine_day_id", "order"] }] });
 
+// Una asignación semanal por fila: día y rango horario. Varias filas permiten repetir la misma rutina en distintos días.
 export const RoutineSchedule = sequelize.define('RoutineSchedule', {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   weekday: { type: DataTypes.INTEGER, allowNull: false, validate: { min: 0, max: 6 } },
@@ -58,6 +68,7 @@ export const RoutineSchedule = sequelize.define('RoutineSchedule', {
   end: { type: DataTypes.TIME, field: 'end_time', allowNull: false },
 }, { tableName: 'routine_schedules', indexes: [{ unique: true, fields: ['routine_day_id', 'weekday', 'start_time', 'end_time'] }] });
 
+// Una ejecución real del entrenamiento, con estado, duración y totales. startedAt/finishedAt son fechas; durationSeconds puede excluir las pausas.
 export const TrainingSession = sequelize.define("TrainingSession", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   startedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
@@ -68,11 +79,13 @@ export const TrainingSession = sequelize.define("TrainingSession", {
   totalVolumeKg: DataTypes.DECIMAL(12, 2),
 }, { timestamps: false, indexes: [{ fields: ["user_id", "started_at"] }] });
 
+// Ejercicio realizado dentro de una sesión; su ID agrupa todas las series de ese ejercicio en ese entrenamiento.
 export const PerformedExercise = sequelize.define("PerformedExercise", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   order: { type: DataTypes.INTEGER, allowNull: false },
 }, { timestamps: false, indexes: [{ unique: true, fields: ["session_id", "order"] }] });
 
+// Una serie realizada: peso, repeticiones y tiempos. El índice único evita repetir el mismo número de serie dentro del mismo ejercicio realizado.
 export const PerformedSet = sequelize.define("PerformedSet", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   setNumber: { type: DataTypes.INTEGER, allowNull: false },
@@ -83,12 +96,14 @@ export const PerformedSet = sequelize.define("PerformedSet", {
   completedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
 }, { timestamps: false, indexes: [{ unique: true, fields: ["performed_exercise_id", "set_number"] }] });
 
+// Mediciones de peso corporal fechadas. Permite consultar evolución sin perder los valores anteriores.
 export const BodyWeightHistory = sequelize.define("BodyWeightHistory", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   weightKg: { type: DataTypes.DECIMAL(5, 2), allowNull: false },
   recordedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
 }, { timestamps: false, indexes: [{ fields: ["user_id", "recorded_at"] }] });
 
+// Marcas de fuerza almacenadas, con peso, repeticiones y estimación de 1RM. El ranking consulta series completadas directamente, no esta tabla.
 export const StrengthRecord = sequelize.define("StrengthRecord", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   maxWeightKg: { type: DataTypes.DECIMAL(7, 2), allowNull: false },
@@ -97,6 +112,9 @@ export const StrengthRecord = sequelize.define("StrengthRecord", {
   achievedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
 }, { timestamps: false, indexes: [{ fields: ["user_id", "exercise_id", "estimated_one_rm"] }] });
 
+// Relaciones: hasMany significa uno a muchos; belongsTo indica a quién pertenece una fila.
+// foreignKey define la columna de enlace; as determina el nombre utilizado en include.
+// CASCADE elimina registros dependientes cuando se elimina su propietario.
 User.hasMany(Routine, { foreignKey: { name: "userId", allowNull: false }, as: "routines", onDelete: "CASCADE" });
 Routine.belongsTo(User, { foreignKey: "userId", as: "user" });
 User.hasMany(TrainingSession, { foreignKey: { name: "userId", allowNull: false }, as: "sessions", onDelete: "CASCADE" });
@@ -126,6 +144,7 @@ PerformedSet.belongsTo(PerformedExercise, { foreignKey: "performedExerciseId", a
 Exercise.hasMany(StrengthRecord, { foreignKey: { name: "exerciseId", allowNull: false }, as: "records" });
 StrengthRecord.belongsTo(Exercise, { foreignKey: "exerciseId", as: "exercise" });
 
+// Agrupa los modelos para utilidades que necesitan recorrerlos o reutilizarlos juntos.
 export const models = {
   User, Exercise, Routine, RoutineDay, RoutineExercise, RoutineSchedule, TrainingSession,
   PerformedExercise, PerformedSet, BodyWeightHistory, StrengthRecord,

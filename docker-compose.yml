@@ -1,3 +1,4 @@
+# Entorno local: contenedores de PostgreSQL y pgAdmin. Las credenciales de ejemplo son de desarrollo.
 services:
   postgres:
     image: postgres:17-alpine
@@ -7,7 +8,9 @@ services:
       POSTGRES_USER: smartgymbro
       POSTGRES_PASSWORD: smartgymbro
     ports:
+      # Puerto de Windows:puerto interno. El backend local usa localhost:5433; otro contenedor usa postgres:5432.
       - "5433:5432"
+    # Volúmenes nombrados: conservan los datos aunque se recree el contenedor.
     volumes:
       - postgres_data:/var/lib/postgresql/data
     #healthcheck:

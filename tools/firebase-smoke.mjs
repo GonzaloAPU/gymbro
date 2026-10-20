@@ -1,8 +1,13 @@
+/**
+ * Prueba aislada de SQL Connect: crea ejercicio, rutina, relación y horario en el emulador local, verifica las respuestas y limpia sus registros al terminar. No apunta a Google Cloud.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 
-// Fixed local demo endpoint: this script cannot target a paid cloud project.
+// Endpoint demo fijo: este script no puede apuntar a un proyecto de pago en la nube.
 const endpoint = 'http://127.0.0.1:9399/v1/projects/demo-gymbro-local/locations/us-central1/services/gymbro-local:executeGraphql';
+/** Envía GraphQL al endpoint fijo del emulador y comprueba tanto HTTP como los errores devueltos por GraphQL. */
 async function graphql(query) {
   const response = await fetch(endpoint, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

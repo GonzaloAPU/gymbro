@@ -1,3 +1,7 @@
+/**
+ * Lee variables del entorno y define valores de desarrollo. process.env contiene la configuración del proceso; Number convierte el puerto de texto a número.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import "dotenv/config";
 
 export const config = {

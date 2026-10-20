@@ -1,6 +1,11 @@
+/**
+ * Contratos TypeScript y llamadas HTTP de rutinas, favoritos y horarios. Las interfaces describen datos esperados; no crean tablas ni validan respuestas en ejecución.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
+// Contrato de datos: describe campos y tipos para detectar errores durante la compilación.
 export interface Exercise {
   movementPattern?: string | null;
   id: string;
@@ -10,6 +15,7 @@ export interface Exercise {
   trainingType: 'POWER' | 'AEROBIC' | 'ANAEROBIC';
 }
 
+// Contrato de datos: describe campos y tipos para detectar errores durante la compilación.
 export interface RoutineExercise {
   id: string;
   order: number;
@@ -23,7 +29,9 @@ export interface RoutineExercise {
   exercise: Exercise;
 }
 
+// Contrato de datos: describe campos y tipos para detectar errores durante la compilación.
 export interface ScheduleSlot { weekday: number; start: string; end: string; }
+// Contrato de datos: describe campos y tipos para detectar errores durante la compilación.
 export interface RoutineDay {
   favorite: boolean;
   schedule: ScheduleSlot[];
@@ -33,6 +41,7 @@ export interface RoutineDay {
   exercises: RoutineExercise[];
 }
 
+// Contrato de datos: describe campos y tipos para detectar errores durante la compilación.
 export interface Routine {
   createdAt: string;
   id: string;
@@ -44,14 +53,19 @@ export interface Routine {
 
 @Injectable({ providedIn: 'root' })
 export class RoutineService {
+  // Dependencias y estado de la clase: inject obtiene servicios; signal conserva valores reactivos.
   private readonly http = inject(HttpClient);
+  /** Solicita todas las rutinas propias, incluyendo ejercicios y asignaciones semanales. */
   getAll() { return this.http.get<Routine[]>('/api/routines'); }
+  /** Actualiza el favorito de un bloque de rutina en el servidor. */
   setFavorite(routineId: string, dayId: string, favorite: boolean) {
     return this.http.patch<{favorite: boolean}>(`/api/routines/${routineId}/days/${dayId}/favorite`, { favorite });
   }
+  /** Reemplaza todos los horarios del bloque con la lista enviada; [] elimina sus asignaciones. */
   assignSchedule(routineId: string, dayId: string, schedule: ScheduleSlot[]) {
     return this.http.put<{schedule: ScheduleSlot[]}>(`/api/routines/${routineId}/days/${dayId}/schedule`, { schedule });
   }
+  /** Envía los datos de creación al endpoint correspondiente y devuelve su Observable HTTP. */
   create(data: {
     name: string;
     goal: string;

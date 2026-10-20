@@ -1,3 +1,7 @@
+/**
+ * Prueba local de la lógica de Entrenar mediante un entorno simulado. Carga y transpila TypeScript para comprobar relojes y acciones sin abrir un navegador.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');

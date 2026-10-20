@@ -1,3 +1,7 @@
+/**
+ * Asocia cada URL con una pantalla. canActivate comprueba la sesión antes de entrar; ** captura direcciones desconocidas y redirige al inicio.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard.component';
 import { WorkoutRouteComponent } from './components/workout-route.component';

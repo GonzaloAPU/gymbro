@@ -1,4 +1,5 @@
-# Isolated proof of concept: no real accounts, passwords, photos or existing data.
+# Prueba aislada: no contiene cuentas, contraseñas, fotos ni datos reales existentes.
+# @table genera una tabla; UUID identifica filas y @default crea el ID si no se proporciona.
 type Exercise @table {
   id: UUID! @default(expr: "uuidV4()")
   name: String!
@@ -14,6 +15,7 @@ type Routine @table {
   goal: String!
 }
 
+# Campos Routine! y Exercise! expresan relaciones obligatorias con otras tablas.
 type RoutineItem @table {
   id: UUID! @default(expr: "uuidV4()")
   routine: Routine!

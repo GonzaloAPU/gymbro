@@ -1,8 +1,13 @@
+/**
+ * Sincroniza tablas y agrega columnas faltantes sin recrearlas. Migra horarios del JSON antiguo a routine_schedules dentro de una transacción. Este archivo sí modifica la base configurada.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import "dotenv/config";
 import { DataTypes } from "sequelize";
 import { sequelize } from "../src/db.js";
 import { Exercise, RoutineExercise, RoutineDay, RoutineSchedule, User } from "../src/models/index.js";
 
+/** Inspecciona las columnas existentes y agrega una nueva solo si falta; permite repetir esta migración. */
 async function addColumnIfMissing(model, field, definition) {
   const queryInterface = sequelize.getQueryInterface();
   const table = model.getTableName();
@@ -15,6 +20,7 @@ try {
   await sequelize.sync();
   await addColumnIfMissing(RoutineDay, "schedule", { type: DataTypes.JSON, allowNull: false, defaultValue: [] });
   await addColumnIfMissing(RoutineDay, "favorite", { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false });
+  // Tras copiar horarios antiguos, vacía su JSON para no migrarlos otra vez; todo se confirma o revierte junto.
   await sequelize.transaction(async transaction => {
     const days = await RoutineDay.findAll({ transaction });
     for (const day of days) {

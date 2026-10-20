@@ -1,3 +1,7 @@
+/**
+ * Verifica el comportamiento del entrenamiento al navegar usando componentes cargados en un entorno simulado; ayuda a detectar reinicios de estado.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');

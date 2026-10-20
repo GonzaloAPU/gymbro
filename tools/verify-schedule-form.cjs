@@ -1,3 +1,7 @@
+/**
+ * Prueba la lógica del formulario de asignación mediante simulaciones de servicios y estado. No sustituye la validación de horarios del servidor.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');

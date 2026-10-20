@@ -1,4 +1,5 @@
 # No public client access. The local lab calls the emulator administrative API only.
+# NO_ACCESS impide acceso desde clientes habituales; la prueba usa la API administrativa del emulador local.
 query ListExercises @auth(level: NO_ACCESS) {
   exercises { id name muscleGroup equipment movementPattern trainingType }
 }

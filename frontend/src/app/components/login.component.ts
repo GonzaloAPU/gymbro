@@ -1,3 +1,7 @@
+/**
+ * Formulario de ingreso. Evita la recarga del navegador, muestra el estado de espera y navega al inicio cuando AuthService guarda la sesión.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import { Component, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
@@ -7,6 +11,8 @@ import { finalize } from 'rxjs';
 @Component({
   standalone: true,
   imports: [RouterLink],
+  // HTML Angular: {{ }} muestra datos, [propiedad] enlaza valores y (evento) llama métodos.
+  // @if y @for controlan bloques visibles y listas; #nombre referencia un elemento del formulario.
   template: `
     <section class="auth-page">
       <div class="auth-copy">
@@ -28,13 +34,16 @@ import { finalize } from 'rxjs';
       </form>
     </section>
   `,
+  // CSS de este componente: disposición, colores y estados; @media adapta la vista a pantallas pequeñas.
   styles: [loginStyles()],
 })
 export class LoginComponent {
+  // Dependencias y estado de la clase: inject obtiene servicios; signal conserva valores reactivos.
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   readonly loading = signal(false);
   readonly error = signal('');
+  /** Valida el formulario, solicita ingresar y navega al inicio; finalize libera el estado de espera tanto al acertar como al fallar. */
   submit(event: Event, email: string, password: string): void {
     event.preventDefault();
     if (!email || password.length < 8) { this.error.set('Completá email y contraseña'); return; }
@@ -45,6 +54,7 @@ export class LoginComponent {
     });
   }
 
+  /** Completa las credenciales públicas de demostración y reutiliza el envío del formulario de ingreso. */
   useDemo(email: HTMLInputElement, password: HTMLInputElement): void {
     email.value = 'demo@smartgymbro.app'; password.value = 'Demo1234!';
     this.submit(new Event('submit'), email.value, password.value);

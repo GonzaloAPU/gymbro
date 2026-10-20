@@ -1,3 +1,7 @@
+/**
+ * Consulta el progreso personal y los rankings de fuerza. El resumen mezcla historiales recientes con totales de toda la cuenta; el ranking compara series de sesiones completadas.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import { Router } from "express";
 import { z } from "zod";
 import { sequelize } from "../db.js";
@@ -8,8 +12,11 @@ import { QueryTypes } from 'sequelize';
 export const progressRouter = Router();
 progressRouter.use(requireAuth);
 
+// GET /leaderboard: SQL agrupa variantes conocidas de nombres, elige la mejor serie de cada usuario y calcula posiciones por peso.
 progressRouter.get('/leaderboard', async (req, res) => {
   const quote = model => sequelize.getQueryInterface().queryGenerator.quoteTable(model.getTableName());
+  // SQL: candidates selecciona series válidas; best elige una marca por usuario y categoría.
+  // dense_rank asigna el mismo puesto si varias personas empatan en peso.
   const rows = await sequelize.query(`
     WITH candidates AS (
       SELECT u.id AS user_id, u.name, ps.weight_kg, ps.repetitions, ps.completed_at, ps.id,
@@ -38,6 +45,7 @@ progressRouter.get('/leaderboard', async (req, res) => {
   res.json({ exercises: definitions.map(exercise => ({ ...exercise, users: rows.filter(row => row.category === exercise.key).map(row => ({ userId:row.userId, name:row.name, weightKg:Number(row.weightKg), repetitions:row.repetitions, achievedAt:row.achievedAt, rank:Number(row.rank), isCurrentUser:row.userId === req.auth.sub })) })) });
 });
 
+// GET /summary: Ejecuta consultas independientes en paralelo; los totales no dependen del límite de sesiones recientes.
 progressRouter.get("/summary", async (req, res) => {
   const [sessions, weights, records, totalCalories, completedSessions] = await Promise.all([
     TrainingSession.findAll({ where: { userId: req.auth.sub, status: "COMPLETED" }, order: [["startedAt", "DESC"]], limit: 12 }),
@@ -49,6 +57,7 @@ progressRouter.get("/summary", async (req, res) => {
   res.json({ sessions, weights: weights.reverse(), records, totalCalories: Number(totalCalories || 0), completedSessions });
 });
 
+// POST /weight: Guarda medición histórica y peso actual del perfil juntos para que ambos valores sean coherentes.
 progressRouter.post("/weight", async (req, res) => {
   const { weightKg } = z.object({ weightKg: z.number().positive().max(500) }).parse(req.body);
   const entry = await sequelize.transaction(async (transaction) => {

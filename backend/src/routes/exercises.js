@@ -1,3 +1,7 @@
+/**
+ * Catálogo compartido de ejercicios: exige autenticación, valida nuevos ejercicios y permite filtrar el listado por tipo y grupo muscular.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import { Router } from "express";
 import { z } from "zod";
 import { Exercise } from "../models/index.js";
@@ -7,6 +11,7 @@ import { sequelize } from '../db.js';
 export const exercisesRouter = Router();
 exercisesRouter.use(requireAuth);
 
+// POST /: Crea un ejercicio tras validar su forma y comprobar duplicados sin distinguir mayúsculas.
 exercisesRouter.post('/', async (req, res) => {
   const input = z.object({
     name: z.string().trim().min(2).max(255),
@@ -21,6 +26,7 @@ exercisesRouter.post('/', async (req, res) => {
   res.status(201).json(exercise);
 });
 
+// GET /: Lista el catálogo aplicando filtros opcionales y un orden estable para la interfaz.
 exercisesRouter.get("/", async (req, res) => {
   const filters = z.object({
     trainingType: z.enum(["POWER", "AEROBIC", "ANAEROBIC"]).optional(),

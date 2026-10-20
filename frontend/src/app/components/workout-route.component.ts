@@ -1,5 +1,9 @@
+/**
+ * Marcador de ruta sin interfaz propia. AppComponent detecta su activación y muestra el entrenamiento persistente que vive fuera del router-outlet.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import { Component } from '@angular/core';
 
-// The app shell owns the workout view so route changes cannot destroy its clocks.
+// La vista vive en AppComponent para que el router no destruya sus relojes al navegar.
 @Component({ standalone: true, template: '' })
 export class WorkoutRouteComponent {}

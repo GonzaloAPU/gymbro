@@ -1,3 +1,7 @@
+/**
+ * Genera cinco perfiles ficticios con rutinas, pesos y sesiones históricas. Usa una transacción y omite cuentas que ya existen para conservar sus datos.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import assert from 'node:assert/strict';
@@ -20,7 +24,7 @@ const catalog = [
 ];
 const round = value => Math.round(value * 100) / 100;
 const anchor = new Date();
-// Noon in Argentina; histories end yesterday, with no future workouts.
+// Mediodía en Argentina: los historiales terminan ayer, sin entrenamientos futuros.
 anchor.setUTCHours(15, 0, 0, 0);
 anchor.setUTCDate(anchor.getUTCDate() - 1);
 const daysAgo = days => new Date(anchor.getTime() - days * 86400000);

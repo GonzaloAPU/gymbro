@@ -1,3 +1,7 @@
+/**
+ * Simula Image, canvas y URL para probar la preparación de fotos JPEG y la liberación de recursos sin cargar una imagen en un navegador real.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');

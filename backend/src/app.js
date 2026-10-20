@@ -1,3 +1,7 @@
+/**
+ * Construye la API Express: permite solicitudes del frontend, interpreta JSON y conecta las rutas. El manejador de errores va al final para recibir fallos de las rutas anteriores.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import express from "express";
 import cors from "cors";
 import { config } from "./config.js";
@@ -10,7 +14,8 @@ import { errorHandler } from "./middleware/error-handler.js";
 
 export const app = express();
 app.use(cors({ origin: config.frontendUrl }));
-// Profile photos are resized client-side to at most 650 KB of Base64 text.
+// Las fotos se comprimen en el navegador a un máximo de 650.000 caracteres Base64.
+// El límite de 1 MB deja margen para el resto de los campos del perfil en el JSON.
 app.use(express.json({ limit: '1mb' }));
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "smartgymbro-api" }));

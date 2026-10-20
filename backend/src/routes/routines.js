@@ -1,3 +1,7 @@
+/**
+ * Crea y consulta rutinas propias, guarda favoritos y reemplaza asignaciones del calendario. Los horarios se almacenan en routine_schedules, no en el campo JSON antiguo.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import { Router } from "express";
 import { z } from "zod";
 import { sequelize } from "../db.js";
@@ -8,6 +12,7 @@ import { scheduleSchema, validateSchedule } from '../schedule.js';
 export const routinesRouter = Router();
 routinesRouter.use(requireAuth);
 
+// PATCH /:routineId/days/:dayId/favorite: Verifica que el bloque pertenezca al usuario y persiste su estado favorito.
 routinesRouter.patch('/:routineId/days/:dayId/favorite', async (req, res) => {
   const { favorite } = z.object({ favorite: z.boolean() }).parse(req.body);
   const day = await RoutineDay.findOne({ where: { id: req.params.dayId, routineId: req.params.routineId }, include: [{ model: Routine, as: 'routine', required: true, where: { userId: req.auth.sub } }] });
@@ -16,26 +21,30 @@ routinesRouter.patch('/:routineId/days/:dayId/favorite', async (req, res) => {
   res.json({ favorite });
 });
 
+// Carga anticipada: obtiene días, prescripciones, datos del catálogo y horarios en la consulta de rutinas.
 const routineInclude = [{
   model: RoutineDay,
   as: "days",
   include: [{ model: RoutineExercise, as: "exercises", include: [{ model: Exercise, as: "exercise" }] }, { model: RoutineSchedule, as: 'schedules' }],
 }];
 
+/** Normaliza horas SQL a HH:mm y ordena los horarios empezando por lunes. */
 function slotsFor(day) {
   return (day.schedules || []).map(slot => ({ weekday: slot.weekday, start: slot.start.slice(0, 5), end: slot.end.slice(0, 5) }))
     .sort((a,b) => ((a.weekday+6)%7)-((b.weekday+6)%7) || a.start.localeCompare(b.start));
 }
+/** Construye la respuesta de la API con schedule calculado desde la tabla de asignaciones. */
 function serializeRoutine(routine) {
   const result = routine.toJSON();
   for (const day of result.days || []) { day.schedule = slotsFor(day); delete day.schedules; }
   return result;
 }
 
+// PUT /:routineId/days/:dayId/schedule: Reemplaza horarios dentro de una transacción: comprueba descansos, cruces y máximo diario antes de borrar y crear filas.
 routinesRouter.put('/:routineId/days/:dayId/schedule', async (req, res) => {
   const { schedule } = scheduleSchema.parse(req.body);
   await sequelize.transaction(async transaction => {
-    // Serialize edits for the same user so concurrent requests cannot exceed the daily limit.
+    // Bloquea la fila del usuario: dos solicitudes simultáneas no pueden superar juntas el límite diario.
     const user = await User.findByPk(req.auth.sub, { transaction, lock: transaction.LOCK.UPDATE });
     if (!user) throw Object.assign(new Error('Usuario no encontrado'), { status: 404 });
     if (schedule.some(slot => (user.restDays || []).includes(slot.weekday))) throw Object.assign(new Error('No podés asignar rutinas a un día de descanso. Quitá primero ese día de descanso en el calendario.'), { status: 409 });
@@ -49,6 +58,7 @@ routinesRouter.put('/:routineId/days/:dayId/schedule', async (req, res) => {
   res.json({ schedule });
 });
 
+// POST /: Crea rutina, bloques y ejercicios juntos; si falla cualquier paso se revierte la transacción.
 routinesRouter.post("/", async (req, res) => {
   const input = z.object({
     name: z.string().min(2).max(100),
@@ -82,6 +92,7 @@ routinesRouter.post("/", async (req, res) => {
   res.status(201).json(serializeRoutine(result));
 });
 
+// GET /: Consulta únicamente rutinas del usuario y carga sus relaciones mediante include.
 routinesRouter.get("/", async (req, res) => {
   const routines = await Routine.findAll({
     where: { userId: req.auth.sub },

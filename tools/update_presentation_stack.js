@@ -1,3 +1,7 @@
+/**
+ * Utilidad histórica para actualizar texto dentro de un PPTX. Trata el documento como ZIP y modifica XML de diapositivas; no participa en la ejecución de Gymbro.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 const fs = require("fs");
 const path = require("path");
 const JSZip = require("jszip");
@@ -13,6 +17,7 @@ const replacements = new Map([
   ["• PostgreSQL normalizado", "• PostgreSQL + Prisma ORM"],
 ]);
 
+/** Abre el PPTX, aplica reemplazos de texto en XML y escribe el documento de salida. */
 async function main() {
   const zip = await JSZip.loadAsync(fs.readFileSync(sourcePath));
   const slideNames = Object.keys(zip.files).filter((name) =>

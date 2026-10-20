@@ -1,3 +1,7 @@
+/**
+ * Carga catálogo y cuenta demo en PostgreSQL usando findOrCreate para reutilizar registros. Son datos de demostración; ejecutar este script puede actualizar ejercicios existentes.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { sequelize } from "../src/db.js";

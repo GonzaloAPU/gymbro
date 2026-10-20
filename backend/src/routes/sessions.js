@@ -1,3 +1,7 @@
+/**
+ * Registra entrenamientos reales: sesión → ejercicios realizados → series. Las series se guardan individualmente; finalizar la sesión calcula duración, volumen y calorías estimadas.
+ * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
+ */
 import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../middleware/auth.js";
@@ -6,12 +10,14 @@ import { PerformedExercise, PerformedSet, TrainingSession } from "../models/inde
 export const sessionsRouter = Router();
 sessionsRouter.use(requireAuth);
 
+// POST /: Abre una sesión para el usuario autenticado; esto no equivale a completarla.
 sessionsRouter.post("/", async (req, res) => {
   const { routineDayId } = z.object({ routineDayId: z.string().uuid().optional() }).parse(req.body);
   const session = await TrainingSession.create({ userId: req.auth.sub, routineDayId });
   res.status(201).json(session);
 });
 
+// POST /:sessionId/exercises: Agrega un ejercicio realizado después de verificar la propiedad de la sesión.
 sessionsRouter.post("/:sessionId/exercises", async (req, res) => {
   const input = z.object({ exerciseId: z.string().uuid(), order: z.number().int().positive() }).parse(req.body);
   const session = await ownedSession(req.params.sessionId, req.auth.sub);
@@ -22,6 +28,7 @@ sessionsRouter.post("/:sessionId/exercises", async (req, res) => {
 sessionsRouter.post("/:sessionId/exercises/:performedExerciseId/sets", saveSet);
 sessionsRouter.put("/:sessionId/exercises/:performedExerciseId/sets/:setNumber", saveSet);
 
+/** Comparte la lógica de POST y PUT: comprueba dueño, sesión activa y ejercicio antes de crear o actualizar una serie. */
 async function saveSet(req, res) {
   const session = await ownedSession(req.params.sessionId, req.auth.sub);
   if (!["ACTIVE", "PAUSED"].includes(session.status)) {
@@ -51,6 +58,7 @@ async function saveSet(req, res) {
   res.status(201).json(set);
 }
 
+// POST /:sessionId/finish: Calcula volumen como suma de peso × repeticiones y una estimación de calorías de 6,5 por minuto activo. No es una medición fisiológica.
 sessionsRouter.post("/:sessionId/finish", async (req, res) => {
   const input = z.object({ durationSeconds: z.number().int().nonnegative().optional() }).parse(req.body);
   const session = await ownedSession(req.params.sessionId, req.auth.sub, true);
@@ -65,6 +73,7 @@ sessionsRouter.post("/:sessionId/finish", async (req, res) => {
   res.json(updated);
 });
 
+/** Busca por identificador y propietario a la vez para impedir acceso a sesiones de otras cuentas. */
 async function ownedSession(id, userId, includeSets = false) {
   const session = await TrainingSession.findOne({
     where: { id, userId },
