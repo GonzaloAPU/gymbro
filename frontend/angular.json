@@ -40,6 +40,6 @@
     }
   },
   "cli": {
-    "analytics": "002a616f-43fd-49cb-bbec-c034b26017ce"
+    "analytics": false
   }
 }

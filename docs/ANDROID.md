@@ -4,7 +4,7 @@ La aplicación reutiliza Angular dentro de Capacitor 8. Sus archivos se instalan
 
 ## Preparar el APK
 
-Requisitos: Node 22 o superior, JDK 21 (también funciona JDK 24 con el Gradle incluido), Android SDK 36 y Build Tools 36.0.0. Android Studio permite instalar el SDK y aceptar sus licencias. No se acepta ninguna licencia automáticamente desde los comandos del proyecto.
+Requisitos: Node 22 o superior, JDK 21, Android SDK 36 y Build Tools 36.0.0. El plugin de alarmas necesita específicamente la toolchain Java 21. Android Studio permite instalar el SDK y aceptar sus licencias. No se acepta ninguna licencia automáticamente desde los comandos del proyecto.
 
 Desde la raíz:
 
@@ -15,7 +15,7 @@ npm.cmd run android:apk
 
 El archivo se genera en `frontend/android/app/build/outputs/apk/debug/app-debug.apk`. Es una versión de pruebas con firma debug, no una publicación de Play Store. Para abrir el proyecto en Android Studio: `npm.cmd run android:open`. Después de cambiar Angular, `npm.cmd run android:sync` reconstruye la interfaz y la copia a Android.
 
-El compilador busca `ANDROID_HOME`, `ANDROID_SDK_ROOT`, el SDK habitual de Windows o `.android-tools/sdk` dentro del proyecto. Busca también un JDK compatible de IntelliJ cuando `JAVA_HOME` no está configurado. Las herramientas y archivos locales quedan fuera de Git.
+El compilador busca `ANDROID_HOME`, `ANDROID_SDK_ROOT`, el SDK habitual de Windows o `.android-tools/sdk` dentro del proyecto. Si `JAVA_HOME` no está configurado, prioriza `.android-tools/jdk21/` y luego busca instalaciones compatibles en `.jdks`. Las herramientas y archivos locales quedan fuera de Git.
 
 ## Probar con tu PC
 
@@ -32,17 +32,17 @@ HTTP está permitido únicamente en el APK debug para la red de pruebas. La vari
 
 - Inicio prioriza «Voy a entrenar» y ofrece «Crear una rutina» como alternativa.
 - Crear rutina tiene tres pasos: nombre, selección y configuración de ejercicios, y revisión antes de guardar. Al guardar vuelve a la biblioteca para asignar los días.
-- Entrenar destaca la siguiente serie y el descanso actual. El reloj total conserva sus controles en un panel desplegable; «Terminar serie» explica la acción que guarda la serie.
-- En la tarjeta de entrenamiento se puede elegir la serie y encadenar de 2 a 4 ejercicios en el orden seleccionado. Se registra una serie de cada ejercicio y el descanso comienza al cerrar la ronda. Cada ejercicio requiere tocar Iniciar; los que completaron todas sus series se omiten. El grupo se configura para el entrenamiento actual y cada serie se guarda individualmente en el backend.
+- Entrenar destaca la siguiente serie y el descanso actual. Los controles están junto a cada reloj. «Editar serie» contiene peso, repeticiones y tiempos; «Terminar serie» registra sus datos.
+- En la tarjeta de entrenamiento se puede elegir el ejercicio y encadenar de 2 a 4 ejercicios en el orden seleccionado. Se registra una serie de cada ejercicio y el descanso comienza al cerrar la ronda. Cada ejercicio requiere tocar Iniciar; los que completaron todas sus series se omiten. El grupo se configura para el entrenamiento actual y cada serie se guarda individualmente en el backend.
 - Barra inferior con Inicio, Entrenar, Progreso y Perfil; indicadores activos y controles táctiles.
 - Márgenes para las áreas seguras del teléfono y formularios con tamaño de texto adecuado.
 - Ícono de pesa y pantalla de arranque con los colores de Gymbro.
 - El botón Atrás vuelve al inicio; desde el inicio minimiza la app. Cambiar de pestaña conserva la instancia del entrenamiento.
 - Los relojes calculan el tiempo mediante marcas reales: al volver de segundo plano recuperan el tiempo transcurrido, aunque Android haya suspendido los intervalos. Un cambio manual del reloj del teléfono puede alterar esa medición.
 
-La API sigue siendo necesaria para ingresar, cargar rutinas y registrar series. Esta primera migración no incluye modo sin conexión, notificaciones de descanso en segundo plano ni recuperación de una sesión si Android cierra el proceso. Probar los relojes, el selector de fotos y el teclado en un dispositivo real antes de distribuirla al equipo.
+La API sigue siendo necesaria para ingresar y cargar datos nuevos. Un entrenamiento ya cargado conserva su estado local y una cola de operaciones durante cortes de conexión; consulta [recuperación y sincronización](ENTRENAMIENTO-OFFLINE.md). Los avisos de entrenamiento, serie y descanso usan notificaciones locales con las limitaciones de Android descritas en [alarmas](ALARMAS.md). Probar los relojes, las notificaciones con pantalla bloqueada, el selector de fotos y el teclado en un dispositivo real antes de distribuirla al equipo.
 
-Las comprobaciones de lógica del recorrido se ejecutan con `node tools/verify-routine-builder.cjs`, `node tools/verify-workout.cjs` y `node tools/verify-workout-navigation.cjs`. Simulan los servicios: no crean rutinas ni sesiones en la base real.
+Las comprobaciones de lógica del recorrido se ejecutan juntas con `npm run test:frontend`. Simulan los servicios: no crean rutinas ni sesiones en la base real. `npm run typecheck` comprueba también declaraciones e importaciones sin uso.
 
 ## Archivos para estudiar
 

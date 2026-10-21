@@ -42,7 +42,7 @@ distintos: no hay que confundir guardar en el navegador con guardar en el servid
 | 11 | `dashboard.component.ts` y `routine-builder.component.ts` | Construcción del plan y biblioteca |
 | 12 | `workout.component.ts` y `backend/src/routes/sessions.js` | Relojes y registro del entrenamiento |
 | 13 | `progress.component.ts` y `backend/src/routes/progress.js` | Resúmenes, totales y ranking SQL |
-| 14 | `backend/test/`, archivos `.spec.ts` y `tools/verify-*.cjs` | Diferencias entre pruebas y simulaciones |
+| 14 | `backend/test/` y `tools/verify-*.cjs` | Diferencias entre pruebas y simulaciones |
 | 15 | `dataconnect/` y `tools/firebase-smoke.mjs` | Experimento separado con SQL Connect |
 
 Las rutas de esta guía son relativas a la raíz del repositorio. En el editor se
@@ -237,7 +237,8 @@ nombrados conservan los datos al recrear contenedores.
 | --- | --- |
 | `npm run dev` | Inicia backend y frontend juntos |
 | `npm run build` | Comprueba la entrada del backend y compila Angular |
-| `npm test` | Ejecuta la suite del backend con node:test |
+| `npm test` | Ejecuta la suite del backend y las verificaciones de interfaz |
+| `npm run typecheck` | Comprueba tipos y declaraciones sin uso de la app |
 | `npm run db:migrate` | Modifica la estructura de la base y migra horarios antiguos |
 | `npm run db:seed` | Carga datos demo; no es un comando de consulta |
 | `backend/scripts/seed-accounts.js` | Genera los cinco perfiles y sus historiales ficticios |
@@ -247,8 +248,10 @@ nombrados conservan los datos al recrear contenedores.
 
 Las pruebas del backend sustituyen métodos de modelos cuando corresponde y abren
 servidores HTTP temporales. `assert` expresa qué resultado se espera; `t.after`
-restaura dependencias y cierra recursos. Los `.spec.ts` de los servicios Angular
-solo prueban su creación con HttpClientTesting; no son una cobertura completa.
+restaura dependencias y cierra recursos. `tools/verify-frontend.cjs` ejecuta las
+verificaciones de interfaz que simulan la conexión, las fotos, el perfil, las rutinas,
+el calendario, el entrenamiento, su recuperación y las alarmas. Se retiraron los
+`.spec.ts` que solo comprobaban creación y no tenían un ejecutor configurado.
 
 ## 11. Firebase local
 

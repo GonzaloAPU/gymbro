@@ -31,14 +31,20 @@ export class WorkoutStorageService implements OnDestroy {
   private readonly fallbackLocks=new Map<string,Promise<unknown>>();
   private readonly retry=()=>{void this.flush();};
   private readonly timer=window.setInterval(this.retry,15000);
-  private readonly accountEffect=effect(()=>{
-    const scope=this.scope();
-    untracked(()=>{
-      this.syncError.set('');this.pending.set(0);this.pendingKeys.set(new Set());
-      if(scope) {try {this.updateStatus(scope,this.read(scope));} catch { /* Conserva el archivo dañado para recuperación manual. */ } void this.flush();}
+  constructor() {
+    effect(() => {
+      const scope = this.scope();
+      untracked(() => {
+        this.syncError.set(''); this.pending.set(0); this.pendingKeys.set(new Set());
+        if (scope) {
+          try { this.updateStatus(scope, this.read(scope)); }
+          catch { /* Conserva el respaldo dañado para recuperación manual. */ }
+          void this.flush();
+        }
+      });
     });
-  });
-  constructor() {window.addEventListener('online',this.retry);}
+    window.addEventListener('online', this.retry);
+  }
 
   scope():string|null {
     const user=this.auth.user();

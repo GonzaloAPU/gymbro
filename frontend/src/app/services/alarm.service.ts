@@ -43,9 +43,13 @@ export class AlarmService implements OnDestroy {
   private readonly handles:PluginListenerHandle[]=[];
   private readonly ticker=window.setInterval(()=>this.checkWeb(),250);
   private readonly resume=()=>{if(document.visibilityState==='visible')void this.refresh();};
-  private readonly accountEffect=effect(()=>{const scope=this.scope();untracked(()=>{void this.switchOwner(scope);});});
 
   constructor() {
+    effect(() => {
+      const scope = this.scope();
+      untracked(() => { void this.switchOwner(scope); });
+    });
+
     document.addEventListener('visibilitychange',this.resume);
     if(this.native) {
       void App.addListener('appStateChange',state=>{if(state.isActive)void this.refresh();}).then(handle=>this.handles.push(handle));

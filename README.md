@@ -1,6 +1,6 @@
 # SmartGymBro
 
-MVP full stack para planificar rutinas, registrar entrenamientos y medir progreso.
+Aplicación Android para planificar rutinas, registrar entrenamientos y medir progreso.
 
 La aplicación Android está en `frontend/android`, integrada con Capacitor. Consultar
 [la guía Android](docs/ANDROID.md) para compilar el APK y conectarlo al backend de pruebas.
@@ -14,7 +14,7 @@ La configuración de la base en la nube y las opciones de backend se documentan 
 
 ## Stack
 
-- Frontend: Angular 19.2 standalone + TypeScript + SCSS
+- App Android: Capacitor 8 + Angular 19.2 standalone + TypeScript + SCSS
 - Backend: Node.js + Express en JavaScript ESM
 - Base de datos: PostgreSQL
 - ORM: Sequelize
@@ -32,19 +32,21 @@ npm.cmd run db:seed
 npm.cmd run dev
 ```
 
-Frontend: `http://localhost:4200`  
+Vista de desarrollo en PC: `http://localhost:4200` (no es el destino de distribución).
+
 API: `http://localhost:3000/api`  
 Health check: `http://localhost:3000/api/health`
 pgAdmin: `http://localhost:5050`
 PostgreSQL del proyecto: `localhost:5433`
 
-Usuario demo: `demo@smartgymbro.app` / `Demo1234!`
+Las cuentas de demostración pertenecen a los datos de prueba del backend; el ingreso
+de la app no incluye un botón con credenciales públicas.
 
 ## Cuenta de usuario
 
 - `/registro`: alta de una cuenta nueva.
-- `/login`: inicio de sesion y acceso a la cuenta demo.
-- `/perfil`: edicion de nombre, objetivo, altura, peso y gimnasio.
+- `/login`: inicio de sesión.
+- `/perfil`: vista del perfil; `/perfil/editar` permite modificarlo.
 - `/rutinas/nueva`: constructor de rutinas con catálogo precargado de fuerza, aeróbico y anaeróbico.
 - Inicio, entrenamiento y progreso requieren un JWT valido.
 
@@ -61,9 +63,25 @@ Autenticacion, perfil, rutinas, sesiones, series y progreso consumen la API real
 ### Estructura Angular
 
 - `src/app/components/`: componentes y pantallas.
-- `src/app/services/`: servicios HTTP y sus archivos `.spec.ts`.
+- `src/app/services/`: servicios HTTP, alarmas y recuperación local del entrenamiento.
 - `src/app/guards/`: proteccion de rutas.
 - `src/app/interceptors/`: agregado automatico del JWT.
+
+## Verificación
+
+```powershell
+npm.cmd run typecheck
+npm.cmd test
+npm.cmd run android:apk
+```
+
+`npm test` ejecuta 105 pruebas del backend, las nueve verificaciones de interfaz
+y 81 casos adicionales de conexión, planificación, sonidos, formularios y fotos.
+Estas últimas también se pueden ejecutar con `npm run test:frontend`; usan servicios
+simulados y no modifican la base real. El APK debug se genera en
+`frontend/android/app/build/outputs/apk/debug/app-debug.apk`.
+
+La limpieza y los límites revisados se documentan en [la auditoría Android](docs/AUDITORIA-ANDROID-2026-10-21.md).
 
 ## pgAdmin
 
