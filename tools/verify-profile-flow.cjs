@@ -23,6 +23,7 @@ function load(file) {
       if(name==='@angular/core') return {Component:()=>target=>target,signal,computed:fn=>fn,inject:token=>token==='auth'?auth:token==='progress'?progress:router};
       if(name==='@angular/router') return {Router:'router'};
       if(name==='@angular/common'||name==='@angular/common/http') return {};
+      if(name.includes('alarm-settings.component'))return {AlarmSettingsComponent:class {}};
       if(name.includes('auth.service')) return {AuthService:'auth'};
       if(name.includes('progress.service')) return {ProgressService:'progress'};
       if(name.includes('profile-photo')) return {prepareProfilePhoto:async()=> 'compressed-photo'};
@@ -60,3 +61,34 @@ assert.equal(screen.records().length,1);
 assert.equal(screen.records()[0].value,80);
 assert.equal(screen.weight(),'65.0');
 console.log('OK: foto en borrador, guardado confirmado, error sin navegación, privacidad compartida y totales de progreso.');
+
+// El historial cambia solo con respuesta exitosa; errores conservan el borrador para reintentar.
+let weightRequest,submittedWeight;
+progress.addWeight=value=>{submittedWeight=value;weightRequest=new Subject();return weightRequest;};
+screen.weightDraft.set('67.25');
+screen.registerWeight({preventDefault(){}},'');
+assert.equal(submittedWeight,undefined);
+screen.registerWeight({preventDefault(){}},'67.25');
+assert.equal(screen.weights().length,0);
+assert.equal(screen.weightSaving(),true);
+screen.registerWeight({preventDefault(){}},'80');
+assert.equal(submittedWeight,67.25,'Bloquea envíos simultáneos');
+weightRequest.error(new Error('Sin conexión'));
+assert.equal(screen.weightDraft(),'67.25'); assert.equal(screen.weights().length,0);
+screen.registerWeight({preventDefault(){}},'67.25');
+weightRequest.next({id:'measurement',weightKg:67.25,recordedAt:'2026-10-20T12:00:00Z'});
+assert.equal(screen.weights().length,1); assert.equal(screen.weightDraft(),'');
+assert.equal(screen.weight(),'67.3'); assert.equal(screen.weightSaved(),true);
+assert.equal(screen.showWeight(),true);
+console.log('OK: registro de peso confirmado, validación, protección contra doble envío y reintento.');
+
+let measuredAt;
+progress.addWeight=(value,date)=>{submittedWeight=value;measuredAt=date;weightRequest=new Subject();return weightRequest;};
+screen.registerWeight({preventDefault(){}},'64','2020-01-15T10:30');
+assert.equal(measuredAt,new Date('2020-01-15T10:30').toISOString());
+weightRequest.next({id:'older',weightKg:64,recordedAt:measuredAt});
+assert.equal(screen.weights()[0].id,'measurement','Insertar una medición antigua conserva el orden por fecha');
+assert.equal(screen.weight(),'67.3','El registro antiguo no reemplaza el peso reciente');
+screen.registerWeight({preventDefault(){}},'65','2099-01-01T10:00');
+assert.equal(screen.weightSaving(),false); assert.ok(screen.weightError());
+console.log('OK: fecha elegida, orden cronológico y rechazo de fechas futuras.');

@@ -1,0 +1,137 @@
+erDiagram
+  session_mutations {
+    uuid id PK
+    varchar kind
+    varchar request_hash
+    jsonb response
+    integer status_code
+    timestamp created_at
+    uuid session_id FK
+  }
+  users {
+    uuid id PK
+    varchar email UK
+    varchar password_hash
+    varchar name
+    varchar goal
+    integer height_cm
+    varchar gym_name
+    varchar discipline
+    text photo_url
+    timestamp created_at
+    timestamp updated_at
+  }
+  user_rest_days {
+    uuid id PK
+    integer weekday
+    uuid user_id FK
+  }
+  exercises {
+    uuid id PK
+    varchar name
+    varchar normalized_name
+    varchar muscle_group
+    varchar equipment
+    varchar movement_pattern
+    varchar training_type
+    uuid created_by_user_id FK
+  }
+  routines {
+    uuid id PK
+    varchar name
+    varchar goal
+    boolean active
+    timestamp created_at
+    uuid user_id FK
+  }
+  routine_days {
+    boolean favorite
+    uuid id PK
+    varchar name
+    integer day_number
+    uuid routine_id FK
+  }
+  routine_exercises {
+    uuid id PK
+    integer order
+    integer target_sets
+    integer min_reps
+    integer max_reps
+    integer rest_seconds
+    integer target_duration_minutes
+    decimal target_distance_km
+    varchar intensity
+    uuid routine_day_id FK
+    uuid exercise_id FK
+  }
+  routine_schedules {
+    uuid id PK
+    integer weekday
+    time start_time
+    time end_time
+    timestamp created_at
+    timestamp updated_at
+    uuid routine_day_id FK
+  }
+  training_sessions {
+    uuid id PK
+    timestamp started_at
+    timestamp finished_at
+    integer duration_seconds
+    enum status
+    decimal calories
+    decimal total_volume_kg
+    uuid user_id FK
+    uuid routine_day_id FK
+  }
+  performed_exercises {
+    uuid id PK
+    integer order
+    uuid session_id FK
+    uuid exercise_id FK
+  }
+  performed_sets {
+    uuid id PK
+    integer set_number
+    decimal weight_kg
+    integer repetitions
+    integer duration_seconds
+    integer actual_rest_seconds
+    timestamp completed_at
+    uuid performed_exercise_id FK
+  }
+  body_weight_histories {
+    uuid id PK
+    decimal weight_kg
+    timestamp recorded_at
+    uuid user_id FK
+  }
+  strength_records {
+    uuid id PK
+    decimal max_weight_kg
+    integer repetitions
+    decimal estimated_one_rm
+    timestamp achieved_at
+    uuid user_id FK
+    uuid exercise_id FK
+  }
+  users ||--o{ user_rest_days : descansa
+  users |o--o{ exercises : crea_privado
+  users ||--o{ routines : posee
+  users ||--o{ training_sessions : registra
+  users ||--o{ body_weight_histories : pesa
+  users ||--o{ strength_records : alcanza
+  routines ||--o{ routine_days : contiene
+  routine_days ||--o{ routine_schedules : programa
+  routine_days ||--o{ routine_exercises : prescribe
+  exercises ||--o{ routine_exercises : integra
+  training_sessions ||--o{ performed_exercises : incluye
+  exercises ||--o{ performed_exercises : identifica
+  performed_exercises ||--o{ performed_sets : guarda
+  exercises ||--o{ strength_records : corresponde
+  training_sessions ||--o{ session_mutations : confirma
+  routine_days |o--o{ training_sessions : origina
+  schema_migrations {
+    varchar version PK
+    timestamp applied_at
+  }

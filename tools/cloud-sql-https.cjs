@@ -78,7 +78,7 @@ async function main() {
         const { digest, rows: count } = expected[table];
         if (!/^[a-f0-9]{32}$/.test(digest) || !Number.isInteger(count)) throw Error('Huella inesperada.');
         return `IF (SELECT count(*) FROM public."${table}") <> ${count}
-          OR (SELECT md5(COALESCE(string_agg(row_to_json(t)::text, E'\\n' ORDER BY id), '')) FROM public."${table}" t) <> '${digest}'
+          OR (SELECT md5(COALESCE(string_agg(row_to_json(t)::text, E'\\n' ORDER BY ${table === 'schema_migrations' ? 'version' : 'id'}), '')) FROM public."${table}" t) <> '${digest}'
           THEN RAISE EXCEPTION 'Diferencia en ${table}'; END IF;`;
       }).join('\n');
       const transaction = `BEGIN; SET LOCAL TIME ZONE 'UTC'; SET LOCAL ROLE "${owner}";
@@ -91,7 +91,7 @@ async function main() {
         tables: Object.fromEntries(tables.map(table => [table, expected[table].rows])) }, null, 2));
     } else {
       const query = tables.map(table => `SELECT '${table}' AS name, count(*)::text AS rows,
-        md5(COALESCE(string_agg(row_to_json(t)::text, E'\\n' ORDER BY id), '')) AS digest FROM public."${table}" t`).join(' UNION ALL ');
+        md5(COALESCE(string_agg(row_to_json(t)::text, E'\\n' ORDER BY ${table === 'schema_migrations' ? 'version' : 'id'}), '')) AS digest FROM public."${table}" t`).join(' UNION ALL ');
       const actual = rows(await execute("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY; SET LOCAL TIME ZONE 'UTC'; " + query + '; COMMIT;'));
       if (actual.length !== tables.length) throw Error('Respuesta de verificación incompleta.');
       for (const row of actual) {

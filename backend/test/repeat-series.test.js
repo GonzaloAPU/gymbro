@@ -7,9 +7,11 @@ import assert from 'node:assert/strict';
 import jwt from 'jsonwebtoken';
 import { app } from '../src/app.js';
 import { config } from '../src/config.js';
+import {sequelize} from '../src/db.js';
 import { TrainingSession, PerformedExercise, PerformedSet } from '../src/models/index.js';
 
 test('repeating a series updates its record and enforces session ownership', async t => {
+  t.mock.method(sequelize,'transaction',async callback=>callback({LOCK:{UPDATE:'UPDATE'}}));
   const originals = [TrainingSession.findOne, PerformedExercise.findOne, PerformedSet.findOne];
   let status = 'ACTIVE';
   let exists = true;

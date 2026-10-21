@@ -11,7 +11,10 @@
     "test": "node --test",
     "db:generate": "node --check src/models/index.js",
     "db:migrate": "node scripts/migrate.js",
-    "db:seed": "node scripts/seed.js"
+    "db:seed": "node scripts/seed.js",
+    "db:seed:exercises": "node scripts/seed-exercises.js",
+    "db:verify:normalization": "node scripts/verify-normalization.js",
+    "db:verify:sync": "node scripts/verify-session-sync.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

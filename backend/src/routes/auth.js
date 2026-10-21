@@ -6,7 +6,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
-import { User, RoutineSchedule, RoutineDay, Routine } from "../models/index.js";
+import { User, RoutineSchedule, RoutineDay, Routine, BodyWeightHistory, UserRestDay } from "../models/index.js";
 import { sequelize } from '../db.js';
 import { config } from "../config.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -24,7 +24,7 @@ authRouter.post("/register", async (req, res) => {
   const passwordHash = await bcrypt.hash(password, 12);
   const user = await User.create({ ...profile, passwordHash });
   const token = jwt.sign({ sub: user.id, email: user.email }, config.jwtSecret, { expiresIn: "7d" });
-  res.status(201).json({ token, user: publicUser(user) });
+  res.status(201).json({ token, user: await publicUser(user) });
 });
 
 // POST /login: Busca el email y compara la contraseña con su hash; devuelve el mismo error para cuenta ausente o contraseña incorrecta.
@@ -35,14 +35,14 @@ authRouter.post("/login", async (req, res) => {
     return res.status(401).json({ message: "Email o contrasena incorrectos" });
   }
   const token = jwt.sign({ sub: user.id, email: user.email }, config.jwtSecret, { expiresIn: "7d" });
-  res.json({ token, user: publicUser(user) });
+  res.json({ token, user: await publicUser(user) });
 });
 
 // GET /me: Devuelve exclusivamente el perfil de la cuenta identificada por el token.
 authRouter.get("/me", requireAuth, async (req, res) => {
   const user = await User.findByPk(req.auth.sub);
   if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
-  res.json(publicUser(user));
+  res.json(await publicUser(user));
 });
 
 // PATCH /me: Valida campos opcionales y guarda el perfil. Bloquea la fila del usuario para coordinar descansos y asignaciones simultáneas.
@@ -64,14 +64,27 @@ authRouter.patch("/me", requireAuth, async (req, res) => {
       const conflicts = await RoutineSchedule.count({ where: { weekday: input.restDays }, include: [{ model: RoutineDay, as: 'routineDay', required: true, include: [{ model: Routine, as: 'routine', required: true, where: { userId: user.id } }] }], transaction });
       if (conflicts) throw Object.assign(new Error('Ese día ya tiene rutinas asignadas. Quitá sus horarios antes de marcarlo como descanso.'), { status: 409 });
     }
-    await user.update(input, { transaction });
+    // Registrar solo cambios de peso evita duplicar mediciones al editar otros datos del perfil.
+    const latestWeight = await BodyWeightHistory.findOne({where:{userId:user.id},order:[['recordedAt','DESC']],transaction});
+    const weightChanged = input.currentKg != null && (latestWeight == null || Number(latestWeight.weightKg) !== input.currentKg);
+    const {restDays,currentKg,...profile} = input;
+    await user.update(profile, { transaction });
+    if (restDays !== undefined) {
+      await UserRestDay.destroy({where:{userId:user.id},transaction});
+      await UserRestDay.bulkCreate(restDays.map(weekday=>({userId:user.id,weekday})),{transaction});
+    }
+    if (weightChanged) await BodyWeightHistory.create({ userId:user.id, weightKg:input.currentKg }, { transaction });
     return user;
   });
-  res.json(publicUser(user));
+  res.json(await publicUser(user));
 });
 
 /** Convierte el modelo a un objeto y excluye passwordHash antes de enviarlo al navegador. */
-function publicUser(user) {
+async function publicUser(user) {
   const { passwordHash: _passwordHash, ...safeUser } = user.toJSON();
-  return safeUser;
+  const [days,latest] = await Promise.all([
+    UserRestDay.findAll({where:{userId:user.id},order:[['weekday','ASC']]}),
+    BodyWeightHistory.findOne({where:{userId:user.id},order:[['recordedAt','DESC']]})
+  ]);
+  return {...safeUser,restDays:days.map(day=>day.weekday),currentKg:latest ? Number(latest.weightKg) : null};
 }

@@ -22,17 +22,22 @@ const sessionService = { start: () => { starts++; return failStart ? throwError(
 sessionService.replaceSet = (_session, _exercise, data) => { if (failSet) return throwError(() => new Error('offline')); const index = savedSets.findIndex(row => row.setNumber === data.setNumber); assert.ok(index >= 0); savedSets[index] = data; return of({}); };
 let navigations = 0;
 const router = { navigateByUrl: path => { navigations++; assert.equal(path, '/progreso'); } };
+const alarmMock={trackTimer(){},timerExpired(){},unlockAudio(){}};
+const storageMock={scope:()=>null,loadState:()=>null,recoveryCommands:()=>[],acknowledgeRecovery(){},saveState(){},rejectState(){},isPending:()=>false};
 const exportsObject = {};
 vm.runInNewContext(compiled, {
   exports: exportsObject,
+  crypto:require('node:crypto'),
   require: name => {
     if (name === '@angular/core') return {
-      Component: () => target => target, Input: () => () => {},
+      Component: () => target => target, Input: () => () => {}, HostListener:()=>()=>{},effect:()=>{},
       signal: initial => { let value = initial; const read = () => value; read.set = next => { value = next; }; return read; },
-      inject: token => token === 'routine' ? routineService : token === 'session' ? sessionService : router,
+      inject: token => token === 'routine' ? routineService : token === 'session' ? sessionService : token === 'storage' ? storageMock : token === 'alarms' ? alarmMock : router,
     };
     if (name === '@angular/router') return { Router: 'router' };
     if (name.includes('routine.service')) return { RoutineService: 'routine' };
+    if (name.includes('alarm.service')) return {AlarmService:'alarms'};
+    if (name.includes('workout-storage.service')) return { WorkoutStorageService:'storage' };
     if (name.includes('session.service')) return { SessionService: 'session' };
     return require(name);
   },

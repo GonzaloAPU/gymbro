@@ -6,6 +6,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { Exercise } from "../models/index.js";
 import { requireAuth } from "../middleware/auth.js";
+import { normalizeExerciseName, exerciseScope } from '../services/exercise-access.js';
 import { sequelize } from '../db.js';
 
 export const exercisesRouter = Router();
@@ -20,9 +21,14 @@ exercisesRouter.post('/', async (req, res) => {
     movementPattern: z.string().trim().max(255).nullable().optional(),
     trainingType: z.enum(['POWER', 'AEROBIC', 'ANAEROBIC']),
   }).parse(req.body);
-  const existing = await Exercise.findOne({ where: sequelize.where(sequelize.fn('lower', sequelize.col('name')), input.name.toLowerCase()) });
-  if (existing) return res.status(409).json({ message: 'Ya existe un ejercicio con ese nombre. Podés seleccionarlo del catálogo.' });
-  const exercise = await Exercise.create({ ...input, movementPattern: input.movementPattern || null });
+  const normalizedName = normalizeExerciseName(input.name);
+  const exercise = await sequelize.transaction(async transaction => {
+    // Serializa nombres equivalentes; los índices SQL son la última barrera contra carreras.
+    await sequelize.query('SELECT pg_advisory_xact_lock(hashtextextended(:name, 0))',{replacements:{name:normalizedName},transaction});
+    const existing = await Exercise.findOne({where:{normalizedName,...exerciseScope(req.auth.sub)},transaction});
+    if (existing) throw Object.assign(new Error('Ese ejercicio ya existe en el catálogo o entre tus ejercicios. Seleccionalo para usarlo.'),{status:409});
+    return Exercise.create({...input,name:input.name.trim().replace(/\s+/g,' '),normalizedName,createdByUserId:req.auth.sub,movementPattern:input.movementPattern || null},{transaction});
+  });
   res.status(201).json(exercise);
 });
 
@@ -33,7 +39,7 @@ exercisesRouter.get("/", async (req, res) => {
     muscleGroup: z.string().min(1).optional(),
   }).parse(req.query);
   const exercises = await Exercise.findAll({
-    where: filters,
+    where: {...filters,...exerciseScope(req.auth.sub)},
     order: [["trainingType", "ASC"], ["muscleGroup", "ASC"], ["name", "ASC"]],
   });
   res.json(exercises);

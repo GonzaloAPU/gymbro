@@ -16,8 +16,11 @@ if (!sdk) {
 env.ANDROID_HOME = sdk;
 // En Windows podemos aprovechar los JDK de IntelliJ, sin modificar la configuración global del equipo.
 if (!env.JAVA_HOME && process.platform === 'win32') {
+  const localJdks = join(root, '.android-tools', 'jdk21');
+  if (existsSync(localJdks)) env.JAVA_HOME = readdirSync(localJdks)
+    .map(name => join(localJdks, name)).find(path => existsSync(join(path, 'bin', 'java.exe')));
   const jdks = join(env.USERPROFILE || '', '.jdks');
-  if (existsSync(jdks)) env.JAVA_HOME = readdirSync(jdks)
+  if (!env.JAVA_HOME && existsSync(jdks)) env.JAVA_HOME = readdirSync(jdks)
     .filter(name => /^openjdk-(21|22|23|24)[.-]/.test(name))
     .map(name => join(jdks, name)).find(path => existsSync(join(path, 'bin', 'java.exe')));
 }

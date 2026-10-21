@@ -2,11 +2,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { AlarmSettingsComponent } from './alarm-settings.component';
 import { AuthService } from '../services/auth.service';
 
 @Component({
   standalone: true,
-  imports: [RouterLink, DecimalPipe],
+  imports: [RouterLink, DecimalPipe, AlarmSettingsComponent],
   template: `
     <section class="page profile-view">
       <header><div><span class="kicker">TU ESPACIO PERSONAL</span><h1>Mi perfil</h1></div><a class="button primary" routerLink="/perfil/editar">Modificar perfil</a></header>
@@ -18,6 +19,7 @@ import { AuthService } from '../services/auth.service';
         <dl><div><dt>Mi gimnasio</dt><dd>{{auth.user()?.gymName || 'Todavía no agregaste tu gimnasio'}}</dd></div><div><dt>Mi objetivo</dt><dd>{{auth.user()?.goal || 'Todavía no definiste un objetivo'}}</dd></div></dl>
       </article>
       <section class="measurements" aria-label="Mis medidas"><article><span>MI PESO</span><button class="eye" type="button" (click)="toggleWeight()" [attr.aria-label]="showWeight() ? 'Ocultar peso' : 'Mostrar peso'" [attr.aria-pressed]="showWeight()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>@if(!showWeight()){<path d="m3 3 18 18"/>}</svg></button><strong>@if(showWeight()) {{{auth.user()?.currentKg != null ? (auth.user()?.currentKg | number:'1.1-1') : '—'}}} @else {•••}<small>kg</small></strong><p>{{showWeight() ? 'Tu peso actual' : 'Solo se muestra cuando vos lo elegís'}}</p></article><article><span>MI ALTURA</span><strong>{{auth.user()?.heightCm || '—'}}<small>cm</small></strong><p>Altura registrada</p></article></section>
+      <app-alarm-settings />
       <a class="progress-link" routerLink="/progreso">Ver mis entrenamientos y récords →</a>
     </section>
   `,

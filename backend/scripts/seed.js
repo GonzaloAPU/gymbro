@@ -5,34 +5,15 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { sequelize } from "../src/db.js";
-import { Exercise, Routine, RoutineDay, RoutineExercise, User } from "../src/models/index.js";
+import { Exercise, Routine, RoutineDay, RoutineExercise, User, BodyWeightHistory } from "../src/models/index.js";
 
-const exerciseData = [
-  { name: "Sentadilla", muscleGroup: "Piernas", equipment: "Barra", movementPattern: "Sentadilla", trainingType: "POWER" },
-  { name: "Press banca", muscleGroup: "Pecho", equipment: "Barra", movementPattern: "Empuje horizontal", trainingType: "POWER" },
-  { name: "Peso muerto rumano", muscleGroup: "Isquiotibiales", equipment: "Barra", movementPattern: "Bisagra de cadera", trainingType: "POWER" },
-  { name: "Remo sentado", muscleGroup: "Espalda", equipment: "Polea", movementPattern: "Traccion horizontal", trainingType: "POWER" },
-  { name: "Press militar", muscleGroup: "Hombros", equipment: "Mancuernas", movementPattern: "Empuje vertical", trainingType: "POWER" },
-  { name: "Dominadas", muscleGroup: "Espalda", equipment: "Barra fija", movementPattern: "Traccion vertical", trainingType: "POWER" },
-  { name: "Hip thrust", muscleGroup: "Gluteos", equipment: "Barra", movementPattern: "Extension de cadera", trainingType: "POWER" },
-  { name: "Curl de biceps", muscleGroup: "Brazos", equipment: "Mancuernas", movementPattern: "Flexion de codo", trainingType: "POWER" },
-  { name: "Correr", muscleGroup: "Cardio", equipment: "Cinta o exterior", movementPattern: "Carrera continua", trainingType: "AEROBIC" },
-  { name: "Bicicleta", muscleGroup: "Cardio", equipment: "Bicicleta", movementPattern: "Pedaleo continuo", trainingType: "AEROBIC" },
-  { name: "Caminata inclinada", muscleGroup: "Cardio", equipment: "Cinta", movementPattern: "Marcha", trainingType: "AEROBIC" },
-  { name: "Eliptica", muscleGroup: "Cardio", equipment: "Eliptica", movementPattern: "Cardio continuo", trainingType: "AEROBIC" },
-  { name: "Remo continuo", muscleGroup: "Cuerpo completo", equipment: "Remo ergometro", movementPattern: "Cardio continuo", trainingType: "AEROBIC" },
-  { name: "Sprints", muscleGroup: "Piernas", equipment: "Pista o cinta", movementPattern: "Carrera por intervalos", trainingType: "ANAEROBIC" },
-  { name: "Bicicleta por intervalos", muscleGroup: "Piernas", equipment: "Bicicleta", movementPattern: "Pedaleo por intervalos", trainingType: "ANAEROBIC" },
-  { name: "Burpees", muscleGroup: "Cuerpo completo", equipment: "Peso corporal", movementPattern: "Acondicionamiento", trainingType: "ANAEROBIC" },
-  { name: "Kettlebell swing", muscleGroup: "Cuerpo completo", equipment: "Kettlebell", movementPattern: "Bisagra explosiva", trainingType: "ANAEROBIC" },
-  { name: "Saltar cuerda", muscleGroup: "Cardio", equipment: "Cuerda", movementPattern: "Saltos por intervalos", trainingType: "ANAEROBIC" },
-];
+import { exerciseData } from "../src/data/exercise-catalog.js";
 
 try {
   await sequelize.authenticate();
   const catalog = [];
   for (const data of exerciseData) {
-    const [exercise] = await Exercise.findOrCreate({ where: { name: data.name }, defaults: data });
+    const [exercise] = await Exercise.findOrCreate({ where: { name: data.name, createdByUserId:null }, defaults: data });
     await exercise.update(data);
     catalog.push(exercise);
   }
@@ -41,11 +22,12 @@ try {
     where: { email: "demo@smartgymbro.app" },
     defaults: {
       passwordHash: await bcrypt.hash("Demo1234!", 12), name: "Alex",
-      goal: "Ganar fuerza y masa muscular", heightCm: 178, currentKg: 78.4,
+      goal: "Ganar fuerza y masa muscular", heightCm: 178,
       gymName: "Smart Gym Centro",
     },
   });
 
+  if (!await BodyWeightHistory.count({where:{userId:user.id}})) await BodyWeightHistory.create({userId:user.id,weightKg:78.4});
   const existingRoutine = await Routine.findOne({ where: { userId: user.id } });
   if (!existingRoutine) {
     const routine = await Routine.create({ userId: user.id, name: "Fuerza base", goal: "Progresion de cargas" });

@@ -25,14 +25,14 @@ const INSTANCE = 'gymbro-569e3-instance';
 const DATABASE = 'gymbro-569e3-database';
 const tables = ['users', 'exercises', 'routines', 'routine_days', 'routine_exercises',
   'routine_schedules', 'training_sessions', 'performed_exercises', 'performed_sets',
-  'body_weight_histories', 'strength_records'];
+  'body_weight_histories', 'strength_records', 'user_rest_days', 'session_mutations', 'schema_migrations'];
 
 /** Resume cada tabla con cantidad y huella del contenido; no devuelve datos personales. */
 async function fingerprint(connection) {
   const result = {};
   for (const table of tables) {
     const response = await connection.query(`SELECT count(*)::int AS rows,
-      md5(COALESCE(string_agg(row_to_json(t)::text, E'\n' ORDER BY id), '')) AS digest
+      md5(COALESCE(string_agg(row_to_json(t)::text, E'\n' ORDER BY ${table === 'schema_migrations' ? 'version' : 'id'}), '')) AS digest
       FROM public."${table}" t`);
     result[table] = response.rows[0];
   }

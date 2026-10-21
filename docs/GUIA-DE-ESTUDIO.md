@@ -237,7 +237,7 @@ nombrados conservan los datos al recrear contenedores.
 | --- | --- |
 | `npm run dev` | Inicia backend y frontend juntos |
 | `npm run build` | Comprueba la entrada del backend y compila Angular |
-| `npm test` | Ejecuta las siete pruebas actuales del backend con node:test |
+| `npm test` | Ejecuta la suite del backend con node:test |
 | `npm run db:migrate` | Modifica la estructura de la base y migra horarios antiguos |
 | `npm run db:seed` | Carga datos demo; no es un comando de consulta |
 | `backend/scripts/seed-accounts.js` | Genera los cinco perfiles y sus historiales ficticios |
@@ -268,3 +268,35 @@ lectura, y elimina sus datos. No ejecuta una migración de las cuentas de Gymbro
 Los archivos de `dataconnect/.dataconnect`, `.firebase`, `node_modules` y `dist`
 son generados por herramientas: no se comentan manualmente. El detalle de arranque
 está en [FIREBASE-PROTOTYPE.md](FIREBASE-PROTOTYPE.md).
+
+
+## 12. Normalización y ejercicios privados
+
+La migración versionada de 20/10/2026 está en backend/scripts/migrations/20261020-normalize.js.
+El comando db:migrate registra versiones en schema_migrations, con transacción y sin sync alter/force.
+Los descansos viven en user_rest_days; el peso actual se consulta desde body_weight_histories.
+La API mantiene los nombres restDays y currentKg para que Angular y Android sigan funcionando.
+Los horarios solo se almacenan en routine_schedules; schedule se construye para la respuesta HTTP.
+
+Un ejercicio sin created_by_user_id pertenece al catálogo oficial. Con propietario, es privado.
+exercise-access.js centraliza la normalización de nombres y las comprobaciones de acceso.
+La API y PostgreSQL protegen contra duplicados por tildes, mayúsculas y espacios; distintos
+sinónimos todavía requieren revisión humana. No hay una tabla por usuario.
+
+El diccionario y diagrama actualizados están en [BASE-DE-DATOS-2026-10-20.md](BASE-DE-DATOS-2026-10-20.md).
+La integración de normalización se prueba en una copia independiente, no sobre cuentas reales.
+Firebase conserva su esquema previo: debe migrarse y revisarse Data Connect antes de usar el backend nuevo allí.
+
+
+## 13. Recuperación de Entrenar y cola local
+
+workout-storage.service.ts mantiene respaldo y cola por cuenta/servidor; session.service.ts encola
+acciones con UUID antes de confirmarlas a la pantalla. WorkoutComponent guarda marcas de tiempo
+para recuperar relojes en marcha y pausados. Un diario permite recuperar acciones que llegaron
+al almacenamiento antes de actualizar la tarjeta.
+
+session-mutations.js guarda recibos transaccionales en session_mutations. El cierre de una sesión
+COMPLETED es inmutable; los reintentos no recalculan sus resultados. Guardar series y finalizar
+usan el mismo bloqueo de fila para que los totales sean coherentes ante concurrencia.
+
+Detalles y comandos: [ENTRENAMIENTO-OFFLINE.md](ENTRENAMIENTO-OFFLINE.md).

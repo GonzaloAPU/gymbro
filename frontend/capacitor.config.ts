@@ -7,5 +7,6 @@ const config: CapacitorConfig = {
   webDir: 'dist/smartgymbro/browser',
   server: { androidScheme: 'https' },
   android: { backgroundColor: '#090d18' },
+  plugins: { LocalNotifications: { smallIcon:'gymbro_notification', iconColor:'#a3e635' } },
 };
 export default config;

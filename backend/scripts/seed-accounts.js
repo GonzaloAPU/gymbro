@@ -36,13 +36,13 @@ try {
     const options = { transaction };
     const exercises = new Map();
     for (const [name, muscleGroup, equipment] of catalog) {
-      const [exercise] = await Exercise.findOrCreate({ where: { name }, defaults: { name, muscleGroup, equipment, trainingType: 'POWER' }, transaction });
+      const [exercise] = await Exercise.findOrCreate({ where: { name, createdByUserId:null }, defaults: { name, muscleGroup, equipment, trainingType: 'POWER' }, transaction });
       exercises.set(name, exercise);
     }
     for (const profile of profiles) {
       const [user, created] = await User.findOrCreate({ where: { email: profile.email }, defaults: {
         name: profile.name, passwordHash, goal: profile.goal, heightCm: profile.heightCm,
-        currentKg: profile.endKg, gymName: 'Smart Gym Centro',
+        gymName: 'Smart Gym Centro',
       }, transaction });
       if (!created) {
         console.log(`${profile.email}: ya existe; se conserva sin cambios.`);

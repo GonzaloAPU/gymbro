@@ -22,7 +22,9 @@
     "firebase:cloud:status": "node --use-system-ca tools/cloud-postgres.cjs --status",
     "firebase:cloud:verify": "node --use-system-ca tools/cloud-sql-https.cjs --verify",
     "firebase:cloud:compile": "node --use-system-ca node_modules/firebase-tools/lib/bin/firebase.js dataconnect:compile --config firebase.cloud.json --project gymbro-569e3 --non-interactive",
-    "firebase:cloud:tables": "node --use-system-ca tools/cloud-sql-https.cjs --tables"
+    "firebase:cloud:tables": "node --use-system-ca tools/cloud-sql-https.cjs --tables",
+    "test:recovery": "node tools/verify-workout-recovery.cjs",
+    "test:alarms": "node tools/verify-alarms.cjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

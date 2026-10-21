@@ -24,6 +24,8 @@ vm.runInNewContext(compiled, { exports: output, require: name => {
   if (name === '@angular/core') return { Component: () => target => target, signal, computed: read => read, effect: run => { effects.push(run); run(); }, inject: token => token === 'auth' ? auth : router };
   if (name === '@angular/router') return { Router: 'router', NavigationEnd };
   if (name === '@angular/core/rxjs-interop') return { toSignal: (observable, options) => { const value = signal(options.initialValue); observable.subscribe(next => value.set(next)); return value; } };
+  if (name.includes('alarm.service')) return {AlarmService:'alarms'};
+  if (name.includes('alarm-settings.component')) return {AlarmSettingsComponent:class {}};
   if (name.includes('auth.service')) return { AuthService: 'auth' };
   if (name.includes('workout-route.component')) return { WorkoutRouteComponent };
   if (name.includes('workout.component')) return { WorkoutComponent: class {} };

@@ -79,7 +79,7 @@ interface BuilderDay { name: string; items: BuilderItem[]; }
           <label>Buscar ejercicio<input type="search" placeholder="Ej. Press de banca" [value]="search()" (input)="search.set($any($event.target).value)"></label>
           <button type="button" class="new-exercise-toggle" (click)="showExerciseForm.set(!showExerciseForm())" [disabled]="creatingExercise()" [attr.aria-expanded]="showExerciseForm()">¿No lo encontrás? Crear un ejercicio</button>
           @if (showExerciseForm()) {
-            <form class="new-exercise-card" (submit)="createExercise($event, exerciseName.value, muscle.value, equipment.value, movement.value, training.value)">
+            <p class="exercise-help">Los ejercicios que creás son privados. Solo vos podés verlos y agregarlos a tus rutinas.</p><form class="new-exercise-card" (submit)="createExercise($event, exerciseName.value, muscle.value, equipment.value, movement.value, training.value)">
               <h3>Agregar ejercicio</h3>
               <label>Nombre<input #exerciseName required minlength="2" maxlength="255" placeholder="Ej. Sentadilla búlgara" [disabled]="creatingExercise()"></label>
               <label>Grupo muscular<input #muscle required minlength="2" maxlength="255" placeholder="Ej. Piernas" list="exercise-muscles" [disabled]="creatingExercise()"><datalist id="exercise-muscles">@for (group of muscleGroups(); track group) {<option [value]="group"></option>}</datalist></label>
@@ -94,7 +94,7 @@ interface BuilderDay { name: string; items: BuilderItem[]; }
           @if (exerciseMessage()) {<p class="exercise-success" role="status">{{exerciseMessage()}}</p>}
           <label>Tipo de entrenamiento<select [value]="typeFilter()" (change)="typeFilter.set($any($event.target).value)"><option value="ALL">Todos</option><option value="POWER">Fuerza / Power</option><option value="AEROBIC">Aeróbico</option><option value="ANAEROBIC">Anaeróbico</option></select></label>
           <label>Grupo muscular<select [value]="muscleFilter()" (change)="muscleFilter.set($any($event.target).value)"><option value="ALL">Todos los grupos</option>@for(group of muscleGroups();track group){<option [value]="group">{{group}}</option>}</select></label>
-          <div class="catalog-list">@for(exercise of filteredExercises();track exercise.id){<button type="button" (click)="addExercise(exercise.id)" [disabled]="hasExercise(exercise.id)" [attr.aria-label]="(hasExercise(exercise.id) ? 'Agregado: ' : 'Agregar ') + exercise.name"><div><strong>{{exercise.name}}</strong><small>{{exercise.muscleGroup}} · {{exercise.equipment}}</small></div><b>{{hasExercise(exercise.id) ? '✓ Agregado' : '+ Agregar'}}</b></button>} @empty {<p>No hay ejercicios con esos filtros.</p>}</div>
+          <div class="catalog-list">@for(exercise of filteredExercises();track exercise.id){<button type="button" (click)="addExercise(exercise.id)" [disabled]="hasExercise(exercise.id)" [attr.aria-label]="(hasExercise(exercise.id) ? 'Agregado: ' : 'Agregar ') + exercise.name"><div><strong>{{exercise.name}}</strong><small>{{exercise.createdByUserId ? 'Personal · ' : 'Oficial · '}}{{exercise.muscleGroup}} · {{exercise.equipment}}</small></div><b>{{hasExercise(exercise.id) ? '✓ Agregado' : '+ Agregar'}}</b></button>} @empty {<p>No hay ejercicios con esos filtros.</p>}</div>
         </aside>
         }
       </div>

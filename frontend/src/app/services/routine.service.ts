@@ -3,10 +3,13 @@
  * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
  */
 import { inject, Injectable } from '@angular/core';
+import { tap } from 'rxjs';
+import { AlarmService } from './alarm.service';
 import { HttpClient } from '@angular/common/http';
 
 // Contrato de datos: describe campos y tipos para detectar errores durante la compilación.
 export interface Exercise {
+  createdByUserId?: string | null;
   movementPattern?: string | null;
   id: string;
   name: string;
@@ -55,15 +58,16 @@ export interface Routine {
 export class RoutineService {
   // Dependencias y estado de la clase: inject obtiene servicios; signal conserva valores reactivos.
   private readonly http = inject(HttpClient);
+  private readonly alarms = inject(AlarmService);
   /** Solicita todas las rutinas propias, incluyendo ejercicios y asignaciones semanales. */
-  getAll() { return this.http.get<Routine[]>('/api/routines'); }
+  getAll() { return this.http.get<Routine[]>('/api/routines').pipe(tap(routines=>this.alarms.updatePlan(routines))); }
   /** Actualiza el favorito de un bloque de rutina en el servidor. */
   setFavorite(routineId: string, dayId: string, favorite: boolean) {
     return this.http.patch<{favorite: boolean}>(`/api/routines/${routineId}/days/${dayId}/favorite`, { favorite });
   }
   /** Reemplaza todos los horarios del bloque con la lista enviada; [] elimina sus asignaciones. */
   assignSchedule(routineId: string, dayId: string, schedule: ScheduleSlot[]) {
-    return this.http.put<{schedule: ScheduleSlot[]}>(`/api/routines/${routineId}/days/${dayId}/schedule`, { schedule });
+    return this.http.put<{schedule: ScheduleSlot[]}>(`/api/routines/${routineId}/days/${dayId}/schedule`, { schedule }).pipe(tap(result=>this.alarms.updateSchedule(dayId,result.schedule)));
   }
   /** Envía los datos de creación al endpoint correspondiente y devuelve su Observable HTTP. */
   create(data: {

@@ -6,7 +6,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { sequelize } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
-import { Exercise, Routine, RoutineDay, RoutineExercise, RoutineSchedule, User } from "../models/index.js";
+import { Exercise, Routine, RoutineDay, RoutineExercise, RoutineSchedule, User, UserRestDay } from "../models/index.js";
+import { assertExercisesAccessible } from '../services/exercise-access.js';
 import { scheduleSchema, validateSchedule } from '../schedule.js';
 
 export const routinesRouter = Router();
@@ -47,7 +48,8 @@ routinesRouter.put('/:routineId/days/:dayId/schedule', async (req, res) => {
     // Bloquea la fila del usuario: dos solicitudes simultáneas no pueden superar juntas el límite diario.
     const user = await User.findByPk(req.auth.sub, { transaction, lock: transaction.LOCK.UPDATE });
     if (!user) throw Object.assign(new Error('Usuario no encontrado'), { status: 404 });
-    if (schedule.some(slot => (user.restDays || []).includes(slot.weekday))) throw Object.assign(new Error('No podés asignar rutinas a un día de descanso. Quitá primero ese día de descanso en el calendario.'), { status: 409 });
+    const restDays = (await UserRestDay.findAll({where:{userId:user.id},transaction})).map(day=>day.weekday);
+    if (schedule.some(slot => restDays.includes(slot.weekday))) throw Object.assign(new Error('No podés asignar rutinas a un día de descanso. Quitá primero ese día de descanso en el calendario.'), { status: 409 });
     const days = await RoutineDay.findAll({ include: [{ model: Routine, as: 'routine', required: true, where: { userId: req.auth.sub } }, { model: RoutineSchedule, as: 'schedules' }], transaction });
     const day = days.find(item => item.id === req.params.dayId && item.routineId === req.params.routineId);
     if (!day) throw Object.assign(new Error('Día de rutina no encontrado'), { status: 404 });
@@ -80,6 +82,7 @@ routinesRouter.post("/", async (req, res) => {
   }).parse(req.body);
 
   const routine = await sequelize.transaction(async (transaction) => {
+    await assertExercisesAccessible(input.days.flatMap(day=>day.exercises.map(item=>item.exerciseId)), req.auth.sub, transaction);
     await Routine.update({ active: false }, { where: { userId: req.auth.sub }, transaction });
     const created = await Routine.create({ userId: req.auth.sub, name: input.name, goal: input.goal, active: true }, { transaction });
     for (const dayInput of input.days) {

@@ -26,5 +26,5 @@ export class ProgressService {
   /** Solicita los rankings públicos para usuarios autenticados, agrupados por ejercicio. */
   getLeaderboard() { return this.http.get<{exercises: ExerciseLeaderboard[]}>('/api/progress/leaderboard'); }
   /** Registra una medición de peso corporal; la API también actualiza el peso actual del perfil. */
-  addWeight(weightKg: number) { return this.http.post<WeightEntry>('/api/progress/weight', { weightKg }); }
+  addWeight(weightKg: number, recordedAt?: string) { return this.http.post<WeightEntry>('/api/progress/weight', { weightKg, recordedAt }); }
 }

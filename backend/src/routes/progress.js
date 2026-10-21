@@ -31,7 +31,7 @@ progressRouter.get('/leaderboard', async (req, res) => {
       JOIN ${quote(Exercise)} e ON e.id = pe.exercise_id
       JOIN ${quote(TrainingSession)} s ON s.id = pe.session_id
       JOIN ${quote(User)} u ON u.id = s.user_id
-      WHERE s.status = 'COMPLETED' AND ps.weight_kg > 0 AND ps.repetitions > 0
+      WHERE e.created_by_user_id IS NULL AND s.status = 'COMPLETED' AND ps.weight_kg > 0 AND ps.repetitions > 0
     ), best AS (
       SELECT *, row_number() OVER (PARTITION BY category, user_id ORDER BY weight_kg DESC, repetitions DESC, completed_at ASC, id ASC) AS personal_best
       FROM candidates WHERE category IS NOT NULL
@@ -57,12 +57,16 @@ progressRouter.get("/summary", async (req, res) => {
   res.json({ sessions, weights: weights.reverse(), records, totalCalories: Number(totalCalories || 0), completedSessions });
 });
 
-// POST /weight: Guarda medición histórica y peso actual del perfil juntos para que ambos valores sean coherentes.
+// POST /weight: Agrega una medición; el peso actual se obtiene del historial, sin columna duplicada.
 progressRouter.post("/weight", async (req, res) => {
-  const { weightKg } = z.object({ weightKg: z.number().positive().max(500) }).parse(req.body);
+  const { weightKg, recordedAt } = z.object({ weightKg: z.number().positive().max(500), recordedAt: z.string().datetime().refine(value => new Date(value).getTime() <= Date.now(), 'La fecha no puede ser futura').optional() }).parse(req.body);
   const entry = await sequelize.transaction(async (transaction) => {
-    await User.update({ currentKg: weightKg }, { where: { id: req.auth.sub }, transaction });
-    return BodyWeightHistory.create({ userId: req.auth.sub, weightKg }, { transaction });
+    // Serializa pesajes por usuario. No sobrescribe ni borra mediciones anteriores.
+    const user = await User.findByPk(req.auth.sub, { transaction, lock:transaction.LOCK.UPDATE });
+    if (!user) throw Object.assign(new Error('Usuario no encontrado'),{status:404});
+    const date = recordedAt ? new Date(recordedAt) : new Date();
+    const measurement = await BodyWeightHistory.create({ userId:req.auth.sub, weightKg, recordedAt:date }, { transaction });
+    return measurement;
   });
   res.status(201).json(entry);
 });

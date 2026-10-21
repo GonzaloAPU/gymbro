@@ -6,7 +6,7 @@
 export function errorHandler(error, _req, res, _next) {
   console.error(error);
   if (error?.name === "SequelizeUniqueConstraintError") {
-    return res.status(409).json({ message: "El email ya esta registrado" });
+    return res.status(409).json({ message: error.errors?.some(item => item.path === "email") ? "El email ya está registrado" : "Ese registro ya existe. Revisá los datos antes de volver a guardarlo." });
   }
   if (error?.name === "SequelizeValidationError") {
     return res.status(400).json({ message: "Datos invalidos", issues: error.errors });
