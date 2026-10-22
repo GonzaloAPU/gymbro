@@ -14,9 +14,10 @@ sessionsRouter.post('/',async(req,res)=>{
   const input=z.object({routineDayId:z.string().uuid().optional(),clientSessionId:z.string().uuid().optional(),startedAt:z.string().datetime().optional(),operationId}).parse(req.body);
   const sessionId=input.clientSessionId||input.operationId||randomUUID();
   const result=await mutateSession({sessionId,userId:req.auth.sub,operationId:input.operationId,kind:'START',payload:input,start:true},async(_,transaction)=>{
-    const existing=await TrainingSession.findByPk(sessionId,{transaction,lock:transaction.LOCK.UPDATE});
+    const existing=await TrainingSession.findByPk(sessionId,{transaction,lock:transaction.LOCK.UPDATE,paranoid:false});
     if(existing) {
       if(existing.userId!==req.auth.sub) throw Object.assign(new Error('Sesión no encontrada'),{status:404});
+      if(existing.deletedAt)throw Object.assign(new Error('La sesión está archivada y no se puede reiniciar con ese identificador'),{status:409});
       if((existing.routineDayId||null)!==(input.routineDayId||null)) throw Object.assign(new Error('Identificador de sesión ya utilizado'),{status:409});
       return {status:200,data:existing};
     }
@@ -33,7 +34,7 @@ sessionsRouter.post('/:sessionId/exercises',async(req,res)=>{
   const input=z.object({exerciseId:z.string().uuid(),order:z.number().int().positive(),clientExerciseId:z.string().uuid().optional(),operationId}).parse(req.body);
   const result=await mutateSession({sessionId:req.params.sessionId,userId:req.auth.sub,operationId:input.operationId,kind:'EXERCISE',payload:input},async(session,transaction)=>{
     assertSessionOpen(session);
-    await assertExercisesAccessible([input.exerciseId],req.auth.sub,transaction);
+    await assertExercisesAccessible([input.exerciseId],req.auth.sub,transaction,session.routineDayId);
     const existing=await PerformedExercise.findOne({where:{sessionId:session.id,order:input.order},transaction});
     if(existing) {
       if(existing.exerciseId!==input.exerciseId||(input.clientExerciseId&&existing.id!==input.clientExerciseId)) throw Object.assign(new Error('Ese orden ya pertenece a otro ejercicio'),{status:409});

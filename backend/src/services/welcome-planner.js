@@ -34,7 +34,7 @@ export function allowedCatalog(input,catalog){
   return choices.flatMap(([name,required,group])=>{
     if(!required.every(item=>input.equipment.includes(item)))return [];
     // Dominadas, saltos y ejercicios explosivos no forman parte de esta bienvenida.
-    const exercise=catalog.find(item=>normalize(item.name)===normalize(name)&&item.trainingType==='POWER'&&!item.createdByUserId);
+    const exercise=catalog.find(item=>normalize(item.name)===normalize(name)&&item.trainingType==='POWER'&&!item.createdByUserId&&!item.deletedAt);
     return exercise?[{id:exercise.id,name:exercise.name,group,equipment:exercise.equipment}]:[];
   });
 }

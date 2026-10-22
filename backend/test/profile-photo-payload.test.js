@@ -1,3 +1,4 @@
+import {accountAccess} from '../src/middleware/active-account.js';
 /**
  * Prueba automatizada del backend: prepara dependencias o datos simulados, ejecuta una operación y usa assert para comprobar el comportamiento. No forma parte del servidor que usa el usuario.
  * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
@@ -18,6 +19,7 @@ test('compressed profile photos larger than 100 KB reach the profile handler', a
   const user = { id: 'photo-owner', async update(input) { savedPhoto = input.photoUrl; }, toJSON: () => ({id:'photo-owner',photoUrl:savedPhoto}) };
   User.findByPk = async () => user;
   sequelize.transaction = async callback => callback({LOCK:{UPDATE:'UPDATE'}});
+  t.mock.method(accountAccess,'isActive',async()=>true);
   const server = app.listen(0,'127.0.0.1');
   await new Promise(resolve => server.once('listening',resolve));
   t.after(() => { [User.findByPk, sequelize.transaction, BodyWeightHistory.findOne, UserRestDay.findAll] = originals; server.close(); });

@@ -4,6 +4,7 @@ import { UserRestDay, RoutineSchedule, BodyWeightHistory } from '../../src/model
 import { exerciseData } from '../../src/data/exercise-catalog.js';
 import { normalizeExerciseName } from '../../src/services/exercise-access.js';
 import {normalizeNameSql,exerciseGuardSql,tableChecks} from '../../src/services/schema-integrity.js';
+import {softDeleteTables} from '../../src/services/soft-delete.js';
 
 export async function normalizeSchema() {
   await sequelize.transaction(async transaction => {
@@ -14,6 +15,8 @@ export async function normalizeSchema() {
     if (done.length) return;
     // sync crea solo las tablas ausentes; los cambios sobre tablas existentes son explícitos abajo.
     await sequelize.sync({transaction});
+    // Los modelos actuales ya filtran deleted_at al leer datos heredados.
+    for(const table of softDeleteTables)await query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS deleted_at timestamptz`);
     const [users] = await query('SELECT * FROM users');
     const [days] = await query('SELECT * FROM routine_days');
     for (const user of users) {

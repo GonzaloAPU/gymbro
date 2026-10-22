@@ -26,7 +26,7 @@ routinesRouter.patch('/:routineId/days/:dayId/favorite', async (req, res) => {
 const routineInclude = [{
   model: RoutineDay,
   as: "days",
-  include: [{ model: RoutineExercise, as: "exercises", include: [{ model: Exercise, as: "exercise" }] }, { model: RoutineSchedule, as: 'schedules' }],
+  include: [{ model: RoutineExercise, as: "exercises", include: [{ model: Exercise, as: "exercise", paranoid:false }] }, { model: RoutineSchedule, as: 'schedules' }],
 }];
 
 /** Normaliza horas SQL a HH:mm y ordena los horarios empezando por lunes. */

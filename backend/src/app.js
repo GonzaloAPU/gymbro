@@ -12,6 +12,8 @@ import { progressRouter } from "./routes/progress.js";
 import { exercisesRouter } from "./routes/exercises.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import {welcomeRouter} from './routes/welcome.js';
+import {requireAuth} from './middleware/auth.js';
+import {requireActiveAccount} from './middleware/active-account.js';
 
 export const app = express();
 // Capacitor sirve los archivos instalados desde https://localhost dentro de Android.
@@ -22,6 +24,10 @@ app.use(cors({ origin: [config.frontendUrl, 'https://localhost'] }));
 app.use(express.json({ limit: '1mb' }));
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "smartgymbro-api" }));
+app.use('/api',(req,res,next)=>{
+  if(['/auth/register','/auth/login'].includes(req.path))return next();
+  requireAuth(req,res,()=>requireActiveAccount(req,res,next));
+});
 app.use("/api/auth", authRouter);
 app.use("/api/routines", routinesRouter);
 app.use("/api/sessions", sessionsRouter);

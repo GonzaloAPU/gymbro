@@ -23,6 +23,7 @@ erDiagram
     uuid session_id FK
   }
   users {
+    timestamptz deleted_at "NULL = vigente"
     uuid id PK
     varchar email UK
     varchar password_hash
@@ -41,6 +42,7 @@ erDiagram
     uuid user_id FK
   }
   exercises {
+    timestamptz deleted_at "NULL = vigente"
     uuid id PK
     varchar name
     varchar normalized_name
@@ -51,6 +53,7 @@ erDiagram
     uuid created_by_user_id FK
   }
   routines {
+    timestamptz deleted_at "NULL = vigente"
     uuid id PK
     varchar name
     varchar goal
@@ -59,6 +62,7 @@ erDiagram
     uuid user_id FK
   }
   routine_days {
+    timestamptz deleted_at "NULL = vigente"
     boolean favorite
     uuid id PK
     varchar name
@@ -66,6 +70,7 @@ erDiagram
     uuid routine_id FK
   }
   routine_exercises {
+    timestamptz deleted_at "NULL = vigente"
     uuid id PK
     integer order
     integer target_sets
@@ -88,6 +93,7 @@ erDiagram
     uuid routine_day_id FK
   }
   training_sessions {
+    timestamptz deleted_at "NULL = vigente"
     uuid id PK
     timestamp started_at
     timestamp finished_at
@@ -99,12 +105,14 @@ erDiagram
     uuid routine_day_id FK
   }
   performed_exercises {
+    timestamptz deleted_at "NULL = vigente"
     uuid id PK
     integer order
     uuid session_id FK
     uuid exercise_id FK
   }
   performed_sets {
+    timestamptz deleted_at "NULL = vigente"
     uuid id PK
     integer set_number
     decimal weight_kg
@@ -115,12 +123,14 @@ erDiagram
     uuid performed_exercise_id FK
   }
   body_weight_histories {
+    timestamptz deleted_at "NULL = vigente"
     uuid id PK
     decimal weight_kg
     timestamp recorded_at
     uuid user_id FK
   }
   strength_records {
+    timestamptz deleted_at "NULL = vigente"
     uuid id PK
     decimal max_weight_kg
     integer repetitions

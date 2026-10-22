@@ -1,3 +1,4 @@
+import {accountAccess} from '../src/middleware/active-account.js';
 /**
  * Prueba automatizada del backend: prepara dependencias o datos simulados, ejecuta una operación y usa assert para comprobar el comportamiento. No forma parte del servidor que usa el usuario.
  * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
@@ -16,6 +17,7 @@ test('profile summary uses lifetime totals independently of recent sessions', as
   TrainingSession.count = async () => 27;
   BodyWeightHistory.findAll = async () => [];
   StrengthRecord.findAll = async () => [];
+  t.mock.method(accountAccess,'isActive',async()=>true);
   const server = app.listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));
   t.after(() => {

@@ -68,6 +68,6 @@ try {
 } finally {
   console.error=originalError;
   if(server)await new Promise(resolve=>server.close(resolve));
-  if(user)await user.destroy();
+  if(user)await user.destroy({force:true});
   await sequelize.close();
 }

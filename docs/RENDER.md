@@ -56,6 +56,13 @@ Esto no sustituye los permisos por usuario que aplica Express.
 
 ## 3. Crear el usuario del backend
 
+**Si ejecutaste el instalador antes de incorporar borrado lógico:** no repitas
+`01-bootstrap.sql`. Ejecutá únicamente `backend/sql/supabase/03-soft-delete.sql`
+como `postgres`. Agrega `deleted_at` a diez tablas, conserva las filas e identificadores
+y registra `20261022_soft_delete`. Se puede volver a ejecutar sin duplicar datos.
+Si el usuario SQL ya existía, también se retira su permiso de borrado físico sobre
+esas entidades. En instalaciones nuevas, `01-bootstrap.sql` ya incluye este cambio.
+
 Abrí `backend/sql/supabase/02-backend-role.sql` en una consulta nueva del SQL Editor.
 Reemplazá `REEMPLAZAR_POR_UNA_CONTRASENA_ALEATORIA` por una contraseña nueva de al
 menos 32 caracteres. Podés generar una cadena hexadecimal localmente con:
@@ -190,6 +197,26 @@ runtime: sus permisos están limitados a operar datos.
 - `npm test`: pruebas de backend, frontend e instalador SQL.
 - El instalador es para proyectos nuevos; actualizar una base existente exige una
   migración incremental. No borrar el esquema para aplicar un cambio de código.
+
+### Borrado lógico
+
+Usuarios, ejercicios, rutinas, bloques, prescripciones, sesiones, ejercicios/series
+realizados, pesajes y marcas conservan `deleted_at` (`NULL` significa vigente).
+Sequelize usa `paranoid`: `destroy()` archiva con UPDATE, las consultas normales
+omiten las filas archivadas y `restore()` permite recuperarlas administrativamente.
+El usuario SQL del backend no tiene DELETE sobre esas diez tablas.
+
+Archivar el padre no elimina ni marca automáticamente sus hijos: así se conserva
+el historial. Las consultas operativas validan al padre; un usuario archivado no
+puede iniciar sesión ni usar JWT anteriores. El ranking filtra explícitamente
+cuentas, ejercicios y ejecuciones anuladas. Los nombres de ejercicios y correos
+siguen reservados; para reutilizar el mismo registro se debe restaurar, no crear
+un duplicado. Los horarios y días de descanso pueden seguir reemplazándose;
+schema_migrations y session_mutations conservan sus registros técnicos.
+
+Este cambio prepara el esquema y el comportamiento del backend; no añade botones
+de eliminación/restauración al APK. Una purga física es una operación administrativa
+diferente y no se ejecuta desde el usuario SQL del backend.
 
 Se verificaron las tablas, catálogo, restricciones, aislamiento de los roles públicos,
 operaciones del usuario backend y rechazo de reinstalaciones. No se hizo un despliegue

@@ -1,3 +1,4 @@
+import {accountAccess} from '../src/middleware/active-account.js';
 /** Prueba los handlers con modelos simulados: no lee ni escribe datos reales. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -26,6 +27,7 @@ test('perfil normalizado e historial corporal con dependencias simuladas', async
     const row={id:`weight-${weights.length}`,recordedAt:new Date().toISOString(),...input};
     weights.push(row);return row;
   });
+  t.mock.method(accountAccess,'isActive',async()=>true);
   const server=app.listen(0,'127.0.0.1');
   t.after(()=>server.close());
   await new Promise(resolve=>server.once('listening',resolve));

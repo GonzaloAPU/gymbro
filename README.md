@@ -75,7 +75,7 @@ npm.cmd test
 npm.cmd run android:apk
 ```
 
-`npm test` ejecuta 148 pruebas del backend, las nueve verificaciones de interfaz
+`npm test` ejecuta 165 pruebas del backend, las nueve verificaciones de interfaz
 y 98 casos adicionales de conexión, planificación, sonidos, formularios, fotos y bienvenida.
 Estas últimas también se pueden ejecutar con `npm run test:frontend`; usan servicios
 simulados y no modifican la base real. El APK debug se genera en

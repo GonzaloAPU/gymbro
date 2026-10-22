@@ -43,6 +43,6 @@ try {
   console.log('OK: bienvenida local, propuesta persistente, aislamiento, rollback real, aceptación idempotente, perfil, peso, descansos y horarios.');
 } finally {
   if(server)await new Promise(resolve=>server.close(resolve));
-  if(user)await User.destroy({where:{id:user.id}});
+  if(user)await User.destroy({where:{id:user.id},force:true});
   await sequelize.close();
 }

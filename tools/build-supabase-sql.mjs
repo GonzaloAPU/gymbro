@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {exerciseData} from '../backend/src/data/exercise-catalog.js';
 import {normalizeExerciseName} from '../backend/src/services/exercise-name.js';
 import {normalizeNameSql,exerciseGuardSql,tableChecks} from '../backend/src/services/schema-integrity.js';
+import {softDeleteSql} from '../backend/src/services/soft-delete.js';
 // Solo este proceso generador usa esta conexión ficticia, nunca abre un socket.
 process.env.DB_CONNECTION_MODE='LOCAL';process.env.DATABASE_URL='postgresql://unused:unused@localhost/unused';
 const {sequelize}=await import('../backend/src/db.js');
@@ -66,6 +67,11 @@ SELECT (SELECT count(*) FROM information_schema.tables WHERE table_schema='gymbr
 -- Resultado esperado: 15 tablas, 190 ejercicios, 0 usuarios.`);
 const target=fileURLToPath(new URL('../backend/sql/supabase/01-bootstrap.sql',import.meta.url));
 fs.mkdirSync(fileURLToPath(new URL('../backend/sql/supabase/',import.meta.url)),{recursive:true});
+// El mismo cambio sirve tanto para un proyecto nuevo como para el ya instalado.
+const migration=`-- Ejecutar como postgres sobre la instalación existente. No borra datos.\nBEGIN;\nSET LOCAL search_path TO gymbro, public;\nSELECT pg_advisory_xact_lock(20261022);\n${softDeleteSql('gymbro')}\nCOMMIT;\nSELECT version FROM gymbro.schema_migrations WHERE version='20261022_soft_delete';\n`;
+fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/03-soft-delete.sql',import.meta.url)),migration);
+// Una instalación nueva ya queda en la versión actual antes de confirmar.
+statements.splice(statements.length-1,0,softDeleteSql('gymbro'));
 fs.writeFileSync(target,statements.join('\n\n')+'\n');
 await sequelize.close();
 console.log('OK: instalador Supabase generado desde modelos, restricciones y catálogo.');

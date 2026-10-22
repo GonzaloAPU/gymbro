@@ -25,8 +25,8 @@ exercisesRouter.post('/', async (req, res) => {
   const exercise = await sequelize.transaction(async transaction => {
     // Serializa nombres equivalentes; los índices SQL son la última barrera contra carreras.
     await sequelize.query('SELECT pg_advisory_xact_lock(hashtextextended(:name, 0))',{replacements:{name:normalizedName},transaction});
-    const existing = await Exercise.findOne({where:{normalizedName,...exerciseScope(req.auth.sub)},transaction});
-    if (existing) throw Object.assign(new Error('Ese ejercicio ya existe en el catálogo o entre tus ejercicios. Seleccionalo para usarlo.'),{status:409});
+    const existing = await Exercise.findOne({where:{normalizedName,...exerciseScope(req.auth.sub)},paranoid:false,transaction});
+    if (existing) throw Object.assign(new Error(existing.deletedAt?'Ese ejercicio está archivado. Se debe restaurar, no duplicar.':'Ese ejercicio ya existe en el catálogo o entre tus ejercicios. Seleccionalo para usarlo.'),{status:409});
     return Exercise.create({...input,name:input.name.trim().replace(/\s+/g,' '),normalizedName,createdByUserId:req.auth.sub,movementPattern:input.movementPattern || null},{transaction});
   });
   res.status(201).json(exercise);

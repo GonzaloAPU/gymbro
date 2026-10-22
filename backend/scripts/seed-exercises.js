@@ -9,7 +9,7 @@ try {
   const result = await sequelize.transaction(async transaction => {
     // El bloqueo evita duplicados si dos cargas del catálogo se ejecutan a la vez.
     await sequelize.query('LOCK TABLE exercises IN SHARE ROW EXCLUSIVE MODE', {transaction});
-    const existing = new Set((await Exercise.findAll({attributes:['name'],where:{createdByUserId:null},transaction})).map(row=>normalize(row.name)));
+    const existing = new Set((await Exercise.findAll({attributes:['name'],where:{createdByUserId:null},paranoid:false,transaction})).map(row=>normalize(row.name)));
     let added = 0;
     for (const data of exerciseData) {
       if (existing.has(normalize(data.name))) continue;

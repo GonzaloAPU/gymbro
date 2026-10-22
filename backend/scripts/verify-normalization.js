@@ -65,10 +65,10 @@ try {
 } finally {
   if(server) await new Promise(resolve=>server.close(resolve));
   for(const user of users) {
-    await models.Routine.destroy({where:{userId:user.id}});
-    await models.TrainingSession.destroy({where:{userId:user.id}});
-    await Exercise.destroy({where:{createdByUserId:user.id}});
-    await user.destroy();
+    await models.Routine.destroy({where:{userId:user.id},force:true});
+    await models.TrainingSession.destroy({where:{userId:user.id},force:true});
+    await Exercise.destroy({where:{createdByUserId:user.id},force:true});
+    await user.destroy({force:true});
   }
   await sequelize.close();
 }

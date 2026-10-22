@@ -9,7 +9,7 @@ try {
   const [tables]=await sequelize.query("SELECT count(*)::int AS total FROM information_schema.tables WHERE table_schema='gymbro' AND table_type='BASE TABLE'");
   assert.equal(tables[0].total,15,'Faltan tablas: ejecutar 01-bootstrap.sql antes de desplegar');
   const [migrations]=await sequelize.query('SELECT version FROM gymbro.schema_migrations');
-  for(const version of ['20261020_normalize','20261020_offline_sessions','20261021_welcome'])assert.ok(migrations.some(row=>row.version===version),'Falta migración '+version);
+  for(const version of ['20261020_normalize','20261020_offline_sessions','20261021_welcome','20261022_soft_delete'])assert.ok(migrations.some(row=>row.version===version),'Falta migración '+version);
   const exercises=await Exercise.count({where:{createdByUserId:null}});
   assert.ok(exercises>=190,'Falta el catálogo oficial completo');
   const [access]=await sequelize.query("SELECT has_schema_privilege('anon','gymbro','USAGE') AS exposed, has_table_privilege(current_user,'gymbro.users','INSERT') AS can_write");

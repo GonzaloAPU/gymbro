@@ -20,7 +20,7 @@ test('Supabase: 15 tablas y 190 ejercicios oficiales',async()=>{
   assert.deepEqual(names,exerciseData.map(e=>e.name).sort());
 });
 test('Supabase: no copia datos personales al instalador',()=>{assert.ok(!sql.includes('passwordHash'));assert.ok(!/INSERT INTO [^;]*users/i.test(sql));assert.ok(!sql.includes('data:image/'));});
-test('Supabase: tres migraciones registradas',async()=>assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,3));
+test('Supabase: cuatro migraciones registradas',async()=>assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,4));
 test('Supabase: no modifica tablas de public',async()=>assert.equal((await db.query("SELECT count(*)::int AS total FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")).rows[0].total,0));
 test('Supabase: anon y authenticated no pueden acceder al esquema',async()=>{
   for(const role of ['anon','authenticated','service_role'])assert.equal((await db.query("SELECT has_schema_privilege($1,'gymbro','USAGE') AS allowed",[role])).rows[0].allowed,false);
@@ -48,4 +48,39 @@ test('Supabase: protege duplicados y normaliza ejercicios privados',async()=>{
 test('Supabase: FK y validación de días siguen activas',async()=>{
   await assert.rejects(db.query('INSERT INTO gymbro.user_rest_days(id,user_id,weekday) VALUES ($1,$2,9)',[randomUUID(),user]),/check constraint/);
   await assert.rejects(db.query('INSERT INTO gymbro.user_rest_days(id,user_id,weekday) VALUES ($1,$2,1)',[randomUUID(),randomUUID()]),/foreign key/);
+});
+test('Supabase: 10 tablas admiten borrado lógico',async()=>{
+  const rows=(await db.query("SELECT table_name FROM information_schema.columns WHERE table_schema='gymbro' AND column_name='deleted_at'")).rows;
+  assert.equal(rows.length,10);
+  assert.ok(!rows.some(row=>['routine_schedules','user_rest_days','session_mutations'].includes(row.table_name)));
+});
+test('Supabase: archivar una rutina conserva días e historial',async()=>{
+  const routine=randomUUID(),day=randomUUID(),session=randomUUID();
+  await db.query("INSERT INTO gymbro.routines(id,name,goal,created_at,user_id) VALUES ($1,'Plan','Fuerza',now(),$2)",[routine,user]);
+  await db.query("INSERT INTO gymbro.routine_days(id,name,day_number,routine_id) VALUES ($1,'Día',1,$2)",[day,routine]);
+  await db.query("INSERT INTO gymbro.training_sessions(id,user_id,routine_day_id,status) VALUES ($1,$2,$3,'COMPLETED')",[session,user,day]);
+  await db.exec('SET ROLE gymbro_backend');
+  await db.query('UPDATE gymbro.routines SET deleted_at=now() WHERE id=$1',[routine]);
+  await assert.rejects(db.query('DELETE FROM gymbro.routines WHERE id=$1',[routine]),/permission denied/);
+  assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.routine_days WHERE id=$1',[day])).rows[0].total,1);
+  assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.training_sessions WHERE id=$1',[session])).rows[0].total,1);
+  assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.routines WHERE id=$1 AND deleted_at IS NULL',[routine])).rows[0].total,0);
+  await db.query('UPDATE gymbro.routines SET deleted_at=NULL WHERE id=$1',[routine]);
+  assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.routines WHERE id=$1 AND deleted_at IS NULL',[routine])).rows[0].total,1);
+  await db.exec('RESET ROLE');
+});
+test('Supabase: migración incremental sirve para el instalador anterior y no pierde filas',async()=>{
+  const old=new PGlite();
+  try {
+    // Reproduce la instalación previa: mismas tablas/datos, sin deleted_at ni versión nueva.
+    await old.exec(sql);
+    for(const table of ['users','exercises','routines','routine_days','routine_exercises','training_sessions','performed_exercises','performed_sets','body_weight_histories','strength_records'])await old.exec(`ALTER TABLE gymbro.${table} DROP COLUMN deleted_at`);
+    await old.exec("DELETE FROM gymbro.schema_migrations WHERE version='20261022_soft_delete'");
+    const before=(await old.query('SELECT id FROM gymbro.exercises ORDER BY id')).rows;
+    const patch=fs.readFileSync(new URL('../backend/sql/supabase/03-soft-delete.sql',import.meta.url),'utf8');
+    await old.exec(patch);await old.exec(patch);
+    assert.deepEqual((await old.query('SELECT id FROM gymbro.exercises ORDER BY id')).rows,before);
+    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.exercises WHERE deleted_at IS NULL')).rows[0].total,190);
+    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,4);
+  }finally{await old.close();}
 });

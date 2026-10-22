@@ -2,8 +2,10 @@
 import jwt from 'jsonwebtoken';
 import {app} from '../src/app.js';
 import {config} from '../src/config.js';
+import {accountAccess} from '../src/middleware/active-account.js';
 
 export async function httpClient(t) {
+  t.mock.method(accountAccess,'isActive',async()=>true);
   t.mock.method(console,'error',()=>{});
   const server=app.listen(0,'127.0.0.1');
   t.after(()=>new Promise(resolve=>server.close(resolve)));
