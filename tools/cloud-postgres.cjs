@@ -32,7 +32,7 @@ async function fingerprint(connection) {
   const result = {};
   for (const table of tables) {
     const response = await connection.query(`SELECT count(*)::int AS rows,
-      md5(COALESCE(string_agg(row_to_json(t)::text, E'\n' ORDER BY ${table === 'schema_migrations' ? 'version' : 'id'}), '')) AS digest
+      md5(COALESCE(string_agg(${table === 'schema_migrations' ? "(to_jsonb(t)-'applied_at')::text" : 'row_to_json(t)::text'}, E'\n' ORDER BY ${table === 'schema_migrations' ? 'version' : 'id'}), '')) AS digest
       FROM public."${table}" t`);
     result[table] = response.rows[0];
   }
@@ -158,5 +158,5 @@ async function main() {
     if (local) await local.end();
   }
 }
-module.exports = { localSnapshot, exportSnapshot, tables };
+module.exports = { localSnapshot, exportSnapshot, tables, fingerprint };
 if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });

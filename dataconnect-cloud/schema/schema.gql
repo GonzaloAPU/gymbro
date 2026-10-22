@@ -2,7 +2,7 @@
 # Esta primera superficie GraphQL solo describe el catálogo, no usuarios ni hashes.
 type Exercise @table(name: "exercises") {
   id: UUID!
-  name: String! @col(dataType: "varchar(255)") @unique(indexName: "exercises_name_key")
+  name: String! @col(dataType: "varchar(255)")
   muscleGroup: String! @col(name: "muscle_group", dataType: "varchar(255)")
   equipment: String! @col(dataType: "varchar(255)")
   movementPattern: String @col(name: "movement_pattern", dataType: "varchar(255)")

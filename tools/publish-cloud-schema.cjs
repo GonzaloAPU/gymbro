@@ -15,7 +15,10 @@ async function main() {
   const [service] = await cli('./lib/dataconnect/load').loadAll(project, config);
   if (service.serviceName !== 'projects/gymbro-569e3/locations/southamerica-east1/services/gymbro-569e3-service') throw Error('Destino inesperado.');
   const api = cli('./lib/dataconnect/client');
-  execFileSync(process.execPath, ['--use-system-ca', 'tools/cloud-sql-https.cjs', '--verify'], { stdio: 'inherit' });
+  const verification = process.env.CLOUD_VERIFY_MANIFEST
+    ? ['tools/upgrade-cloud-db.cjs','--verify',process.env.CLOUD_VERIFY_MANIFEST]
+    : ['tools/cloud-sql-https.cjs','--verify'];
+  execFileSync(process.execPath, ['--use-system-ca', ...verification], { stdio: 'inherit' });
   for (const schema of service.schemas) {
     // NONE omite migraciones del esquema SQL importado, no la autorización de
     // consultas. Se conserva la base completa y el conector sigue siendo privado.
@@ -26,7 +29,7 @@ async function main() {
   for (const info of service.connectorInfo) await api.upsertConnector(info.connector);
   const dataplane = cli('./lib/dataconnect/dataplaneClient');
   const response = await dataplane.executeGraphQL(dataplane.dataconnectDataplaneClient(), service.serviceName,
-    { query: 'query { exercises { id name } }' });
+    { query: 'query { exercises(limit: 1000) { id name } }' });
   if (response.body.errors?.length || !Array.isArray(response.body.data?.exercises)) throw Error('El catálogo publicado no responde correctamente.');
   console.log('OK: interfaz GraphQL del catálogo publicada sin migraciones; ' + response.body.data.exercises.length + ' ejercicios consultados.');
 }

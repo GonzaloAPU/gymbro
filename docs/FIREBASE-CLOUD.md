@@ -161,6 +161,31 @@ por HTTPS y consulta el catálogo. El comando genérico `firebase deploy --only
 dataconnect` intenta inspeccionar la base por el socket interceptado por AVG y falla
 en esta máquina; no es necesario desactivar certificados para publicar.
 
+## Actualización del 21 de octubre de 2026
+
+Se aplicaron a la base remota las migraciones `20261020_normalize`,
+`20261020_offline_sessions` y `20261021_welcome`, además del catálogo de 190
+ejercicios. Quedaron 15 tablas. Se conservaron los datos remotos originales;
+no se copiaron las cuentas ni las sesiones actuales de la base local.
+
+El respaldo previo verificado, el SQL aplicado y el manifiesto final están en
+`backups/cloud-upgrade-2026-10-22T01-22-45-819Z/` (nombre en UTC). Se ensayaron
+las migraciones reales del backend en una base temporal y luego se aplicaron
+en una sola transacción HTTPS, comprobando las huellas antes de confirmar.
+La comparación de `schema_migrations` verifica versiones y omite `applied_at`,
+porque la fecha de ejecución cambia entre el ensayo y la nube.
+
+Para verificar este estado sin compararlo con los datos locales posteriores:
+
+```powershell
+node --use-system-ca tools/upgrade-cloud-db.cjs --verify backups/cloud-upgrade-2026-10-22T01-22-45-819Z/after-manifest.json
+```
+
+El modo `--apply` está diseñado para la actualización desde el respaldo inicial:
+rechaza una base modificada y no se usa para futuras migraciones diferentes.
+La interfaz SQL Connect conserva su acceso privado y ya no declara unicidad
+global por nombre, porque la base distingue catálogo oficial y privado.
+
 ## Próximo paso: backend
 
 La base admite el backend Express/Sequelize existente. Para una conexión de servidor
