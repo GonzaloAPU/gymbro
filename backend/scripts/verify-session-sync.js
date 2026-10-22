@@ -9,12 +9,18 @@ const {migrateOfflineSessions}=await import('./migrations/20261020-offline-sessi
 const {app}=await import('../src/app.js');
 const {config}=await import('../src/config.js');
 const {default:jwt}=await import('jsonwebtoken');
+const {migrateLegal}=await import('./migrations/20261022-legal.js');
+const {recordLegalAcceptance,legalDocuments}=await import('../src/services/legal.js');
+const {LegalAcceptance}=await import('../src/models/index.js');
+const fixtureConsent={version:legalDocuments.version,termsAccepted:true,privacyAcknowledged:true,adultConfirmed:true,sportsDataConsent:true};
 let user,server;
 const originalError=console.error;
 try {
+  await migrateLegal();
   await migrateOfflineSessions();
   user=await User.create({name:'Sync test',email:`sync-${randomUUID()}@example.invalid`,passwordHash:'test-only'});
   const exercise=await Exercise.findOne({where:{createdByUserId:null}});assert.ok(exercise);
+  await recordLegalAcceptance(user.id,fixtureConsent);
   server=app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
   const base=`http://127.0.0.1:${server.address().port}/api/sessions`;
   const request=async(path,body,method='POST',owner=user.id)=>{
@@ -68,6 +74,7 @@ try {
 } finally {
   console.error=originalError;
   if(server)await new Promise(resolve=>server.close(resolve));
+  if(user)await LegalAcceptance.destroy({where:{userId:user.id}});
   if(user)await user.destroy({force:true});
   await sequelize.close();
 }

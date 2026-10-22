@@ -7,7 +7,7 @@ THEN RAISE EXCEPTION 'El esquema gymbro ya existe: no se modifica. Usar migracio
 CREATE SCHEMA gymbro;
 SET LOCAL search_path TO gymbro, public;
 
-CREATE TABLE IF NOT EXISTS "gymbro"."users" ("id" UUID , "email" VARCHAR(255) NOT NULL UNIQUE, "password_hash" VARCHAR(255) NOT NULL, "name" VARCHAR(255) NOT NULL, "goal" VARCHAR(255), "height_cm" INTEGER, "gym_name" VARCHAR(255), "discipline" VARCHAR(255), "photo_url" TEXT, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "deleted_at" TIMESTAMP WITH TIME ZONE, PRIMARY KEY ("id"));
+CREATE TABLE IF NOT EXISTS "gymbro"."users" ("id" UUID , "email" VARCHAR(255) NOT NULL UNIQUE, "password_hash" VARCHAR(255) NOT NULL, "name" VARCHAR(255) NOT NULL, "goal" VARCHAR(255), "height_cm" INTEGER, "gym_name" VARCHAR(255), "discipline" VARCHAR(255), "photo_url" TEXT, "leaderboard_opt_in" BOOLEAN NOT NULL DEFAULT false, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "deleted_at" TIMESTAMP WITH TIME ZONE, PRIMARY KEY ("id"));
 
 CREATE TABLE IF NOT EXISTS "gymbro"."user_rest_days" ("id" UUID , "weekday" INTEGER NOT NULL, "user_id" UUID NOT NULL REFERENCES "gymbro"."users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, PRIMARY KEY ("id"));
 
@@ -126,6 +126,28 @@ REVOKE DELETE ON "gymbro"."users","gymbro"."exercises","gymbro"."routines","gymb
 END IF; END $$;
 INSERT INTO "gymbro".schema_migrations(version) VALUES ('20261022_soft_delete') ON CONFLICT(version) DO NOTHING;
 
+ALTER TABLE "gymbro".users ADD COLUMN IF NOT EXISTS leaderboard_opt_in boolean NOT NULL DEFAULT false;
+CREATE TABLE IF NOT EXISTS "gymbro".legal_acceptances (
+ id uuid PRIMARY KEY, user_id uuid NOT NULL REFERENCES "gymbro".users(id) ON DELETE RESTRICT,
+ version varchar(80) NOT NULL, document_hash varchar(64) NOT NULL, documents jsonb NOT NULL,
+ terms_accepted boolean NOT NULL CHECK(terms_accepted),
+ privacy_acknowledged boolean NOT NULL CHECK(privacy_acknowledged),
+ adult_confirmed boolean NOT NULL CHECK(adult_confirmed),
+ sports_data_consent boolean NOT NULL, accepted_at timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS legal_acceptances_user_id_accepted_at ON "gymbro".legal_acceptances(user_id,accepted_at);
+REVOKE ALL ON "gymbro".legal_acceptances FROM PUBLIC;
+DO $$ DECLARE r text; BEGIN
+FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP
+IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname=r) THEN
+EXECUTE format('REVOKE ALL ON "gymbro".legal_acceptances FROM %I',r);
+END IF; END LOOP;
+IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='gymbro_backend') THEN
+GRANT SELECT, INSERT ON "gymbro".legal_acceptances TO gymbro_backend;
+REVOKE UPDATE, DELETE ON "gymbro".legal_acceptances FROM gymbro_backend;
+END IF; END $$;
+INSERT INTO "gymbro".schema_migrations(version) VALUES ('20261022_legal') ON CONFLICT DO NOTHING;
+
 -- El esquema de la aplicación no se expone por REST/GraphQL de Supabase.
 REVOKE ALL ON SCHEMA gymbro FROM PUBLIC;
 REVOKE ALL ON ALL TABLES IN SCHEMA gymbro FROM PUBLIC;
@@ -141,4 +163,4 @@ COMMIT;
 SELECT (SELECT count(*) FROM information_schema.tables WHERE table_schema='gymbro' AND table_type='BASE TABLE') AS tablas,
 (SELECT count(*) FROM gymbro.exercises) AS ejercicios,
 (SELECT count(*) FROM gymbro.users) AS usuarios;
--- Resultado esperado: 15 tablas, 190 ejercicios, 0 usuarios.
+-- Resultado esperado: 16 tablas, 190 ejercicios, 0 usuarios.

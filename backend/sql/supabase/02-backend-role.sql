@@ -23,6 +23,7 @@ TO gymbro_backend;
 -- Solo estas filas auxiliares se reemplazan físicamente desde la aplicación.
 GRANT DELETE ON TABLE gymbro.routine_schedules, gymbro.user_rest_days, gymbro.welcome_plans TO gymbro_backend;
 GRANT SELECT ON gymbro.schema_migrations TO gymbro_backend;
+GRANT SELECT, INSERT ON gymbro.legal_acceptances TO gymbro_backend;
 GRANT EXECUTE ON FUNCTION gymbro.gymbro_normalize_name(text), gymbro.gymbro_exercise_name_guard() TO gymbro_backend;
 ALTER ROLE gymbro_backend SET search_path TO gymbro, public;
 COMMIT;

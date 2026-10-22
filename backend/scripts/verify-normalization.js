@@ -12,9 +12,14 @@ const {migrateOfflineSessions}=await import('./migrations/20261020-offline-sessi
 const {app} = await import('../src/app.js');
 const {config} = await import('../src/config.js');
 const {default:jwt} = await import('jsonwebtoken');
+const {migrateLegal}=await import('./migrations/20261022-legal.js');
+const {recordLegalAcceptance,legalDocuments}=await import('../src/services/legal.js');
+const {LegalAcceptance}=await import('../src/models/index.js');
+const fixtureConsent={version:legalDocuments.version,termsAccepted:true,privacyAcknowledged:true,adultConfirmed:true,sportsDataConsent:true};
 let server;
 const users=[];
 try {
+  await migrateLegal();
   await migrateOfflineSessions();
   const counts = async () => Object.fromEntries(await Promise.all(Object.entries(models).map(async ([key,m])=>[key,await m.count()])));
   const before=await counts(); await normalizeSchema(); assert.deepEqual(await counts(),before,'Repetir la migración no altera datos');
@@ -23,6 +28,7 @@ try {
   assert.ok(!(await sequelize.getQueryInterface().describeTable('routine_days')).schedule);
   const marker=randomUUID();
   for(let index=0;index<2;index++) users.push(await User.create({name:`Prueba ${index}`,email:`normalization-${marker}-${index}@example.invalid`,passwordHash:'test-only'}));
+  for(const account of users)await recordLegalAcceptance(account.id,fixtureConsent);
   server=app.listen(0); await new Promise(resolve=>server.once('listening',resolve));
   const base=`http://127.0.0.1:${server.address().port}/api`;
   const request=async(index,path,method='GET',body)=>{
@@ -68,6 +74,7 @@ try {
     await models.Routine.destroy({where:{userId:user.id},force:true});
     await models.TrainingSession.destroy({where:{userId:user.id},force:true});
     await Exercise.destroy({where:{createdByUserId:user.id},force:true});
+    await LegalAcceptance.destroy({where:{userId:user.id}});
     await user.destroy({force:true});
   }
   await sequelize.close();

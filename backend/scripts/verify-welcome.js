@@ -9,10 +9,16 @@ const {migrateWelcome}=await import('./migrations/20261021-welcome.js');
 const {app}=await import('../src/app.js');
 const {config}=await import('../src/config.js');
 const {default:jwt}=await import('jsonwebtoken');
+const {migrateLegal}=await import('./migrations/20261022-legal.js');
+const {recordLegalAcceptance,legalDocuments}=await import('../src/services/legal.js');
+const {LegalAcceptance}=await import('../src/models/index.js');
+const fixtureConsent={version:legalDocuments.version,termsAccepted:true,privacyAcknowledged:true,adultConfirmed:true,sportsDataConsent:true};
 let user,server;
 try {
+  await migrateLegal();
   await migrateWelcome();
   user=await User.create({name:'Welcome verification',email:`welcome-${randomUUID()}@example.invalid`,passwordHash:'not-a-login'});
+  await recordLegalAcceptance(user.id,fixtureConsent);
   server=app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
   const token=jwt.sign({sub:user.id},config.jwtSecret),base=`http://127.0.0.1:${server.address().port}/api`;
   const request=async(path,body,ownerToken=token)=>{
@@ -43,6 +49,7 @@ try {
   console.log('OK: bienvenida local, propuesta persistente, aislamiento, rollback real, aceptación idempotente, perfil, peso, descansos y horarios.');
 } finally {
   if(server)await new Promise(resolve=>server.close(resolve));
+  if(user)await LegalAcceptance.destroy({where:{userId:user.id}});
   if(user)await User.destroy({where:{id:user.id},force:true});
   await sequelize.close();
 }

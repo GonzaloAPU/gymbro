@@ -32,7 +32,7 @@ progressRouter.get('/leaderboard', async (req, res) => {
       JOIN ${quote(TrainingSession)} s ON s.id = pe.session_id
       JOIN ${quote(User)} u ON u.id = s.user_id
       WHERE e.created_by_user_id IS NULL AND s.status = 'COMPLETED' AND ps.weight_kg > 0 AND ps.repetitions > 0
-        AND u.deleted_at IS NULL AND s.deleted_at IS NULL AND pe.deleted_at IS NULL AND ps.deleted_at IS NULL AND e.deleted_at IS NULL
+        AND u.leaderboard_opt_in = true AND u.deleted_at IS NULL AND s.deleted_at IS NULL AND pe.deleted_at IS NULL AND ps.deleted_at IS NULL AND e.deleted_at IS NULL
     ), best AS (
       SELECT *, row_number() OVER (PARTITION BY category, user_id ORDER BY weight_kg DESC, repetitions DESC, completed_at ASC, id ASC) AS personal_best
       FROM candidates WHERE category IS NOT NULL

@@ -14,6 +14,8 @@ import { errorHandler } from "./middleware/error-handler.js";
 import {welcomeRouter} from './routes/welcome.js';
 import {requireAuth} from './middleware/auth.js';
 import {requireActiveAccount} from './middleware/active-account.js';
+import {legalRouter} from './routes/legal.js';
+import {requireLegal} from './services/legal.js';
 
 export const app = express();
 // Capacitor sirve los archivos instalados desde https://localhost dentro de Android.
@@ -25,8 +27,13 @@ app.use(express.json({ limit: '1mb' }));
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "smartgymbro-api" }));
 app.use('/api',(req,res,next)=>{
-  if(['/auth/register','/auth/login'].includes(req.path))return next();
+  if(['/auth/register','/auth/login','/legal/documents','/legal/privacy','/legal/terms'].includes(req.path))return next();
   requireAuth(req,res,()=>requireActiveAccount(req,res,next));
+});
+app.use('/api/legal',legalRouter);
+app.use('/api',(req,res,next)=>{
+  if(['/auth/register','/auth/login','/auth/me'].includes(req.path)&&req.method!=='PATCH')return next();
+  requireLegal(req,res,next);
 });
 app.use("/api/auth", authRouter);
 app.use("/api/routines", routinesRouter);

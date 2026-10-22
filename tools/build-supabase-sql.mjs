@@ -6,6 +6,7 @@ import {exerciseData} from '../backend/src/data/exercise-catalog.js';
 import {normalizeExerciseName} from '../backend/src/services/exercise-name.js';
 import {normalizeNameSql,exerciseGuardSql,tableChecks} from '../backend/src/services/schema-integrity.js';
 import {softDeleteSql} from '../backend/src/services/soft-delete.js';
+import {legalSchemaSql} from '../backend/src/services/legal-schema.js';
 // Solo este proceso generador usa esta conexión ficticia, nunca abre un socket.
 process.env.DB_CONNECTION_MODE='LOCAL';process.env.DATABASE_URL='postgresql://unused:unused@localhost/unused';
 const {sequelize}=await import('../backend/src/db.js');
@@ -21,6 +22,7 @@ CREATE SCHEMA gymbro;
 SET LOCAL search_path TO gymbro, public;`];
 const models=sequelize.modelManager.getModelsTopoSortedByForeignKey().reverse();
 for(const model of models){
+  if(model.name==='LegalAcceptance')continue; // DDL compartido con la migración incremental.
   const table={tableName:model.tableName,schema:'gymbro'};
   const attributes=Object.fromEntries(Object.entries(model.rawAttributes).map(([name,attribute])=>{
     const copy={...attribute};
@@ -64,7 +66,7 @@ COMMIT;
 SELECT (SELECT count(*) FROM information_schema.tables WHERE table_schema='gymbro' AND table_type='BASE TABLE') AS tablas,
 (SELECT count(*) FROM gymbro.exercises) AS ejercicios,
 (SELECT count(*) FROM gymbro.users) AS usuarios;
--- Resultado esperado: 15 tablas, 190 ejercicios, 0 usuarios.`);
+-- Resultado esperado: 16 tablas, 190 ejercicios, 0 usuarios.`);
 const target=fileURLToPath(new URL('../backend/sql/supabase/01-bootstrap.sql',import.meta.url));
 fs.mkdirSync(fileURLToPath(new URL('../backend/sql/supabase/',import.meta.url)),{recursive:true});
 // El mismo cambio sirve tanto para un proyecto nuevo como para el ya instalado.
@@ -72,6 +74,8 @@ const migration=`-- Ejecutar como postgres sobre la instalación existente. No b
 fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/03-soft-delete.sql',import.meta.url)),migration);
 // Una instalación nueva ya queda en la versión actual antes de confirmar.
 statements.splice(statements.length-1,0,softDeleteSql('gymbro'));
+statements.splice(statements.length-1,0,legalSchemaSql('gymbro'));
+fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/04-legal-consents.sql',import.meta.url)),`-- Aplicar ANTES de actualizar Render. No borra datos ni acepta documentos por los usuarios.\nBEGIN;\nSELECT pg_advisory_xact_lock(20261023);\n${legalSchemaSql('gymbro')}\nCOMMIT;\nSELECT version FROM gymbro.schema_migrations WHERE version='20261022_legal';\n`);
 fs.writeFileSync(target,statements.join('\n\n')+'\n');
 await sequelize.close();
 console.log('OK: instalador Supabase generado desde modelos, restricciones y catálogo.');

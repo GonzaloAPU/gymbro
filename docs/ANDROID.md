@@ -2,6 +2,20 @@
 
 La aplicación reutiliza Angular dentro de Capacitor 8. Sus archivos se instalan en el teléfono: no abre una web alojada remotamente. Identificador inicial: `com.smartgymbro.app`. Android mínimo: 7 (API 24); objetivo: Android 16 (API 36).
 
+## APK 0.3.1 con servidor preconfigurado y privacidad
+
+Incluye `https://gymbro-api-t7mg.onrender.com` como servidor predeterminado y ya no
+requiere configurar la conexión en la primera apertura. La actualización migra una
+vez las instalaciones anteriores al servidor público. Si antes usaban otro servidor,
+se retiran su token y perfil locales; los respaldos de entrenamientos no se borran
+y siguen separados por servidor/cuenta. Una sesión de Render ya configurada se conserva.
+La pantalla Conexión sigue disponible para diagnóstico; después de cerrar sesión
+permite cambiar manualmente de servidor. El navegador conserva el proxy de desarrollo.
+Versión Android: `0.3.1`, código `3`. Incluye términos, privacidad y consentimientos separados.
+Antes de instalarla sobre el servicio publicado, seguir el orden SQL → Render → APK de
+[privacidad](PRIVACIDAD.md). El APK directo conserva la firma debug de pruebas;
+una publicación en Play Store requiere preparar la firma de distribución.
+
 ## Preparar el APK
 
 Requisitos: Node 22 o superior, JDK 21, Android SDK 36 y Build Tools 36.0.0. El plugin de alarmas necesita específicamente la toolchain Java 21. Android Studio permite instalar el SDK y aceptar sus licencias. No se acepta ninguna licencia automáticamente desde los comandos del proyecto.
@@ -21,12 +35,12 @@ El compilador busca `ANDROID_HOME`, `ANDROID_SDK_ROOT`, el SDK habitual de Windo
 
 1. Iniciar PostgreSQL y el backend como hasta ahora: `docker compose up -d` y `npm.cmd run dev:backend`.
 2. Instalar el APK en el teléfono y conectarlo al mismo Wi-Fi que la PC.
-3. En la primera apertura, indicar `http://IP-DE-TU-PC:3000`. Podés encontrar la IPv4 del adaptador Wi-Fi con `ipconfig`. En un emulador Android de esa PC, usar `http://10.0.2.2:3000`.
+3. Para cambiar el servidor de producción por uno local, abrir Conexión desde el ingreso e indicar `http://IP-DE-TU-PC:3000`. Podés encontrar la IPv4 del adaptador Wi-Fi con `ipconfig`. En un emulador Android de esa PC, usar `http://10.0.2.2:3000`.
 4. Comprobar la conexión e ingresar con una cuenta existente. Si Windows bloquea el acceso, permitir únicamente el puerto 3000 en la red privada para las pruebas. No abrir PostgreSQL a Internet.
 
 `localhost` en el teléfono significa el propio teléfono. La dirección configurada es la del backend Express, nunca la de Firebase ni la de PostgreSQL. Se puede volver a cambiar desde «Configurar conexión al servidor» en el ingreso; cerrar sesión antes de cambiarla evita enviar credenciales a otro servidor.
 
-HTTP está permitido únicamente en el APK debug para la red de pruebas. La variante release exige HTTPS. Para el lanzamiento configuraremos la dirección HTTPS definitiva al desplegar el backend. La app no contiene contraseñas de la base ni claves administrativas de Firebase.
+HTTP está permitido únicamente en el APK debug para la red de pruebas. La variante release exige HTTPS. La dirección HTTPS de Render ya está preconfigurada. La app no contiene contraseñas de la base ni claves administrativas.
 
 ## Cambios de experiencia
 

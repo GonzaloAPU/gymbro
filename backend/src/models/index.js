@@ -16,7 +16,23 @@ export const User = sequelize.define("User", {
   gymName: DataTypes.STRING,
   discipline: DataTypes.STRING,
   photoUrl: DataTypes.TEXT,
+  leaderboardOptIn: {type:DataTypes.BOOLEAN,allowNull:false,defaultValue:false},
 }, {paranoid:true});
+
+// Recibo inmutable de cada aceptación o retiro de consentimiento; conserva el texto leído.
+export const LegalAcceptance = sequelize.define('LegalAcceptance', {
+  id:{type:DataTypes.UUID,defaultValue:DataTypes.UUIDV4,primaryKey:true},
+  version:{type:DataTypes.STRING(80),allowNull:false},
+  documentHash:{type:DataTypes.STRING(64),allowNull:false},
+  documents:{type:DataTypes.JSONB,allowNull:false},
+  termsAccepted:{type:DataTypes.BOOLEAN,allowNull:false},
+  privacyAcknowledged:{type:DataTypes.BOOLEAN,allowNull:false},
+  adultConfirmed:{type:DataTypes.BOOLEAN,allowNull:false},
+  sportsDataConsent:{type:DataTypes.BOOLEAN,allowNull:false},
+  acceptedAt:{type:DataTypes.DATE,allowNull:false},
+}, {timestamps:false,indexes:[{fields:['user_id','accepted_at']}]});
+User.hasMany(LegalAcceptance,{foreignKey:{name:'userId',allowNull:false},as:'legalAcceptances',onDelete:'RESTRICT'});
+LegalAcceptance.belongsTo(User,{foreignKey:'userId',as:'user'});
 
 // Un descanso por fila; el índice compuesto impide repetir el mismo día por usuario.
 export const UserRestDay = sequelize.define('UserRestDay', {
@@ -185,6 +201,7 @@ StrengthRecord.belongsTo(Exercise, { foreignKey: "exerciseId", as: "exercise" })
 
 // Agrupa los modelos para utilidades que necesitan recorrerlos o reutilizarlos juntos.
 export const models = {
+  LegalAcceptance,
   WelcomePlan, SessionMutation, User, UserRestDay, Exercise, Routine, RoutineDay, RoutineExercise, RoutineSchedule, TrainingSession,
   PerformedExercise, PerformedSet, BodyWeightHistory, StrengthRecord,
 };

@@ -1,3 +1,4 @@
+import {legalAccess} from '../src/services/legal.js';
 import {accountAccess} from '../src/middleware/active-account.js';
 /**
  * Prueba automatizada del backend: prepara dependencias o datos simulados, ejecuta una operación y usa assert para comprobar el comportamiento. No forma parte del servidor que usa el usuario.
@@ -22,6 +23,7 @@ test('repeating a series updates its record and enforces session ownership', asy
   PerformedExercise.findOne = async () => ({ id: 'exercise' });
   PerformedSet.findOne = async () => exists ? saved : null;
   t.mock.method(accountAccess,'isActive',async()=>true);
+  t.mock.method(legalAccess,'status',async()=>({needsAcceptance:false,sportsDataConsent:true}));
   const server = app.listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));
   t.after(() => {

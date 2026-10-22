@@ -10,6 +10,7 @@ import { User, RoutineSchedule, RoutineDay, Routine, BodyWeightHistory, UserRest
 import { sequelize } from '../db.js';
 import { config } from "../config.js";
 import { requireAuth } from "../middleware/auth.js";
+import {legalInput,recordLegalAcceptance} from '../services/legal.js';
 
 export const authRouter = Router();
 
@@ -19,10 +20,15 @@ authRouter.post("/register", async (req, res) => {
     name: z.string().min(2),
     email: z.string().email(),
     password: z.string().min(8),
+    legal: legalInput,
   }).parse(req.body);
-  const { password, ...profile } = input;
+  const { password, legal, ...profile } = input;
   const passwordHash = await bcrypt.hash(password, 12);
-  const user = await User.create({ ...profile, passwordHash });
+  const user = await sequelize.transaction(async transaction=>{
+    const account=await User.create({...profile,passwordHash},{transaction});
+    await recordLegalAcceptance(account.id,legal,transaction);
+    return account;
+  });
   const token = jwt.sign({ sub: user.id, email: user.email }, config.jwtSecret, { expiresIn: "7d" });
   res.status(201).json({ token, user: await publicUser(user) });
 });
@@ -49,6 +55,7 @@ authRouter.get("/me", requireAuth, async (req, res) => {
 authRouter.patch("/me", requireAuth, async (req, res) => {
   const input = z.object({
     name: z.string().min(2).max(80).optional(),
+    leaderboardOptIn: z.boolean().optional(),
     goal: z.string().max(160).nullable().optional(),
     heightCm: z.number().int().min(100).max(250).nullable().optional(),
     currentKg: z.number().positive().max(500).nullable().optional(),

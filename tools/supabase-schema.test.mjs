@@ -13,14 +13,14 @@ await db.exec(sql);
 const roleSql=fs.readFileSync(new URL('../backend/sql/supabase/02-backend-role.sql',import.meta.url),'utf8');
 const user=randomUUID();
 await db.query("INSERT INTO gymbro.users(id,email,password_hash,name,created_at,updated_at) VALUES ($1,'test@example.invalid','not-a-real-hash','Prueba',now(),now())",[user]);
-test('Supabase: 15 tablas y 190 ejercicios oficiales',async()=>{
+test('Supabase: 16 tablas y 190 ejercicios oficiales',async()=>{
   const rows=(await db.query("SELECT count(*)::int AS total FROM information_schema.tables WHERE table_schema='gymbro' AND table_type='BASE TABLE'")).rows;
-  assert.equal(rows[0].total,15);
+  assert.equal(rows[0].total,16);
   const names=(await db.query('SELECT name FROM gymbro.exercises')).rows.map(e=>e.name).sort();
   assert.deepEqual(names,exerciseData.map(e=>e.name).sort());
 });
 test('Supabase: no copia datos personales al instalador',()=>{assert.ok(!sql.includes('passwordHash'));assert.ok(!/INSERT INTO [^;]*users/i.test(sql));assert.ok(!sql.includes('data:image/'));});
-test('Supabase: cuatro migraciones registradas',async()=>assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,4));
+test('Supabase: cinco migraciones registradas',async()=>assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,5));
 test('Supabase: no modifica tablas de public',async()=>assert.equal((await db.query("SELECT count(*)::int AS total FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")).rows[0].total,0));
 test('Supabase: anon y authenticated no pueden acceder al esquema',async()=>{
   for(const role of ['anon','authenticated','service_role'])assert.equal((await db.query("SELECT has_schema_privilege($1,'gymbro','USAGE') AS allowed",[role])).rows[0].allowed,false);
@@ -81,6 +81,30 @@ test('Supabase: migración incremental sirve para el instalador anterior y no pi
     await old.exec(patch);await old.exec(patch);
     assert.deepEqual((await old.query('SELECT id FROM gymbro.exercises ORDER BY id')).rows,before);
     assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.exercises WHERE deleted_at IS NULL')).rows[0].total,190);
-    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,4);
+    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,5);
   }finally{await old.close();}
+});
+test('Supabase: migración legal se puede repetir sin crear consentimientos ni publicar cuentas',async()=>{
+  const old=new PGlite();
+  try{
+    await old.exec(sql);
+    await old.exec('DROP TABLE gymbro.legal_acceptances; ALTER TABLE gymbro.users DROP COLUMN leaderboard_opt_in;');
+    await old.exec("DELETE FROM gymbro.schema_migrations WHERE version='20261022_legal'");
+    const id=randomUUID();
+    await old.query("INSERT INTO gymbro.users(id,email,password_hash,name,created_at,updated_at) VALUES ($1,'old@example.test','hash','Anterior',now(),now())",[id]);
+    const patch=fs.readFileSync(new URL('../backend/sql/supabase/04-legal-consents.sql',import.meta.url),'utf8');
+    await old.exec(patch);await old.exec(patch);
+    assert.equal((await old.query('SELECT leaderboard_opt_in FROM gymbro.users WHERE id=$1',[id])).rows[0].leaderboard_opt_in,false);
+    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.legal_acceptances')).rows[0].total,0);
+    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,5);
+  }finally{await old.close();}
+});
+test('Supabase: backend registra recibos pero no puede alterarlos ni borrarlos',async()=>{
+  await db.exec('SET ROLE gymbro_backend');
+  try{
+    const id=randomUUID();
+    await db.query("INSERT INTO gymbro.legal_acceptances(id,user_id,version,document_hash,documents,terms_accepted,privacy_acknowledged,adult_confirmed,sports_data_consent,accepted_at) VALUES ($1,$2,'test','hash','{}',true,true,true,false,now())",[id,user]);
+    await assert.rejects(db.query('UPDATE gymbro.legal_acceptances SET sports_data_consent=true WHERE id=$1',[id]),/permission denied/);
+    await assert.rejects(db.query('DELETE FROM gymbro.legal_acceptances WHERE id=$1',[id]),/permission denied/);
+  }finally{await db.exec('RESET ROLE');}
 });

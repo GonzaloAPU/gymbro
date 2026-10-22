@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const ts = require('typescript');
 const { throwError } = require('rxjs');
 const storage = new Map();
-const localStorage = { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) };
+const localStorage = { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value),removeItem:key=>storage.delete(key) };
 const signal = initial => { let value = initial; const read = () => value; read.set = next => { value = next; }; return read; };
 let native = true;
 let endpoint;
@@ -25,8 +25,15 @@ function load(path) {
   } });
   return exports;
 }
-const { ApiEndpointService, normalizeServer } = load('frontend/src/app/services/api-endpoint.service.ts');
+const { ApiEndpointService, normalizeServer,DEFAULT_API_SERVER } = load('frontend/src/app/services/api-endpoint.service.ts');
 endpoint = new ApiEndpointService();
+assert.equal(endpoint.server(),'https://gymbro-api-t7mg.onrender.com');
+assert.equal(storage.get('gymbro.api-server'),DEFAULT_API_SERVER);
+storage.delete('gymbro.default-api-version');storage.set('gymbro.api-server','http://192.168.1.20:3000');storage.set('smartgymbro_token','old-server-token');storage.set('smartgymbro_user','old-profile');storage.set('workout-backup','preserve');
+endpoint=new ApiEndpointService();
+assert.equal(endpoint.server(),DEFAULT_API_SERVER);
+assert.equal(storage.has('smartgymbro_token'),false);assert.equal(storage.has('smartgymbro_user'),false);assert.equal(storage.get('workout-backup'),'preserve');
+storage.set('smartgymbro_token','current-server-token');new ApiEndpointService();assert.equal(storage.get('smartgymbro_token'),'current-server-token');storage.delete('smartgymbro_token');
 assert.equal(normalizeServer(' https://example.com/ '), 'https://example.com');
 for (const value of ['file:///local', 'https://user:password@example.com', 'https://example.com/path', 'https://example.com/?key=secret']) {
   assert.throws(() => normalizeServer(value));
@@ -35,8 +42,11 @@ const { authInterceptor } = load('frontend/src/app/interceptors/auth.interceptor
 let sent;
 const request = url => ({ url, clone: changes => ({ url, ...changes }) });
 const next = value => { sent = value; return value; };
+authInterceptor(request('/api/auth/me'), next);
+assert.equal(sent.url,DEFAULT_API_SERVER+'/api/auth/me','Android conecta a Render sin configurar manualmente');
+endpoint.server.set('');sent=undefined;
 authInterceptor(request('/api/auth/me'), next).subscribe({ error: error => assert.match(error.message, /Configurá/) });
-assert.equal(sent, undefined, 'Sin servidor Android no debe enviar credenciales al origen local');
+assert.equal(sent,undefined,'Un servidor vacío no recibe credenciales');
 endpoint.save('http://192.168.1.20:3000');
 authInterceptor(request('/api/auth/me'), next);
 assert.equal(sent.url, 'http://192.168.1.20:3000/api/auth/me');

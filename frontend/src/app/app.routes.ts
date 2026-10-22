@@ -14,17 +14,22 @@ import { authGuard } from './guards/auth.guard';
 import { RoutineBuilderComponent } from './components/routine-builder.component';
 import { ConnectionComponent } from './components/connection.component';
 import {welcomeGuard} from './guards/welcome.guard';
+import {legalGuard} from './guards/legal.guard';
 
 export const routes: Routes = [
+  {path:'privacidad/ajustes',loadComponent:()=>import('./components/privacy-settings.component').then(m=>m.PrivacySettingsComponent),canActivate:[authGuard,legalGuard]},
+  {path:'terminos',loadComponent:()=>import('./components/legal.component').then(m=>m.LegalComponent)},
+  {path:'privacidad',data:{kind:'privacy'},loadComponent:()=>import('./components/legal.component').then(m=>m.LegalComponent)},
+  {path:'consentimiento',loadComponent:()=>import('./components/consent.component').then(m=>m.ConsentComponent),canActivate:[authGuard]},
   { path: 'conexion', component: ConnectionComponent },
   { path: 'login', component: LoginComponent },
   { path: 'registro', component: RegisterComponent },
-  { path: 'bienvenida', loadComponent:()=>import('./components/welcome.component').then(module=>module.WelcomeComponent),canActivate:[authGuard] },
-  { path: '', component: DashboardComponent, canActivate: [authGuard,welcomeGuard] },
-  { path: 'entrenamiento', component: WorkoutRouteComponent, canActivate: [authGuard] },
-  { path: 'progreso', component: ProgressComponent, canActivate: [authGuard] },
-  { path: 'perfil', component: ProfileViewComponent, canActivate: [authGuard] },
-  { path: 'perfil/editar', component: ProfileComponent, canActivate: [authGuard] },
-  { path: 'rutinas/nueva', component: RoutineBuilderComponent, canActivate: [authGuard] },
+  { path: 'bienvenida',data:{sports:true}, loadComponent:()=>import('./components/welcome.component').then(module=>module.WelcomeComponent),canActivate:[authGuard,legalGuard] },
+  { path: '', component: DashboardComponent, canActivate: [authGuard,legalGuard,welcomeGuard] },
+  { path: 'entrenamiento',data:{sports:true}, component: WorkoutRouteComponent, canActivate: [authGuard,legalGuard] },
+  { path: 'progreso', component: ProgressComponent, canActivate: [authGuard,legalGuard] },
+  { path: 'perfil', component: ProfileViewComponent, canActivate: [authGuard,legalGuard] },
+  { path: 'perfil/editar', component: ProfileComponent, canActivate: [authGuard,legalGuard] },
+  { path: 'rutinas/nueva', component: RoutineBuilderComponent, canActivate: [authGuard,legalGuard] },
   { path: '**', redirectTo: '' },
 ];

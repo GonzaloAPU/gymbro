@@ -19,6 +19,7 @@ function loadComponent(file,services={},globals={}) {
       if(name==='@angular/common/http')return {HttpErrorResponse};
       if(name==='@angular/common')return {};
       if(name.includes('alarm-settings.component'))return {AlarmSettingsComponent:class {}};
+      if(name.includes('legal.service'))return {LegalService:'legal',legalDocuments:require('../../shared/legal-documents.json')};
       if(name.includes('auth.service'))return {AuthService:'auth'};
       if(name.includes('api-endpoint.service'))return {ApiEndpointService:'endpoint'};
       if(name.includes('exercise.service'))return {ExerciseService:'exercises'};

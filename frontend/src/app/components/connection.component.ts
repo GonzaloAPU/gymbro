@@ -1,4 +1,4 @@
-/** Pantalla inicial de Android para probar el backend local antes de publicarlo. */
+/** Configuración técnica opcional; el APK ya incluye el servidor de producción. */
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiEndpointService } from '../services/api-endpoint.service';
@@ -9,10 +9,10 @@ import { ApiEndpointService } from '../services/api-endpoint.service';
   template: `
     <section class="page connection">
       <p class="eyebrow">GYMBRO ANDROID</p><h1>Conectá tu gimnasio</h1>
-      <p>Mientras probamos la aplicación, indicá dónde está funcionando el backend.</p>
+      <p>Gymbro ya incluye su servidor. Esta pantalla permite comprobar la conexión o configurar otro servidor de pruebas.</p>
       <label for="server">Dirección del servidor</label>
       <input id="server" #server type="url" [value]="endpoint.server()" placeholder="http://192.168.1.20:3000" autocomplete="url" autocapitalize="off">
-      <p>En tu teléfono usá la IP de tu PC y conectate al mismo Wi-Fi. En el emulador Android: http://10.0.2.2:3000. Para el lanzamiento usaremos HTTPS.</p>
+      <p>La conexión pública usa HTTPS. Para cambiar de servidor, cerrá sesión primero.</p>
       <button class="button primary" [disabled]="checking()" (click)="save(server.value)">{{ checking() ? 'Comprobando…' : 'Guardar y comprobar conexión' }}</button>
       <p role="status">{{ message() }}</p>
       <a class="button ghost" routerLink="/login">Volver a ingresar</a>

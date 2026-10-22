@@ -5,11 +5,13 @@ import { migrateOfflineSessions } from './migrations/20261020-offline-sessions.j
 import { normalizeSchema } from './migrations/20261020-normalize.js';
 import { migrateWelcome } from './migrations/20261021-welcome.js';
 import {migrateSoftDelete} from './migrations/20261022-soft-delete.js';
+import {migrateLegal} from './migrations/20261022-legal.js';
 try {
  await sequelize.authenticate();
  await normalizeSchema();
  await migrateOfflineSessions();
  await migrateWelcome();
  await migrateSoftDelete();
+ await migrateLegal();
  console.log('Migraciones verificadas: esquema normalizado.');
 } finally { await sequelize.close(); }

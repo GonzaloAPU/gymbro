@@ -1,3 +1,4 @@
+import {legalAccess} from '../src/services/legal.js';
 import {accountAccess} from '../src/middleware/active-account.js';
 /**
  * Prueba automatizada del backend: prepara dependencias o datos simulados, ejecuta una operación y usa assert para comprobar el comportamiento. No forma parte del servidor que usa el usuario.
@@ -18,6 +19,7 @@ test('profile summary uses lifetime totals independently of recent sessions', as
   BodyWeightHistory.findAll = async () => [];
   StrengthRecord.findAll = async () => [];
   t.mock.method(accountAccess,'isActive',async()=>true);
+  t.mock.method(legalAccess,'status',async()=>({needsAcceptance:false,sportsDataConsent:true}));
   const server = app.listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));
   t.after(() => {

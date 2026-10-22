@@ -1,3 +1,4 @@
+import {legalAccess} from '../src/services/legal.js';
 import {accountAccess} from '../src/middleware/active-account.js';
 /**
  * Prueba automatizada del backend: prepara dependencias o datos simulados, ejecuta una operación y usa assert para comprobar el comportamiento. No forma parte del servidor que usa el usuario.
@@ -20,6 +21,7 @@ test('exercise creation validates table fields and rejects duplicate names', asy
   Exercise.findOne = async () => duplicate ? { id: 'existing' } : null;
   Exercise.create = async data => { created = data; return { id: 'new-exercise', ...data }; };
   t.mock.method(accountAccess,'isActive',async()=>true);
+  t.mock.method(legalAccess,'status',async()=>({needsAcceptance:false,sportsDataConsent:true}));
   const server = app.listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));
   t.after(() => { [Exercise.findOne, Exercise.create, sequelize.transaction, sequelize.query] = originals; server.close(); });

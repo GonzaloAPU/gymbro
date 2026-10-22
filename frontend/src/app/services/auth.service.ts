@@ -5,6 +5,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { catchError, tap, throwError, timeout } from 'rxjs';
+import type {LegalInput} from './legal.service';
 
 // Contrato de datos: describe campos y tipos para detectar errores durante la compilación.
 export interface UserProfile {
@@ -18,6 +19,7 @@ export interface UserProfile {
   discipline: string | null;
   photoUrl: string | null;
   restDays: number[];
+  leaderboardOptIn?: boolean;
 }
 
 // Contrato de datos: describe campos y tipos para detectar errores durante la compilación.
@@ -51,7 +53,7 @@ export class AuthService {
   }
 
   /** Solicita crear la cuenta y guarda la sesión devuelta; convierte la espera excesiva en un mensaje comprensible. */
-  register(data: { name: string; email: string; password: string }) {
+  register(data: { name: string; email: string; password: string;legal:LegalInput }) {
     return this.http.post<AuthResponse>('/api/auth/register', data).pipe(
       timeout(20000),
       catchError((error) => throwError(() => error.name === 'TimeoutError'
@@ -68,8 +70,13 @@ export class AuthService {
   }
 
   /** Envía únicamente los campos a modificar y guarda el perfil confirmado por el servidor. */
-  updateProfile(data: Partial<Pick<UserProfile, 'name' | 'goal' | 'heightCm' | 'currentKg' | 'gymName' | 'discipline' | 'photoUrl' | 'restDays'>>) {
-    return this.http.patch<UserProfile>('/api/auth/me', data).pipe(
+  updateProfile(data: Partial<Pick<UserProfile, 'name' | 'goal' | 'heightCm' | 'currentKg' | 'gymName' | 'discipline' | 'photoUrl' | 'restDays' | 'leaderboardOptIn'>>) {
+    const changes={...data};
+    // Editar nombre o foto no debe reenviar medidas que el usuario no modificó.
+    for(const key of ['heightCm','currentKg','goal','discipline'] as const){
+      if(changes[key]===this.user()?.[key])delete changes[key];
+    }
+    return this.http.patch<UserProfile>('/api/auth/me', changes).pipe(
       tap((user) => this.saveUser(user)),
     );
   }

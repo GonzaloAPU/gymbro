@@ -1,3 +1,4 @@
+import {legalAccess} from '../src/services/legal.js';
 import {accountAccess} from '../src/middleware/active-account.js';
 /** Prueba los handlers con modelos simulados: no lee ni escribe datos reales. */
 import test from 'node:test';
@@ -28,6 +29,7 @@ test('perfil normalizado e historial corporal con dependencias simuladas', async
     weights.push(row);return row;
   });
   t.mock.method(accountAccess,'isActive',async()=>true);
+  t.mock.method(legalAccess,'status',async()=>({needsAcceptance:false,sportsDataConsent:true}));
   const server=app.listen(0,'127.0.0.1');
   t.after(()=>server.close());
   await new Promise(resolve=>server.once('listening',resolve));

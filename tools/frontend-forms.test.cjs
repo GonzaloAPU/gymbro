@@ -43,6 +43,7 @@ function authFixture(kind){
   const auth={login:body=>{state.sent.push(body);return pending;},register:body=>{state.sent.push(body);return pending;}};
   const result=loadComponent(`frontend/src/app/components/${kind}.component.ts`,{auth,endpoint:{native:true},router:{navigateByUrl:url=>state.routes.push(url)}});
   const screen=new result[kind==='login'?'LoginComponent':'RegisterComponent']();
+  if(kind==='register'){screen.terms.set(true);screen.privacy.set(true);screen.adult.set(true);screen.sports.set(true);}
   const submit=kind==='login'?()=>screen.submit(event(),'ana@example.test','Password1!'):()=>screen.submit(event(),' Ana ','ana@example.test','Password1!','Password1!');
   return {screen,state,pending,submit};
 }
@@ -54,7 +55,7 @@ test('ingreso: conserva mensaje de tiempo de espera',()=>{const {screen,pending,
 test('ingreso: doble envío mientras espera no duplica solicitudes',()=>{const {state,submit}=authFixture('login');submit();submit();assert.equal(state.sent.length,1);});
 test('registro: nombre solo de espacios se rechaza',()=>{const {screen,state}=authFixture('register');screen.submit(event(),'  ','a@b.test','Password1!','Password1!');assert.equal(state.sent.length,0);assert.ok(screen.error());});
 test('registro: confirmación distinta no llama al backend',()=>{const {screen,state}=authFixture('register');screen.submit(event(),'Ana','a@b.test','Password1!','Password2!');assert.equal(state.sent.length,0);assert.ok(screen.error());});
-test('registro: recorta nombre y no envía confirmación de contraseña',()=>{const {state,submit}=authFixture('register');submit();assert.deepEqual(plain(state.sent[0]),{name:'Ana',email:'ana@example.test',password:'Password1!'});});
+test('registro: recorta nombre y no envía confirmación de contraseña',()=>{const {state,submit}=authFixture('register');submit();assert.deepEqual(plain(state.sent[0]),{name:'Ana',email:'ana@example.test',password:'Password1!',legal:{version:require('../shared/legal-documents.json').version,termsAccepted:true,privacyAcknowledged:true,adultConfirmed:true,sportsDataConsent:true}});});
 test('registro: navega a bienvenida solo tras respuesta exitosa',()=>{const {screen,state,pending,submit}=authFixture('register');submit();assert.equal(state.routes.length,0);assert.equal(screen.loading(),true);pending.next({});pending.complete();assert.deepEqual(state.routes,['/bienvenida']);assert.equal(screen.loading(),false);});
 test('registro: email ocupado mantiene formulario y libera envío',()=>{const {screen,state,pending,submit}=authFixture('register');submit();pending.error(new HttpErrorResponse('Email ocupado'));assert.equal(screen.error(),'Email ocupado');assert.equal(screen.loading(),false);assert.equal(state.routes.length,0);});
 test('registro: doble envío mientras espera no crea dos cuentas',()=>{const {state,submit}=authFixture('register');submit();submit();assert.equal(state.sent.length,1);});

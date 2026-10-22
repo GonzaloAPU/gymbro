@@ -25,6 +25,7 @@ import { ApiEndpointService } from '../services/api-endpoint.service';
         @if (error()) { <div class="form-error">{{ error() }}</div> }
         <button class="button primary" type="submit" [disabled]="loading()">{{ loading() ? 'Ingresando…' : 'Ingresar' }} <span>→</span></button>
         <div class="switch">¿No tenés cuenta? <a routerLink="/registro">Crear cuenta</a></div>
+        <p class="switch"><a routerLink="/terminos">Términos</a> · <a routerLink="/privacidad">Privacidad</a></p>
         @if (endpoint.native) { <a class="connection-link" routerLink="/conexion">Configurar conexión al servidor</a> }
       </form>
     </section>
