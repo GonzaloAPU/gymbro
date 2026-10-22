@@ -5,6 +5,7 @@
 import { app } from "./app.js";
 import { config } from "./config.js";
 import { sequelize, closeDatabase } from "./db.js";
+import {databaseDiagnostic} from './database-diagnostic.js';
 
 // Un deploy no se anuncia como sano si todavía no pudo autenticar contra la base.
 let server;
@@ -12,7 +13,7 @@ try {
   await sequelize.authenticate();
   server=app.listen(config.port,'0.0.0.0',()=>console.log(`SmartGymBro API lista en puerto ${config.port}`));
 } catch(error) {
-  console.error(`No se pudo iniciar la conexión a la base (${error.name}). Revisá credenciales y permisos.`);
+  console.error(databaseDiagnostic(error));
   await closeDatabase();process.exitCode=1;
 }
 
