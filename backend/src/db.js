@@ -4,15 +4,17 @@
  */
 import "dotenv/config";
 import { Sequelize } from "sequelize";
+import {databaseOptions,cloudSqlHook} from './database-options.js';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL no esta configurada");
+const settings=databaseOptions(process.env);
+export const sequelize=settings.url
+  ? new Sequelize(settings.url,settings.options)
+  : new Sequelize(settings.database,settings.user,undefined,settings.options);
+let connector;
+if(settings.connector){
+  const {Connector}=await import('@google-cloud/cloud-sql-connector');
+  connector=new Connector();
+  sequelize.addHook('beforeConnect',cloudSqlHook(connector,settings.connector));
 }
-
-export const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: "postgres",
-  logging: process.env.SQL_LOGGING === "true" ? console.log : false,
-  define: {
-    underscored: true,
-  },
-});
+/** Libera también la renovación de certificados del conector al apagar el servidor. */
+export async function closeDatabase(){try{await sequelize.close();}finally{connector?.close();}}

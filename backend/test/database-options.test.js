@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {databaseOptions,cloudSqlHook} from '../src/database-options.js';
+const cloud={DB_CONNECTION_MODE:'CLOUD_SQL',CLOUD_SQL_INSTANCE:'gymbro-569e3:southamerica-east1:gymbro-569e3-instance',DB_NAME:'gymbro-569e3-database',DB_USER:'gymbro-render@gymbro-569e3.iam',GOOGLE_APPLICATION_CREDENTIALS:'/etc/secrets/google-service-account.json'};
+test('base: conserva URL local y limita el pool',()=>{const result=databaseOptions({DATABASE_URL:'postgres://local/test'});assert.equal(result.url,'postgres://local/test');assert.equal(result.options.pool.max,3);assert.equal(result.connector,undefined);});
+test('base: exige URL local',()=>assert.throws(()=>databaseOptions({}),/DATABASE_URL/));
+test('base: rechaza modo desconocido',()=>assert.throws(()=>databaseOptions({DB_CONNECTION_MODE:'CLOUD'}),/inválido/));
+for(const key of ['CLOUD_SQL_INSTANCE','DB_NAME','DB_USER','GOOGLE_APPLICATION_CREDENTIALS'])test(`base: nube exige ${key}`,()=>assert.throws(()=>databaseOptions({...cloud,[key]:''}),new RegExp(key)));
+test('base: nube ignora URL local y obliga IAM',()=>{const result=databaseOptions({...cloud,DATABASE_URL:'postgres://wrong/test'});assert.equal(result.url,undefined);assert.equal(result.connector.authType,'IAM');assert.equal(result.connector.ipType,'PUBLIC');assert.equal(result.user,cloud.DB_USER);});
+test('base: rechaza instancia incompleta',()=>assert.throws(()=>databaseOptions({...cloud,CLOUD_SQL_INSTANCE:'gymbro'}),/proyecto/));
+test('base: rechaza email completo como usuario SQL',()=>assert.throws(()=>databaseOptions({...cloud,DB_USER:'gymbro-render@gymbro-569e3.iam.gserviceaccount.com'}),/DB_USER/));
+test('base: integra stream oficial en dialectOptions de Sequelize',async()=>{const stream=()=>{};let received;const config={password:'old',dialectOptions:{application_name:'gymbro'}};await cloudSqlHook({getOptions:async options=>{received=options;return {stream};}},databaseOptions(cloud).connector)(config);assert.equal(received.authType,'IAM');assert.equal(config.dialectOptions.stream,stream);assert.equal(config.dialectOptions.application_name,'gymbro');assert.equal(config.password,undefined);});
+test('base: error IAM no habilita conexión directa',async()=>{const config={};await assert.rejects(cloudSqlHook({getOptions:async()=>{throw Error('IAM');}},{})(config),/IAM/);assert.equal(config.dialectOptions,undefined);});

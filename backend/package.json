@@ -18,6 +18,7 @@
     "db:verify:welcome": "node scripts/verify-welcome.js"
   },
   "dependencies": {
+    "@google-cloud/cloud-sql-connector": "^1.12.1",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",

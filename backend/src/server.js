@@ -4,16 +4,22 @@
  */
 import { app } from "./app.js";
 import { config } from "./config.js";
-import { sequelize } from "./db.js";
+import { sequelize, closeDatabase } from "./db.js";
 
-const server = app.listen(config.port, () => {
-  console.log(`SmartGymBro API listening on http://localhost:${config.port}`);
-});
+// Un deploy no se anuncia como sano si todavía no pudo autenticar contra la base.
+let server;
+try {
+  await sequelize.authenticate();
+  server=app.listen(config.port,'0.0.0.0',()=>console.log(`SmartGymBro API lista en puerto ${config.port}`));
+} catch(error) {
+  console.error(`No se pudo iniciar la conexión a la base (${error.name}). Revisá credenciales y permisos.`);
+  await closeDatabase();process.exitCode=1;
+}
 
 /** Cierra el servidor HTTP y el pool de conexiones al terminar el proceso. */
 async function shutdown() {
-  server.close();
-  await sequelize.close();
+  if(server)await new Promise(resolve=>server.close(resolve));
+  await closeDatabase();
 }
 
 process.on("SIGINT", shutdown);

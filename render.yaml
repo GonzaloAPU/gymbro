@@ -1,0 +1,32 @@
+# Solo backend. No crea otra base ni ejecuta migraciones/semillas al arrancar.
+services:
+  - type: web
+    name: gymbro-api
+    runtime: node
+    branch: render
+    plan: free
+    region: virginia
+    buildCommand: npm ci --omit=dev --workspace backend
+    startCommand: npm run start --workspace backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_CONNECTION_MODE
+        value: CLOUD_SQL
+      - key: CLOUD_SQL_INSTANCE
+        value: gymbro-569e3:southamerica-east1:gymbro-569e3-instance
+      - key: DB_NAME
+        value: gymbro-569e3-database
+      - key: DB_USER
+        sync: false
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/secrets/google-service-account.json
+      - key: FRONTEND_URL
+        value: https://localhost
+      - key: GEMINI_ENABLED
+        value: false
