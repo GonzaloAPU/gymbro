@@ -1,22 +1,21 @@
-/** Separa la configuración local de la conexión IAM usada por Render. No lee ni imprime claves. */
-export function databaseOptions(env) {
-  const common={dialect:'postgres',logging:env.SQL_LOGGING==='true'?console.log:false,define:{underscored:true},pool:{max:3,min:0,idle:10000,acquire:60000}};
-  if(env.DB_CONNECTION_MODE && !['LOCAL','CLOUD_SQL'].includes(env.DB_CONNECTION_MODE))throw Error('DB_CONNECTION_MODE inválido');
-  if(env.DB_CONNECTION_MODE!=='CLOUD_SQL') {
-    if(!env.DATABASE_URL)throw Error('DATABASE_URL no esta configurada');
-    return {url:env.DATABASE_URL,options:common};
-  }
-  for(const key of ['CLOUD_SQL_INSTANCE','DB_NAME','DB_USER','GOOGLE_APPLICATION_CREDENTIALS'])if(!env[key]?.trim())throw Error(`Falta configurar ${key}`);
-  if(!/^[^:]+:[^:]+:[^:]+$/.test(env.CLOUD_SQL_INSTANCE))throw Error('CLOUD_SQL_INSTANCE debe ser proyecto:región:instancia');
-  if(!env.DB_USER.endsWith('.iam')||env.DB_USER.endsWith('.gserviceaccount.com'))throw Error('DB_USER debe ser el usuario PostgreSQL de la cuenta de servicio, terminado en .iam');
-  return {options:common,database:env.DB_NAME,user:env.DB_USER,connector:{instanceConnectionName:env.CLOUD_SQL_INSTANCE,ipType:'PUBLIC',authType:'IAM'}};
-}
-
-/** Cada conexión obtiene un stream cifrado del conector; no cae a PostgreSQL directo si falla IAM. */
-export function cloudSqlHook(connector,options) {
-  return async config=>{
-    const transport=await connector.getOptions(options);
-    config.dialectOptions={...config.dialectOptions,...transport,connectionTimeoutMillis:30000};
-    delete config.password;
-  };
+/** PostgreSQL local o Supabase. El modo remoto verifica siempre el certificado TLS. */
+import {readFileSync} from 'node:fs';
+export function databaseOptions(env,{readCertificate=file=>readFileSync(file,'utf8')}={}) {
+  const options={dialect:'postgres',logging:env.SQL_LOGGING==='true'?console.log:false,define:{underscored:true},pool:{max:3,min:0,idle:10000,acquire:60000}};
+  if(env.DB_CONNECTION_MODE && !['LOCAL','SUPABASE'].includes(env.DB_CONNECTION_MODE))throw Error('DB_CONNECTION_MODE inválido: usar LOCAL o SUPABASE');
+  if(!env.DATABASE_URL)throw Error('DATABASE_URL no esta configurada');
+  if(env.DB_CONNECTION_MODE!=='SUPABASE')return {url:env.DATABASE_URL,options};
+  let url;
+  try {url=new URL(env.DATABASE_URL);}catch{throw Error('DATABASE_URL de Supabase inválida');}
+  if(!['postgres:','postgresql:'].includes(url.protocol)||!url.username||!url.password||url.pathname!=='/postgres')throw Error('Usá la URI PostgreSQL completa de Supabase, con usuario y contraseña');
+  if(!/^(?:[a-z0-9-]+\.)*pooler\.supabase\.com$/.test(url.hostname)&&!/^db\.[a-z0-9-]+\.supabase\.co$/.test(url.hostname))throw Error('El host debe ser el indicado por Supabase en Connect');
+  if(url.port && url.port!=='5432')throw Error('Usá Session pooler en puerto 5432, no Transaction pooler');
+  // Evita que pg reinterprete sslmode=require y desactive la validación del certificado.
+  for(const key of [...url.searchParams.keys()])if(key.toLowerCase().startsWith('ssl'))url.searchParams.delete(key);
+  const ssl={require:true,rejectUnauthorized:true};
+  if(env.DB_SSL_CA_FILE)ssl.ca=readCertificate(env.DB_SSL_CA_FILE);
+  options.dialectOptions={ssl,connectionTimeoutMillis:30000};
+  options.define.schema='gymbro';
+  options.hooks={afterConnect:async client=>{await client.query('SET search_path TO gymbro, public');}};
+  return {url:url.toString(),options};
 }

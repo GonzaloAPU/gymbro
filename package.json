@@ -13,7 +13,7 @@
     "dev:frontend": "npm run start --workspace frontend",
     "dev:backend": "npm run dev --workspace backend",
     "build": "npm run build --workspace backend && npm run build --workspace frontend",
-    "test": "npm run test --workspace backend && npm run test --workspace frontend",
+    "test": "npm run test --workspace backend && npm run test --workspace frontend && npm run supabase:test",
     "test:frontend": "npm run test --workspace frontend",
     "typecheck": "npm run typecheck --workspace frontend",
     "db:generate": "npm run db:generate --workspace backend",
@@ -26,9 +26,12 @@
     "firebase:cloud:compile": "node --use-system-ca node_modules/firebase-tools/lib/bin/firebase.js dataconnect:compile --config firebase.cloud.json --project gymbro-569e3 --non-interactive",
     "firebase:cloud:tables": "node --use-system-ca tools/cloud-sql-https.cjs --tables",
     "test:recovery": "node tools/verify-workout-recovery.cjs",
-    "test:alarms": "node tools/verify-alarms.cjs"
+    "test:alarms": "node tools/verify-alarms.cjs",
+    "supabase:sql": "node tools/build-supabase-sql.mjs",
+    "supabase:test": "node --test tools/supabase-schema.test.mjs"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.3.16",
     "concurrently": "^9.1.2",
     "firebase-tools": "^15.34.0"
   }

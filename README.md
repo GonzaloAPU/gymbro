@@ -75,7 +75,7 @@ npm.cmd test
 npm.cmd run android:apk
 ```
 
-`npm test` ejecuta 145 pruebas del backend, las nueve verificaciones de interfaz
+`npm test` ejecuta 148 pruebas del backend, las nueve verificaciones de interfaz
 y 98 casos adicionales de conexión, planificación, sonidos, formularios, fotos y bienvenida.
 Estas últimas también se pueden ejecutar con `npm run test:frontend`; usan servicios
 simulados y no modifican la base real. El APK debug se genera en
@@ -100,4 +100,4 @@ Para registrar PostgreSQL dentro de pgAdmin usa:
 
 ## Backend en Render
 
-La rama `render` incluye conexión IAM a Cloud SQL y `render.yaml`. La configuración de la cuenta de servicio, los secretos y el despliegue manual se describe en [docs/RENDER.md](docs/RENDER.md).
+La rama `render` usa PostgreSQL de Supabase y el backend Express en Render. Incluye SQL para crear 15 tablas y 190 ejercicios, un usuario de ejecución con permisos limitados y `render.yaml`. Seguí la guía de aprendizaje [docs/RENDER.md](docs/RENDER.md). `npm run supabase:test` verifica el instalador en PostgreSQL embebido sin credenciales ni servicios externos.
