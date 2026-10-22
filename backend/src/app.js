@@ -11,6 +11,7 @@ import { sessionsRouter } from "./routes/sessions.js";
 import { progressRouter } from "./routes/progress.js";
 import { exercisesRouter } from "./routes/exercises.js";
 import { errorHandler } from "./middleware/error-handler.js";
+import {welcomeRouter} from './routes/welcome.js';
 
 export const app = express();
 // Capacitor sirve los archivos instalados desde https://localhost dentro de Android.
@@ -26,4 +27,5 @@ app.use("/api/routines", routinesRouter);
 app.use("/api/sessions", sessionsRouter);
 app.use("/api/progress", progressRouter);
 app.use("/api/exercises", exercisesRouter);
+app.use('/api/welcome',welcomeRouter);
 app.use(errorHandler);

@@ -23,6 +23,7 @@ function loadComponent(file,services={},globals={}) {
       if(name.includes('api-endpoint.service'))return {ApiEndpointService:'endpoint'};
       if(name.includes('exercise.service'))return {ExerciseService:'exercises'};
       if(name.includes('routine.service'))return {RoutineService:'routines'};
+      if(name.includes('welcome.service'))return {WelcomeService:'welcome'};
       if(name.includes('profile-photo'))return {prepareProfilePhoto:services.preparePhoto};
       return require(name);
     },

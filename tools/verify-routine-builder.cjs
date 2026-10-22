@@ -51,3 +51,24 @@ assert.equal(payload.days[0].exercises[0].exerciseId,'bench');
 assert.equal(payload.days[0].exercises[0].targetSets,3);
 assert.equal(destination,'/#library-title');
 console.log('OK: pasos guiados, búsqueda sin acentos, validación, conservación del borrador y guardado compatible.');
+
+// Las propuestas usan IDs reales, conservan el borrador y no asignan kilómetros a ejercicios en el lugar.
+(async () => {
+  const {exerciseData}=await import('../backend/src/data/exercise-catalog.js');
+  const {normalizeExerciseName}=await import('../backend/src/services/exercise-name.js');
+  assert.equal(new Set(exerciseData.map(e=>normalizeExerciseName(e.name))).size,exerciseData.length);
+  for(const proposal of builder.proposals) {
+    const sample=new output.RoutineBuilderComponent();sample.ngOnInit();
+    sample.catalog.set(exerciseData.map((e,i)=>({...e,id:String(i)})));
+    sample.loadProposal(proposal);
+    assert.equal(sample.step(),2);assert.equal(sample.currentDay().items.length,proposal.entries.length);
+    for(const item of sample.currentDay().items) if(item.exercise.trainingType!=='POWER') {
+      assert.ok(item.targetDurationMinutes>0);assert.equal(item.targetDistanceKm,null);
+    }
+    const before=sample.currentDay().items.length;sample.loadProposal(proposal);
+    assert.equal(sample.currentDay().items.length,before);
+  }
+  const missing=new output.RoutineBuilderComponent();missing.ngOnInit();missing.loadProposal(builder.proposals[0]);
+  assert.equal(missing.currentDay().items.length,0);assert.ok(missing.error());
+  console.log('OK: cuatro propuestas completas, catálogo único, tiempos de cardio y borradores protegidos.');
+})().catch(error=>{console.error(error);process.exitCode=1;});

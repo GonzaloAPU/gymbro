@@ -1,4 +1,6 @@
 /** Catálogo inicial reutilizable; no contiene sesiones ni datos personales. */
+import { outdoorExercises } from './outdoor-exercises.js';
+import { homeParkExpansion } from './home-park-expansion.js';
 const baseExercises = [
   { name: "Sentadilla", muscleGroup: "Piernas", equipment: "Barra", movementPattern: "Sentadilla", trainingType: "POWER" },
   { name: "Press banca", muscleGroup: "Pecho", equipment: "Barra", movementPattern: "Empuje horizontal", trainingType: "POWER" },
@@ -20,7 +22,7 @@ const baseExercises = [
   { name: "Saltar cuerda", muscleGroup: "Cardio", equipment: "Cuerda", movementPattern: "Saltos por intervalos", trainingType: "ANAEROBIC" },
 ];
 
-export const exerciseData = [...baseExercises, ...[
+export const exerciseData = [...baseExercises, ...outdoorExercises, ...homeParkExpansion, ...[
   {
     "name": "Press banca inclinado con barra",
     "equipment": "Barra",

@@ -1,4 +1,18 @@
 erDiagram
+  welcome_plans {
+    uuid id PK
+    uuid user_id FK,UK
+    uuid routine_id FK
+    jsonb preferences
+    jsonb proposal
+    varchar source
+    timestamp accepted_at
+    timestamp skipped_at
+    timestamp created_at
+    timestamp updated_at
+  }
+  users ||--o| welcome_plans : prepara
+  routines |o--o{ welcome_plans : acepta
   session_mutations {
     uuid id PK
     varchar kind

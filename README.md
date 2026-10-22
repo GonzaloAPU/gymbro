@@ -75,13 +75,16 @@ npm.cmd test
 npm.cmd run android:apk
 ```
 
-`npm test` ejecuta 105 pruebas del backend, las nueve verificaciones de interfaz
-y 81 casos adicionales de conexión, planificación, sonidos, formularios y fotos.
+`npm test` ejecuta 133 pruebas del backend, las nueve verificaciones de interfaz
+y 98 casos adicionales de conexión, planificación, sonidos, formularios, fotos y bienvenida.
 Estas últimas también se pueden ejecutar con `npm run test:frontend`; usan servicios
 simulados y no modifican la base real. El APK debug se genera en
 `frontend/android/app/build/outputs/apk/debug/app-debug.apk`.
 
 La limpieza y los límites revisados se documentan en [la auditoría Android](docs/AUDITORIA-ANDROID-2026-10-21.md).
+
+La [bienvenida](docs/BIENVENIDA.md) prepara un plan local o con Gemini, muestra su semana
+y guarda rutinas/horarios/descansos al aceptar. Funciona sin configurar IA en modo local.
 
 ## pgAdmin
 

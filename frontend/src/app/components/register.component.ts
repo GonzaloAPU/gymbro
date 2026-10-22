@@ -45,7 +45,7 @@ export class RegisterComponent {
     if (password !== confirmPassword) { this.error.set('Las contraseñas no coinciden'); return; }
     this.loading.set(true); this.error.set('');
     this.auth.register({ name: name.trim(), email, password }).pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: () => this.router.navigateByUrl('/perfil'),
+      next: () => this.router.navigateByUrl('/bienvenida'),
       error: (error: HttpErrorResponse | Error) => { this.error.set(error instanceof HttpErrorResponse ? error.error?.message || 'No pudimos conectar con el servidor. Intentá nuevamente.' : error.message); },
     });
   }

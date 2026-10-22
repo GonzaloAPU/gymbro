@@ -24,6 +24,17 @@ export const UserRestDay = sequelize.define('UserRestDay', {
   weekday: {type:DataTypes.INTEGER, allowNull:false, validate:{min:0,max:6}},
 }, {timestamps:false, indexes:[{unique:true,fields:['user_id','weekday']}]});
 
+// Documento de propuesta: conserva la entrada y el resultado para aceptar una sola vez.
+// Los ejercicios y horarios aceptados se guardan en las tablas normalizadas existentes.
+export const WelcomePlan = sequelize.define('WelcomePlan', {
+  id:{type:DataTypes.UUID,defaultValue:DataTypes.UUIDV4,primaryKey:true},
+  preferences:{type:DataTypes.JSONB,allowNull:false},
+  proposal:{type:DataTypes.JSONB,allowNull:false},
+  source:{type:DataTypes.STRING(16),allowNull:false},
+  acceptedAt:DataTypes.DATE,
+  skippedAt:DataTypes.DATE,
+}, {indexes:[{unique:true,fields:['user_id']}]});
+
 // Catálogo reutilizable. No incluye series realizadas: estas se registran por separado para cada sesión.
 export const Exercise = sequelize.define("Exercise", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
@@ -142,6 +153,9 @@ SessionMutation.belongsTo(TrainingSession,{foreignKey:'sessionId',as:'session'})
 // CASCADE elimina registros dependientes cuando se elimina su propietario.
 User.hasMany(Routine, { foreignKey: { name: "userId", allowNull: false }, as: "routines", onDelete: "CASCADE" });
 Routine.belongsTo(User, { foreignKey: "userId", as: "user" });
+User.hasOne(WelcomePlan,{foreignKey:{name:'userId',allowNull:false},as:'welcomePlan',onDelete:'CASCADE'});
+WelcomePlan.belongsTo(User,{foreignKey:'userId',as:'user'});
+WelcomePlan.belongsTo(Routine,{foreignKey:{name:'routineId',allowNull:true},as:'routine',onDelete:'SET NULL'});
 User.hasMany(TrainingSession, { foreignKey: { name: "userId", allowNull: false }, as: "sessions", onDelete: "CASCADE" });
 TrainingSession.belongsTo(User, { foreignKey: "userId", as: "user" });
 User.hasMany(BodyWeightHistory, { foreignKey: { name: "userId", allowNull: false }, as: "weights", onDelete: "CASCADE" });
@@ -171,6 +185,6 @@ StrengthRecord.belongsTo(Exercise, { foreignKey: "exerciseId", as: "exercise" })
 
 // Agrupa los modelos para utilidades que necesitan recorrerlos o reutilizarlos juntos.
 export const models = {
-  SessionMutation, User, UserRestDay, Exercise, Routine, RoutineDay, RoutineExercise, RoutineSchedule, TrainingSession,
+  WelcomePlan, SessionMutation, User, UserRestDay, Exercise, Routine, RoutineDay, RoutineExercise, RoutineSchedule, TrainingSession,
   PerformedExercise, PerformedSet, BodyWeightHistory, StrengthRecord,
 };

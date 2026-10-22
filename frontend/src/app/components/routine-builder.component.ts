@@ -41,6 +41,10 @@ interface BuilderDay { name: string; items: BuilderItem[]; }
         <main class="plan">
           @if (step() === 1) {
           <h2>¿Cómo se llama tu rutina?</h2>
+          @if (!currentDay().items.length) {
+            <p class="step-help">Empezá con una propuesta editable:</p>
+            @for (proposal of proposals; track proposal.name) {<button type="button" class="button ghost" style="margin:4px" (click)="loadProposal(proposal)" [disabled]="catalogLoading() || !!catalogError()">{{proposal.name}}</button>}
+          }
           <section class="routine-data">
             <label>Nombre de la rutina<input [value]="routineName()" (input)="routineName.set($any($event.target).value)" placeholder="Ej. Espalda y bíceps" maxlength="255"></label>
             <label>Objetivo principal<select [value]="goal()" (change)="goal.set($any($event.target).value)"><option>Fuerza</option><option>Hipertrofia</option><option>Resistencia</option><option>Cardio</option><option>Rendimiento mixto</option></select></label>
@@ -118,6 +122,29 @@ export class RoutineBuilderComponent implements OnInit {
   readonly search = signal('');
   readonly catalogLoading = signal(true);
   readonly catalogError = signal('');
+  /** Resuelve propuestas contra ejercicios oficiales existentes; no duplica el catálogo. */
+  readonly proposals = [
+    {name:'Casa · sin equipo', entries:[['Sentadilla con peso corporal',0],['Flexiones con rodillas apoyadas',0],['Puente de glúteos',0],['Bird dog',0]]},
+    {name:'Parque · banco y barra', entries:[['Caminata activa',5],['Flexiones inclinadas en banco',0],['Remo invertido',0],['Zancadas sin peso',0]]},
+    {name:'Trote y técnica de carrera', entries:[['Caminata activa',5],['Trote suave',8],['Trote lateral',1],['Trote con rodillas al pecho',1],['Trote con talones a la cola',1],['Caminata de recuperación',5]]},
+    {name:'Casa · circuito con cuerda', entries:[['Marcha con rodillas altas',3],['Saltar cuerda',1],['Sentadilla con peso corporal',0],['Pasos laterales sin salto',2]]},
+  ];
+  loadProposal(proposal: {name:string;entries:(string|number)[][]}): void {
+    if(this.currentDay().items.length || this.catalogLoading()) return;
+    const entries = proposal.entries.map(([name, minutes]) => ({exercise:this.catalog().find(e => !e.createdByUserId && e.name === name), minutes:Number(minutes)}));
+    if(entries.some(entry => !entry.exercise)) {this.error.set('Actualizá el catálogo del backend para cargar esta propuesta.');return;}
+    this.routineName.set(proposal.name); this.goal.set('Rendimiento mixto');
+    for(const entry of entries) {
+      this.addExercise(entry.exercise!.id);
+      const index=this.currentDay().items.length-1;
+      if(entry.minutes) {
+        this.updateNumber(index,'targetDurationMinutes',String(entry.minutes));
+        this.updateNumber(index,'targetDistanceKm','');
+        this.updateIntensity(index,'BAJA');
+      }
+    }
+    this.step.set(2);
+  }
   hasExercise(id: string): boolean { return this.currentDay().items.some(item => item.exercise.id === id); }
   /** Cada paso valida lo necesario antes de mostrar la siguiente decisión. Atrás conserva el borrador. */
   nextStep(): void {
@@ -179,7 +206,7 @@ export class RoutineBuilderComponent implements OnInit {
   addExercise(id:string): void {
     if (!id) return; const exercise=this.catalog().find(item=>item.id===id); if(!exercise) return;
     if(this.currentDay().items.some(item=>item.exercise.id===id)){this.error.set('Ese ejercicio ya está en la rutina');return;}
-    const item:BuilderItem={ exercise,targetSets:exercise.trainingType==='POWER'?3:1,minReps:exercise.trainingType==='POWER'?8:1,maxReps:exercise.trainingType==='POWER'?12:1,restSeconds:exercise.trainingType==='POWER'?90:exercise.trainingType==='ANAEROBIC'?60:0,targetDurationMinutes:exercise.trainingType==='POWER'?null:30,targetDistanceKm:exercise.trainingType==='AEROBIC'?5:null,intensity:exercise.trainingType==='POWER'?null:'MEDIA' };
+    const item:BuilderItem={ exercise,targetSets:exercise.trainingType==='POWER'?3:1,minReps:exercise.trainingType==='POWER'?8:1,maxReps:exercise.trainingType==='POWER'?12:1,restSeconds:exercise.trainingType==='POWER'?90:exercise.trainingType==='ANAEROBIC'?60:0,targetDurationMinutes:exercise.trainingType==='POWER'?null:exercise.movementPattern==='Técnica de carrera'?1:30,targetDistanceKm:exercise.trainingType==='AEROBIC'?5:null,intensity:exercise.trainingType==='POWER'?null:'MEDIA' };
     this.error.set(''); this.updateDay(day=>({...day,items:[...day.items,item]}));
   }
   /** Quita del borrador el ejercicio indicado por su posición; no lo elimina del catálogo. */

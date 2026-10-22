@@ -404,3 +404,10 @@ resetRest.play(); now+=1000; ticks.forEach(tick=>tick());
 assert.equal(resetRest.phaseMilliseconds(),1000);
 resetRest.ngOnDestroy(); routineService.getAll=originalGetAll;
 console.log('OK: reiniciar descanso conserva total y series, queda pausado y permite reanudar.');
+
+routineService.getAll=()=>of([{active:true,name:'Trote',days:[{id:'run-day',name:'Carrera',schedule:[{weekday:new Date().getDay(),start:'08:00',end:'09:00'}],exercises:[{exercise:{id:'run',name:'Trote lateral',muscleGroup:'Piernas',trainingType:'ANAEROBIC'},targetSets:1,minReps:1,maxReps:1,restSeconds:60,targetDurationMinutes:2}]}]}]);
+const cardio=new exportsObject.WorkoutComponent();cardio.ngOnInit();
+assert.equal(cardio.current().workSeconds,120,'Cardio usa los minutos planificados');
+assert.equal(cardio.setDraft(0).weight,'0');assert.equal(cardio.setDraft(0).reps,'1');
+cardio.ngOnDestroy();routineService.getAll=originalGetAll;
+console.log('OK: cardio respeta duración y no inventa kilos ni repeticiones de fuerza.');

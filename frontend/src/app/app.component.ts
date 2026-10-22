@@ -98,7 +98,7 @@ export class AppComponent {
   /** Obtiene hasta dos iniciales del nombre para el avatar que se muestra como alternativa a una foto. */
   get initials(): string { return (this.auth.user()?.name || 'U').split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase(); }
   /** La barra inferior ya permite ir a Entrenar; durante la edición evitamos tapar el botón Continuar. */
-  get editingForm(): boolean { return this.router.url.startsWith('/rutinas/nueva') || this.router.url.startsWith('/perfil/editar'); }
+  get editingForm(): boolean { return this.router.url.startsWith('/rutinas/nueva') || this.router.url.startsWith('/perfil/editar') || this.router.url.startsWith('/bienvenida'); }
   /** Descarta la vista de entrenamiento, cierra la sesión local y navega al formulario de ingreso. */
   logout(): void { this.workoutVisited.set(false); this.auth.logout(); this.router.navigateByUrl('/login'); }
 }

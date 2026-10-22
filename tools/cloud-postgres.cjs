@@ -25,7 +25,7 @@ const INSTANCE = 'gymbro-569e3-instance';
 const DATABASE = 'gymbro-569e3-database';
 const tables = ['users', 'exercises', 'routines', 'routine_days', 'routine_exercises',
   'routine_schedules', 'training_sessions', 'performed_exercises', 'performed_sets',
-  'body_weight_histories', 'strength_records', 'user_rest_days', 'session_mutations', 'schema_migrations'];
+  'body_weight_histories', 'strength_records', 'user_rest_days', 'session_mutations', 'welcome_plans', 'schema_migrations'];
 
 /** Resume cada tabla con cantidad y huella del contenido; no devuelve datos personales. */
 async function fingerprint(connection) {
