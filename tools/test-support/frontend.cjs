@@ -12,11 +12,11 @@ function loadComponent(file,services={},globals={}) {
   vm.runInNewContext(compiled.get(absolute),{
     exports,window:{scrollTo(){}},...globals,
     require:name=>{
-      if(name==='@angular/core')return {Component:()=>target=>target,signal,computed:read=>read,inject:token=>{
+      if(name==='@angular/core')return {Injectable:()=>target=>target,Component:()=>target=>target,Input:()=>()=>{},signal,computed:read=>read,inject:token=>{
         if(!(token in services))throw Error(`Falta simular ${token}`);return services[token];
       }};
       if(name==='@angular/router')return {Router:'router'};
-      if(name==='@angular/common/http')return {HttpErrorResponse};
+      if(name==='@angular/common/http')return {HttpErrorResponse,HttpClient:'http'};
       if(name==='@angular/common')return {};
       if(name.includes('alarm-settings.component'))return {AlarmSettingsComponent:class {}};
       if(name.includes('legal.service'))return {LegalService:'legal',legalDocuments:require('../../shared/legal-documents.json')};

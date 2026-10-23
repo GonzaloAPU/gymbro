@@ -116,6 +116,20 @@ function reopen(){if(workout)workout.ngOnDestroy();if(store)store.ngOnDestroy();
   workout.startSeries(0);await settle();workout.completeSet(0,'35','8');await settle();assert.equal(workout.phase(),'rest');
   reopen();workout.endRest();assert.equal(workout.active(),0);assert.equal(workout.nextSetIndex(),1);
   routine.getAll=originalGetAll;
+  // La cantidad editada pertenece al entrenamiento: sobrevive al cierre sin alterar el plan.
+  account='account-extra-sets';reopen();
+  workout.configureSets({value:'4'});reopen();
+  assert.equal(workout.current().sets,4);
+  assert.equal(workout.nextSetIndex(),0);
+  assert.equal((await firstValueFrom(routine.getAll()))[0].days[0].exercises[0].targetSets,3);
+  workout.startSeries(0);await settle();
+  workout.visible=false;workout.ngOnChanges({visible:{currentValue:false,firstChange:false}});
+  assert.ok([...timers.values()].some(timer=>timer.period===250));
+  assert.ok(![...timers.values()].some(timer=>timer.period===16));
+  advance(4321);
+  workout.visible=true;workout.ngOnChanges({visible:{currentValue:true,firstChange:false}});
+  assert.equal(workout.phaseMilliseconds(),4321,'Volver recupera los milisegundos aunque no hubo repintados ocultos');
+  assert.ok([...timers.values()].some(timer=>timer.period===16));
   // Corrupción: se bloquea el respaldo y nunca se reemplaza silenciosamente.
   server='https://corrupt.test';const corruptScope=store.scope();data.set(corruptScope,'invalid JSON');
   await assert.rejects(firstValueFrom(sessions.finish(randomUUID(),10)));assert.equal(data.get(corruptScope),'invalid JSON');

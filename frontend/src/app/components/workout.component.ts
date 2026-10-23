@@ -71,7 +71,7 @@ interface WorkoutExercise {
             <button type="button" class="start-next" (click)="endRest()" [disabled]="saving()">Terminar descanso</button>
           }
           @else {<p>Completaste este ejercicio. Continuá cuando estés listo.</p><button type="button" class="start-next" (click)="nextExercise()" [disabled]="saving()">{{nextActionLabel()}}</button>}
-          <details class="timer-settings"><summary>Editar serie</summary>@if((!current().trainingType || current().trainingType === 'POWER') && (phase() === 'work' || nextSetIndex() >= 0)) {@let editIndex = phase() === 'work' ? seriesIndex()! : nextSetIndex();<div class="active-series-fields"><label>Peso (kg)<input type="number" min="0" step="0.5" [value]="setDraft(editIndex).weight" (input)="updateSetDraft(editIndex, 'weight', $any($event.target).value)" [disabled]="saving()"></label><label>Repeticiones<input type="number" min="1" step="1" [value]="setDraft(editIndex).reps" (input)="updateSetDraft(editIndex, 'reps', $any($event.target).value)" [disabled]="saving()"></label></div>}<p>Pausá el reloj en curso para cambiar su duración. El tiempo transcurrido se conserva.</p><div class="active-series-fields"><label>Serie (segundos)<input type="number" min="1" max="3600" step="1" [value]="current().workSeconds" [disabled]="saving() || (phase() === 'work' && running() && !seriesPaused())" (change)="configureTimer('work', $any($event.target).value)"></label><label>Descanso (segundos)<input type="number" min="0" max="3600" step="1" [value]="restSeconds()" [disabled]="saving() || (phase() === 'rest' && running())" (change)="configureTimer('rest', $any($event.target).value)"></label></div></details>
+          <details class="timer-settings"><summary>Editar serie</summary><div class="active-series-fields"><label>Cantidad de series<input type="number" [min]="minimumSets()" max="1000" step="1" [value]="current().sets" [disabled]="saving()" (change)="configureSets($any($event.target))"></label></div><p>Para este entrenamiento; tu rutina base se conserva.</p>@if((!current().trainingType || current().trainingType === 'POWER') && (phase() === 'work' || nextSetIndex() >= 0)) {@let editIndex = phase() === 'work' ? seriesIndex()! : nextSetIndex();<div class="active-series-fields"><label>Peso (kg)<input type="number" min="0" step="0.5" [value]="setDraft(editIndex).weight" (input)="updateSetDraft(editIndex, 'weight', $any($event.target).value)" [disabled]="saving()"></label><label>Repeticiones<input type="number" min="1" step="1" [value]="setDraft(editIndex).reps" (input)="updateSetDraft(editIndex, 'reps', $any($event.target).value)" [disabled]="saving()"></label></div>}<p>Pausá el reloj en curso para cambiar su duración. El tiempo transcurrido se conserva.</p><div class="active-series-fields"><label>Serie (segundos)<input type="number" min="1" max="3600" step="1" [value]="current().workSeconds" [disabled]="saving() || (phase() === 'work' && running() && !seriesPaused())" (change)="configureTimer('work', $any($event.target).value)"></label><label>Descanso (segundos)<input type="number" min="0" max="3600" step="1" [value]="restSeconds()" [disabled]="saving() || (phase() === 'rest' && running())" (change)="configureTimer('rest', $any($event.target).value)"></label></div></details>
           @if(error() && phase() !== 'work') {<p class="error" role="alert">{{error()}}</p>}
           <details class="linked-settings"><summary>Encadenar de 2 a 4 ejercicios</summary><p>Elegí el orden: una serie de A, después B (y C o D si los agregás). Descansás al cerrar la ronda. Cada serie empieza al tocar Iniciar.</p>@for(exercise of exercises; track exercise.id; let i=$index) {<label><input type="checkbox" [checked]="linkedExercises().includes(i)" [attr.aria-label]="exercise.name" (change)="toggleLinkedExercise(i)" [disabled]="phase() !== 'idle' || saving() || chainRoundActive() || (!linkedExercises().includes(i) && linkedExercises().length >= 4)">{{exercise.name}} @if(linkedExercises().includes(i)) {<b>{{linkedExercises().indexOf(i)+1}}</b>}</label>}<p>@if(linkedExercises().length === 1) {Elegí otro ejercicio para activar el grupo.} @else if(linkedExercises().length >= 2) {Se omiten los ejercicios que ya completaron todas sus series.}</p><label>Descanso entre rondas (segundos)<input type="number" min="0" max="3600" step="1" [value]="linkedRestSeconds()" (change)="configureLinkedRest($any($event.target).value)" [disabled]="phase() !== 'idle' || saving() || chainRoundActive()"></label><button type="button" class="repeat-record" (click)="clearLinkedExercises()" [disabled]="phase() !== 'idle' || saving() || chainRoundActive()">Quitar grupo</button></details>
         </div>
@@ -219,6 +219,7 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
   // Map mantiene el ID devuelto por la API y las series completadas de cada ejercicio durante esta sesión.
   private readonly performedIds = new Map<string, string>();
   private readonly completedByExercise = new Map<string, Set<number>>();
+  private readonly setCountOverrides = new Map<string,number>();
   private readonly setDrafts = signal(new Map<string, {weight:string; reps:string}>());
   /** La tarjeta y la tabla comparten los mismos valores, sin perderlos al pausar o volver de otra pestaña. */
   setDraft(index: number): {weight:string; reps:string} {
@@ -248,7 +249,7 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
       phase:this.phase(),seriesIndex:this.seriesIndex(),phaseMs:this.seriesFrozen?this.phaseMilliseconds():this.phaseMs,phaseSince:this.phaseSince,
       frozen:this.seriesFrozen,paused:this.seriesPaused(),pendingSeries:this.pendingSeries,lastRestSeconds:this.lastRestSeconds,
       linked:this.linkedExercises(),linkedRest:this.linkedRestSeconds(),linkedRound:this.linkedRound,remainingLinked:[...this.remainingLinked],
-      completed:[...this.completedByExercise].map(([id,sets])=>[id,[...sets]]),records:this.completedSeries(),
+      completed:[...this.completedByExercise].map(([id,sets])=>[id,[...sets]]),records:this.completedSeries(),setCounts:[...this.setCountOverrides],
       performed:[...this.performedIds],saved:[...this.savedSeries],repeats:[...this.repeatByExercise],drafts:[...this.setDrafts()],
     };
   }
@@ -267,6 +268,7 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
     const validNumber=(number:unknown)=>typeof number==='number'&&Number.isFinite(number)&&number>=0;
     if(!data||data.version!==1||!Array.isArray(data.exercises)||!data.exercises.length||data.exercises.length>300||
       !data.exercises.every((item:any)=>item&&typeof item.id==='string'&&typeof item.name==='string'&&typeof item.muscle==='string'&&typeof item.reps==='string'&&Number.isInteger(item.sets)&&item.sets>0&&item.sets<=1000&&validNumber(item.rest)&&item.rest<=3600&&validNumber(item.workSeconds)&&item.workSeconds>=1&&item.workSeconds<=3600&&Number.isInteger(item.done)&&item.done>=0&&item.done<=item.sets)||
+      (data.setCounts!==undefined&&(!Array.isArray(data.setCounts)||!data.setCounts.every((entry:any)=>Array.isArray(entry)&&entry.length===2&&typeof entry[0]==='string'&&Number.isInteger(entry[1])&&entry[1]>=1&&entry[1]<=1000)))||
       !Number.isInteger(data.active)||!data.exercises[data.active]||!['idle','work','rest'].includes(data.phase)||
       !['running','finished','frozen','paused','linkedRound'].every(key=>typeof data[key]==='boolean')||
       !['accumulatedMs','runningSince','phaseMs','phaseSince','lastRestSeconds','linkedRest'].every(key=>validNumber(data[key]))||
@@ -283,6 +285,7 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
       !data.records.every((record:any)=>record&&typeof record.key==='string'&&typeof record.exerciseName==='string'&&data.exercises[record.exerciseIndex]?.id===record.exerciseId&&Number.isInteger(record.setNumber)&&record.setNumber>0&&record.setNumber<=data.exercises[record.exerciseIndex].sets&&validNumber(record.weightKg)&&Number.isInteger(record.repetitions)&&record.repetitions>0&&validNumber(record.durationSeconds))||
       typeof data.routineName!=='string'||typeof data.selectedPlanKey!=='string'||(data.sessionId!==null&&typeof data.sessionId!=='string'))throw Error('Respaldo inválido');
     this.phaseAlarmId.set(data.phaseAlarmId||crypto.randomUUID());
+    this.setCountOverrides.clear();for(const [id,count] of data.setCounts||[])this.setCountOverrides.set(id,count);
     this.exercises=data.exercises;this.active.set(data.active);this.routineName.set(data.routineName);
     this.routineDayId=data.routineDayId;this.selectedPlanKey=data.selectedPlanKey;this.sessionId.set(data.sessionId);
     this.sessionFinished.set(data.finished);this.running.set(data.running);
@@ -338,7 +341,7 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
         const recovery=this.storage.recoveryCommands(this.storageScope);
         for(const command of recovery)this.recoverCommand(command);
         this.storage.acknowledgeRecovery(this.storageScope,recovery.map(command=>command.id));
-        if(this.running()) {this.tick();this.interval=window.setInterval(()=>this.tick(),16);}
+        if(this.running()) {this.tick();this.scheduleTicks();}
         this.persist();
       } catch {this.storage.rejectState(this.storageScope);}
     }
@@ -346,6 +349,7 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
   }
   /** Al volver a mostrar Entrenar, vuelve a consultar el plan para reflejar asignaciones recientes sin desmontar la sesión. */
   ngOnChanges(changes: SimpleChanges): void {
+    if(changes['visible']&&this.running()){this.tick();this.scheduleTicks();}
     if (changes['visible']?.currentValue && !changes['visible'].firstChange) this.refreshPlan();
   }
   /** Consulta el plan de hoy e ignora respuestas antiguas. Si ya hay una sesión en curso, preserva su estado aunque cambie la asignación. */
@@ -376,9 +380,11 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
   selectPlannedWorkout(key: string): void {
     if (this.saving() || (this.sessionId() && !this.sessionFinished())) return;
     const entry = this.todayPlan().find(entry => entry.key === key); if (!entry) return;
+    if(this.selectedPlanKey!==key)this.setCountOverrides.clear();
     this.recovered=false; this.selectedPlanKey = key; this.routineDayId = entry.day.id;
     this.routineName.set(entry.day.name);
     this.exercises = entry.day.exercises.map(item => ({id:item.exercise.id,name:item.exercise.name,muscle:item.exercise.muscleGroup,sets:item.targetSets,reps:`${item.minReps}-${item.maxReps}`,rest:item.restSeconds,done:0,trainingType:item.exercise.trainingType,workSeconds:item.exercise.trainingType !== 'POWER' && item.targetDurationMinutes ? Math.min(3600, Math.max(1, Math.round(item.targetDurationMinutes*60))) : 45}));
+    for(const exercise of this.exercises)exercise.sets=this.setCountOverrides.get(exercise.id)??exercise.sets;
     this.active.set(0); this.completed.set(new Set()); this.sessionFinished.set(false); this.sessionId.set(null);
     this.elapsed.set(0); this.elapsedMilliseconds.set(0); this.accumulatedMs = 0;
     this.phase.set('idle'); this.seriesIndex.set(null); this.phaseElapsed.set(0); this.phaseMilliseconds.set(0);
@@ -428,10 +434,15 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
     this.running.set(true);
     this.phaseSince = Date.now();
     if (this.pendingSeries !== null) { this.beginSeries(this.pendingSeries); this.pendingSeries = null; }
-    this.interval = window.setInterval(() => this.tick(), 16);
+    this.scheduleTicks();
     this.persist();
   }
 
+  /** Fuera de Entrenar evita redibujar toda la app 60 veces por segundo; el tiempo real sigue corriendo. */
+  private scheduleTicks():void {
+    window.clearInterval(this.interval);
+    this.interval=window.setInterval(()=>this.tick(),this.visible?16:250);
+  }
   /** Recalcula tiempos a partir de marcas temporales, sin sumar intervalos fijos. Cierra el descanso cuando alcanza su duración. */
   private tick(): void {
     const now = Date.now();
@@ -444,6 +455,31 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
       if(this.phaseElapsed()>=duration)this.alarms.timerExpired(this.phaseAlarmId());
       if (this.phase() === 'rest' && this.phaseElapsed() >= this.restSeconds()) this.endRest();
     }
+  }
+
+  /** No elimina series registradas, reabiertas o en curso al reducir el objetivo. */
+  minimumSets(): number {
+    const id=this.current()?.id;
+    return Math.max(1,...[...this.completed()].map(index=>index+1),
+      ...this.completedSeries().filter(record=>record.exerciseId===id).map(record=>record.setNumber),
+      this.seriesIndex()===null?0:this.seriesIndex()!+1,
+      this.pendingSeries===null?0:this.pendingSeries+1,
+      (this.repeatByExercise.get(id)||0)+1);
+  }
+  /** Cambia solo el objetivo de esta sesión y lo incluye en el respaldo local. */
+  configureSets(input: HTMLInputElement): void {
+    const exercise=this.current();
+    if(!exercise)return;
+    const count=Number(input.value);
+    if(this.saving()||this.sessionFinished()) {input.value=String(exercise.sets);return;}
+    const minimum=this.minimumSets();
+    if(!input.value.trim()||!Number.isInteger(count)||count<minimum||count>1000){
+      this.error.set(`Usá una cantidad entera entre ${minimum} y 1000. No se pueden quitar series registradas o en curso.`);
+      input.value=String(exercise.sets);return;
+    }
+    exercise.sets=count;
+    this.setCountOverrides.set(exercise.id,count);
+    this.error.set('');this.persist();
   }
 
   /** Edita el tiempo de una fase futura o pausada, conservando lo transcurrido. Cumplir el tiempo de serie no la guarda automáticamente. */

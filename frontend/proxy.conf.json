@@ -1,9 +1,9 @@
 {
   "/api/**": {
-    "target": "http://127.0.0.1:3000",
-    "secure": false,
+    "target": "https://gymbro-api-t7mg.onrender.com",
+    "secure": true,
     "changeOrigin": true,
-    "proxyTimeout": 15000,
-    "timeout": 20000
+    "proxyTimeout": 60000,
+    "timeout": 65000
   }
 }

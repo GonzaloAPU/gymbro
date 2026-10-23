@@ -3,13 +3,11 @@
  * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
  */
 import { Routes } from '@angular/router';
-import { DashboardComponent } from './components/dashboard.component';
+import {TabRouteComponent} from './components/tab-route.component';
 import { WorkoutRouteComponent } from './components/workout-route.component';
-import { ProgressComponent } from './components/progress.component';
 import { LoginComponent } from './components/login.component';
 import { RegisterComponent } from './components/register.component';
 import { ProfileComponent } from './components/profile.component';
-import { ProfileViewComponent } from './components/profile-view.component';
 import { authGuard } from './guards/auth.guard';
 import { RoutineBuilderComponent } from './components/routine-builder.component';
 import { ConnectionComponent } from './components/connection.component';
@@ -25,10 +23,10 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'registro', component: RegisterComponent },
   { path: 'bienvenida',data:{sports:true}, loadComponent:()=>import('./components/welcome.component').then(module=>module.WelcomeComponent),canActivate:[authGuard,legalGuard] },
-  { path: '', component: DashboardComponent, canActivate: [authGuard,legalGuard,welcomeGuard] },
+  { path: '',data:{tab:0}, component: TabRouteComponent, canActivate: [authGuard,legalGuard,welcomeGuard] },
   { path: 'entrenamiento',data:{sports:true}, component: WorkoutRouteComponent, canActivate: [authGuard,legalGuard] },
-  { path: 'progreso', component: ProgressComponent, canActivate: [authGuard,legalGuard] },
-  { path: 'perfil', component: ProfileViewComponent, canActivate: [authGuard,legalGuard] },
+  { path: 'progreso',data:{tab:2}, component: TabRouteComponent, canActivate: [authGuard,legalGuard] },
+  { path: 'perfil',data:{tab:3}, component: TabRouteComponent, canActivate: [authGuard,legalGuard] },
   { path: 'perfil/editar', component: ProfileComponent, canActivate: [authGuard,legalGuard] },
   { path: 'rutinas/nueva', component: RoutineBuilderComponent, canActivate: [authGuard,legalGuard] },
   { path: '**', redirectTo: '' },

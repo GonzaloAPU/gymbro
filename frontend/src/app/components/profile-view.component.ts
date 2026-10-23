@@ -1,5 +1,5 @@
 /** Perfil de lectura. La edición vive en otra ruta y solamente se abre por decisión del usuario. */
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, inject, OnInit, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AlarmSettingsComponent } from './alarm-settings.component';
@@ -8,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import { prepareProfilePhoto } from '../services/profile-photo';
 
 @Component({
+  selector:'app-profile-view',
   standalone: true,
   imports: [RouterLink, DecimalPipe, AlarmSettingsComponent],
   template: `
@@ -34,7 +35,10 @@ import { prepareProfilePhoto } from '../services/profile-photo';
     .profile-view{max-width:760px;padding-block:30px 60px}header{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:24px}.kicker{font-size:10px;letter-spacing:.14em;font-weight:800;color:var(--lime)}h1{font-size:36px;margin:10px 0}.identity{padding:30px;border:1px solid var(--line);border-radius:24px;background:var(--surface);text-align:center}.portrait{width:112px;height:112px;border-radius:28px;background:var(--surface-2);overflow:hidden;display:grid;place-items:center;margin:auto;border:1px solid #a3e63555}.portrait img{width:100%;height:100%;object-fit:cover}.portrait span{font-size:38px;font-weight:800;color:var(--lime)}h2{font-size:30px;margin:18px 0 5px}.email{color:var(--muted);font-size:14px;overflow-wrap:anywhere}.discipline{display:inline-block;color:var(--lime);background:#a3e63512;padding:8px 14px;border-radius:30px;font-size:14px}dl{text-align:left;margin:28px 0 0}dl>div{padding:18px 0;border-top:1px solid var(--line)}dt{font-size:12px;color:var(--muted);margin-bottom:9px}dd{margin:0;line-height:1.6;overflow-wrap:anywhere}.measurements{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}.measurements article{position:relative;padding:22px;background:var(--surface);border:1px solid var(--line);border-radius:18px}.measurements article>span{font-size:11px;color:var(--lime);font-weight:800}.measurements strong{display:block;margin-top:22px;font-size:32px}.measurements small{font-size:14px;font-weight:400;color:var(--muted);margin-left:6px}.measurements p{font-size:12px;color:var(--muted);line-height:1.6}.eye{position:absolute;right:12px;top:8px;border:0;background:transparent;color:var(--muted);width:44px;height:44px;cursor:pointer}.eye svg{width:23px;height:23px}.progress-link{display:block;padding:18px;text-align:center;color:var(--lime);font-size:14px}.error{color:#fca5a5}@media(max-width:480px){header{align-items:flex-start;flex-direction:column}header .button{width:100%}.identity{padding:24px}.measurements{gap:10px}.measurements article{padding:18px 14px}.measurements strong{font-size:28px}}
   `],
 })
-export class ProfileViewComponent implements OnInit {
+export class ProfileViewComponent implements OnInit, OnChanges {
+  @Input() visible=true;
+  ngOnChanges(changes:SimpleChanges):void {if(changes['visible']?.currentValue&&!changes['visible'].firstChange){this.showWeight.set(localStorage.getItem(this.weightKey)==='true');this.ngOnInit();}}
+
   readonly auth = inject(AuthService);
   readonly error = signal('');
   readonly photoSaving = signal(false);

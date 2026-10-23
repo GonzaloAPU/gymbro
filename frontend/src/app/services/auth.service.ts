@@ -64,20 +64,22 @@ export class AuthService {
 
   /** Obtiene el perfil actualizado del servidor y sincroniza el almacenamiento y la signal compartida. */
   refreshProfile() {
+    const token=this.token;
     return this.http.get<UserProfile>('/api/auth/me').pipe(
-      tap((user) => this.saveUser(user)),
+      tap((user) => {if(token&&this.token===token)this.saveUser(user);}),
     );
   }
 
   /** Envía únicamente los campos a modificar y guarda el perfil confirmado por el servidor. */
   updateProfile(data: Partial<Pick<UserProfile, 'name' | 'goal' | 'heightCm' | 'currentKg' | 'gymName' | 'discipline' | 'photoUrl' | 'restDays' | 'leaderboardOptIn'>>) {
+    const token=this.token;
     const changes={...data};
     // Editar nombre o foto no debe reenviar medidas que el usuario no modificó.
     for(const key of ['heightCm','currentKg','goal','discipline'] as const){
       if(changes[key]===this.user()?.[key])delete changes[key];
     }
     return this.http.patch<UserProfile>('/api/auth/me', changes).pipe(
-      tap((user) => this.saveUser(user)),
+      tap((user) => {if(token&&this.token===token)this.saveUser(user);}),
     );
   }
 

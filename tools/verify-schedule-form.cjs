@@ -15,7 +15,7 @@ const auth = { user: () => ({ id: 'test-user' }) };
 const compiled = ts.transpileModule(fs.readFileSync('frontend/src/app/components/dashboard.component.ts','utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, experimentalDecorators: true } }).outputText;
 const output = {};
 vm.runInNewContext(compiled, { exports: output, localStorage: { getItem: () => null }, require: name => {
-  if (name === '@angular/core') return { Component: () => target => target, signal, inject: token => token === 'routines' ? routineService : auth };
+  if (name === '@angular/core') return { Component: () => target => target, Input:()=>()=>{}, signal, inject: token => token === 'routines' ? routineService : auth };
   if (name === '@angular/common' || name === '@angular/router') return {};
   if (name.includes('routine.service')) return { RoutineService: 'routines' };
   if (name.includes('auth.service')) return { AuthService: 'auth' };

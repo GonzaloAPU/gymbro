@@ -411,3 +411,40 @@ assert.equal(cardio.current().workSeconds,120,'Cardio usa los minutos planificad
 assert.equal(cardio.setDraft(0).weight,'0');assert.equal(cardio.setDraft(0).reps,'1');
 cardio.ngOnDestroy();routineService.getAll=originalGetAll;
 console.log('OK: cardio respeta duración y no inventa kilos ni repeticiones de fuerza.');
+
+// El objetivo puede crecer después de completar lo previsto, sin borrar las series anteriores.
+const editableCount=groupedWorkout([2]);
+for(let index=0;index<2;index++){
+  editableCount.startSeries(index);editableCount.completeSet(index,'40','8');editableCount.endRest();
+}
+assert.equal(editableCount.nextSetIndex(),-1);
+editableCount.configureSets({value:'3'});
+assert.equal(editableCount.current().sets,3);
+assert.equal(editableCount.completedSeries().length,2);
+assert.equal(editableCount.nextSetIndex(),2);
+editableCount.startSeries(2);
+const inProgressCount={value:'2'};
+editableCount.configureSets(inProgressCount);
+assert.equal(editableCount.current().sets,3,'No elimina la serie en curso');
+assert.equal(inProgressCount.value,'3','El campo vuelve al valor válido');
+editableCount.completeSet(2,'45','9');editableCount.endRest();
+assert.equal(editableCount.completedSeries().length,3);
+assert.equal(savedSets.at(-1).setNumber,3,'La serie extra se envía con su número propio');
+editableCount.returnToSeries(2);
+editableCount.configureSets({value:'2'});
+assert.equal(editableCount.current().sets,3,'Tampoco borra una serie registrada que se reabrió');
+editableCount.ngOnDestroy();routineService.getAll=originalGetAll;
+
+const fewerSets=groupedWorkout([4]);
+fewerSets.configureSets({value:'2'});
+assert.equal(fewerSets.current().sets,2,'Permite quitar series pendientes');
+for(const invalid of ['', '0','-1','1.5','1001','NaN']){
+  const input={value:invalid};fewerSets.configureSets(input);
+  assert.equal(fewerSets.current().sets,2);assert.equal(input.value,'2');
+}
+fewerSets.saving.set(true);fewerSets.configureSets({value:'3'});
+assert.equal(fewerSets.current().sets,2,'No cambia mientras guarda');
+fewerSets.saving.set(false);fewerSets.sessionFinished.set(true);fewerSets.configureSets({value:'3'});
+assert.equal(fewerSets.current().sets,2,'No cambia una sesión finalizada');
+fewerSets.ngOnDestroy();routineService.getAll=originalGetAll;
+console.log('OK: series adicionales, reducción segura, validación y protección de registros en curso/reabiertos.');

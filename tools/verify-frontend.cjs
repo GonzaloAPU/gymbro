@@ -18,6 +18,8 @@ const checks = [
   'frontend-profile-photo.test.cjs',
   'frontend-welcome.test.cjs',
   'frontend-legal.test.cjs',
+  'frontend-navigation-cache.test.cjs',
+  'frontend-session-isolation.test.cjs',
 ];
 for (const check of checks) {
   const args = check.endsWith('.test.cjs') ? ['--test', resolve(__dirname, check)] : [resolve(__dirname, check)];

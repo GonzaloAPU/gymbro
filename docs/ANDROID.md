@@ -2,7 +2,7 @@
 
 La aplicación reutiliza Angular dentro de Capacitor 8. Sus archivos se instalan en el teléfono: no abre una web alojada remotamente. Identificador inicial: `com.smartgymbro.app`. Android mínimo: 7 (API 24); objetivo: Android 16 (API 36).
 
-## APK 0.3.1 con servidor preconfigurado y privacidad
+## APK 0.3.5 con servidor preconfigurado, privacidad y carrusel
 
 Incluye `https://gymbro-api-t7mg.onrender.com` como servidor predeterminado y ya no
 requiere configurar la conexión en la primera apertura. La actualización migra una
@@ -10,8 +10,12 @@ vez las instalaciones anteriores al servidor público. Si antes usaban otro serv
 se retiran su token y perfil locales; los respaldos de entrenamientos no se borran
 y siguen separados por servidor/cuenta. Una sesión de Render ya configurada se conserva.
 La pantalla Conexión sigue disponible para diagnóstico; después de cerrar sesión
-permite cambiar manualmente de servidor. El navegador conserva el proxy de desarrollo.
-Versión Android: `0.3.1`, código `3`. Incluye términos, privacidad y consentimientos separados.
+permite cambiar manualmente de servidor en la APK. En el navegador se usa
+`frontend/proxy.conf.json`, que en esta rama apunta a Render. Cambiar el campo de
+Conexión no cambia ese proxy: hay que editar su `target` y reiniciar `ng serve`.
+Versión Android: `0.3.5`, código `7`. Incluye términos, privacidad y consentimientos separados,
+cantidad de series editable, carrusel que sigue el dedo y caché de lectura en memoria.
+Los cambios de fluidez y las reglas del gesto están en [navegación](NAVEGACION.md).
 Antes de instalarla sobre el servicio publicado, seguir el orden SQL → Render → APK de
 [privacidad](PRIVACIDAD.md). El APK directo conserva la firma debug de pruebas;
 una publicación en Play Store requiere preparar la firma de distribución.

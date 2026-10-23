@@ -2,12 +2,13 @@
  * Pantalla de progreso y rankings. Consume el resumen y el ranking por ejercicio; el volumen mostrado se calcula sobre las sesiones recientes recibidas.
  * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
  */
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, computed, inject, OnInit, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { ExerciseLeaderboard, ProgressService, WeightEntry, StrengthRecord } from '../services/progress.service';
 import { AuthService } from '../services/auth.service';
 
 @Component({
+  selector:'app-progress',
   standalone: true,
   imports: [DatePipe, DecimalPipe],
   // Todas las métricas y mediciones se obtienen de la API; no se muestran gráficas de ejemplo.
@@ -36,7 +37,10 @@ import { AuthService } from '../services/auth.service';
     .leaderboard{margin-top:24px;padding:28px;background:var(--surface);border:1px solid var(--line);border-radius:20px}.ranking-head{display:flex;align-items:center;justify-content:space-between;gap:15px}.ranking-head h2{margin:8px 0;font-size:28px}.ranking-head>button{border:1px solid var(--line);background:var(--surface-2);color:var(--text);border-radius:9px;padding:10px 13px;cursor:pointer;font-size:12px}.leaderboard>p{font-size:12px;line-height:1.7;color:var(--muted)}.ranking-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0}.ranking-tabs button{padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);cursor:pointer;font-size:12px}.ranking-tabs button.active{background:var(--lime);border-color:var(--lime);color:#0b130d;font-weight:800}.ranking-scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:500px;text-align:left}caption{text-align:left;font-size:13px;font-weight:700;margin-bottom:16px}th{font-size:9px;letter-spacing:.1em;color:var(--muted);padding:12px 10px}td{padding:15px 10px;border-top:1px solid var(--line);font-size:12px}td strong{color:var(--lime);font-size:19px}td small{font-size:11px;color:var(--muted)}.rank-number{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--surface-2);color:var(--muted);font-weight:800}.rank-number.podium{background:#fbbf2415;color:#fbbf24}.my-rank{background:#a3e63508}.you-label{display:inline-block;color:var(--lime);font-size:9px;padding:4px 6px;margin-left:8px;border:1px solid #a3e63540;border-radius:5px}.empty-ranking{text-align:center;color:var(--muted);padding:30px}.leaderboard .ranking-error{color:#fca5a5}.leaderboard .ranking-note{font-size:10px;margin:18px 0 0}@media(max-width:550px){.leaderboard{padding:18px}.ranking-head h2{font-size:23px}}.progress{padding-top:58px;padding-bottom:80px}.kicker{color:var(--lime);font-size:11px;letter-spacing:.18em;font-weight:800}.progress>h1{font-size:clamp(46px,6vw,72px);letter-spacing:-.05em;margin:12px 0}.lead{color:var(--muted);font-size:17px;max-width:580px}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:20px;overflow:hidden;margin:44px 0 20px}.metrics article{background:var(--surface);padding:28px}.metrics article>span{display:block;color:var(--muted);font-size:10px;letter-spacing:.13em}.metrics strong{font-size:42px;display:block;margin:14px 0 7px}.metrics small{font-size:16px;color:var(--muted)}.metrics em{font-size:12px;color:var(--lime);font-style:normal}.content{display:grid;grid-template-columns:1.65fr 1fr;gap:20px}.chart,.records{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:28px}.chart h2,.records h2{font-size:23px;margin:8px 0}svg{width:100%;height:240px;margin-top:12px;overflow:visible}.records>div{display:flex;justify-content:space-between;align-items:center;padding:20px 0;border-top:1px solid var(--line)}.records>div span{display:flex;flex-direction:column;font-weight:700}.records>div small{color:var(--muted);margin-top:5px;font-weight:400}.records>div strong{font-size:21px}.records i{font-size:11px;color:var(--muted);font-style:normal}.empty{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:20px}@media(max-width:750px){.metrics{grid-template-columns:1fr}.content{grid-template-columns:1fr}.progress{padding-top:38px}.metrics article{padding:20px}.chart{padding:20px}}
   `]
 })
-export class ProgressComponent implements OnInit {
+export class ProgressComponent implements OnInit, OnChanges {
+  @Input() visible=true;
+  ngOnChanges(changes:SimpleChanges):void {if(changes['visible']?.currentValue&&!changes['visible'].firstChange){this.showWeight.set(localStorage.getItem(this.weightKey)==='true');this.ngOnInit();}}
+
   // Dependencias y estado de la clase: inject obtiene servicios; signal conserva valores reactivos.
   private readonly progress = inject(ProgressService);
   private readonly auth = inject(AuthService);
