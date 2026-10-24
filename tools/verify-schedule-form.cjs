@@ -24,6 +24,11 @@ vm.runInNewContext(compiled, { exports: output, localStorage: { getItem: () => n
   return require(name);
 } });
 const dashboard = new output.DashboardComponent();
+const endInput = {value: ''};
+dashboard.suggestScheduleEnd('19:00', endInput);
+assert.equal(endInput.value, '19:30');
+dashboard.suggestScheduleEnd('23:45', endInput);
+assert.equal(endInput.value, '', 'No propone un final anterior al inicio al cruzar medianoche');
 const day = { id: 'day', schedule: [] };
 dashboard.routines.set([{id:'routine', days:[day]}]);
 dashboard.openSchedule(day);

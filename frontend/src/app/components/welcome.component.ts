@@ -11,7 +11,7 @@ import {WelcomeInput,WelcomeProposal,WelcomeService} from '../services/welcome.s
     <span class="kicker">TU PRIMER PLAN</span><h1>Empezá con tu semana armada</h1>
     <p class="intro">Contanos cómo querés entrenar. Te proponemos rutinas, horarios y descansos que después podés modificar.</p>
     @if(loading()) {<p role="status">Preparando bienvenida…</p>} @else {
-      <ol class="steps" aria-label="Pasos de bienvenida"><li [class.active]="step()===1">1 · Sobre vos</li><li [class.active]="step()===2">2 · Tu semana</li><li [class.active]="step()===3">3 · Tu plan</li></ol>
+      <ol class="steps" aria-label="Pasos de bienvenida">@for(label of ['Sobre vos','Tu semana','Tu plan'];track $index){<li [class.active]="step()===$index+1"><button type="button" [disabled]="busy()" [attr.aria-current]="step()===$index+1?'step':null" (click)="goToStep($index+1)">{{$index+1}} · {{label}}</button></li>}</ol>
       @if(error()) {<p class="notice error" role="alert">{{error()}}</p>}
       <div class="card">
       @if(step()===1) {
@@ -64,7 +64,7 @@ export class WelcomeComponent implements OnInit {
   private readonly router=inject(Router);
   readonly step=signal(1);readonly loading=signal(true);readonly busy=signal(false);readonly error=signal('');readonly aiAvailable=signal(false);
   readonly proposal=signal<WelcomeProposal|null>(null);readonly restrictionAnswer=signal<''|'YES'|'NO'>('');
-  readonly form=signal<WelcomeInput>({age:0,heightCm:this.auth.user()?.heightCm||0,weightKg:this.auth.user()?.currentKg||0,goal:'GENERAL',experience:'BEGINNER',place:'HOME',equipment:[],sessions:3,minutes:45,availability:[1,3,5].map(weekday=>({weekday,start:'18:00',end:'19:00'})),hasRestrictions:false,mode:'LOCAL',aiConsent:false});
+  readonly form=signal<WelcomeInput>({age:0,heightCm:this.auth.user()?.heightCm||0,weightKg:this.auth.user()?.currentKg||0,goal:'GENERAL',experience:'BEGINNER',place:'HOME',equipment:[],sessions:3,minutes:30,availability:[1,3,5].map(weekday=>({weekday,start:'18:00',end:'18:30'})),hasRestrictions:false,mode:'LOCAL',aiConsent:false});
   readonly places=[{value:'GYM' as const,label:'Gimnasio'},{value:'HOME' as const,label:'Casa'},{value:'PARK' as const,label:'Parque'}];
   readonly equipment=[{value:'DUMBBELLS',label:'Mancuernas'},{value:'BENCH',label:'Banco'},{value:'BARBELL',label:'Barra y discos'},{value:'CABLE',label:'Polea'},{value:'PULLUP',label:'Barra fija'}];
   readonly durations=[30,45,60,75,90];
@@ -78,11 +78,21 @@ export class WelcomeComponent implements OnInit {
     finally{this.loading.set(false);}
   }
   setField<K extends keyof WelcomeInput>(key:K,value:WelcomeInput[K]){if(this.busy())return;this.form.update(form=>({...form,[key]:value}));this.error.set('');}
-  numberField(key:'age'|'heightCm'|'weightKg'|'sessions'|'minutes',raw:string){this.setField(key,Number(raw));}
+  numberField(key:'age'|'heightCm'|'weightKg'|'sessions'|'minutes',raw:string){
+    this.setField(key,Number(raw));
+    if(key==='minutes'&&!this.busy())this.setField('availability',this.form().availability.map(slot=>({...slot,end:this.endAfter(slot.start)})));
+  }
   toggleEquipment(item:string){const list=this.form().equipment;this.setField('equipment',list.includes(item)?list.filter(value=>value!==item):[...list,item]);}
   available(day:number){return this.form().availability.some(slot=>slot.weekday===day);}
-  toggleDay(weekday:number){const slots=this.form().availability;this.setField('availability',this.available(weekday)?slots.filter(slot=>slot.weekday!==weekday):[...slots,{weekday,start:'18:00',end:'19:00'}].sort((a,b)=>((a.weekday+6)%7)-((b.weekday+6)%7)));}
-  changeTime(day:number,key:'start'|'end',value:string){this.setField('availability',this.form().availability.map(slot=>slot.weekday===day?{...slot,[key]:value}:slot));}
+  toggleDay(weekday:number){const slots=this.form().availability;this.setField('availability',this.available(weekday)?slots.filter(slot=>slot.weekday!==weekday):[...slots,{weekday,start:'18:00',end:this.endAfter('18:00')}].sort((a,b)=>((a.weekday+6)%7)-((b.weekday+6)%7)));}
+  /** El final sigue la duración elegida; el usuario puede ampliarlo manualmente. */
+  private endAfter(start:string):string {
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(start))return '';
+    const total=Number(start.slice(0,2))*60+Number(start.slice(3))+this.form().minutes;
+    if(total>=1440)return ''; // No convertir un horario nocturno en uno anterior al inicio.
+    return `${Math.floor(total/60)}`.padStart(2,'0')+':'+`${total%60}`.padStart(2,'0');
+  }
+  changeTime(day:number,key:'start'|'end',value:string){this.setField('availability',this.form().availability.map(slot=>slot.weekday===day?{...slot,[key]:value,...(key==='start'?{end:this.endAfter(value)}:{})}:slot));}
   dayName(day:number){return this.weekdays.find(value=>value.value===day)?.name||'';}
   restLabel(days:number[]){return this.weekdays.filter(day=>days.includes(day.value)).map(day=>day.name).join(' · ')||'Sin días adicionales';}
   private validate(step:number){
@@ -100,6 +110,11 @@ export class WelcomeComponent implements OnInit {
   }
   next(){if(this.busy()||!this.validate(this.step()))return;this.step.update(value=>Math.min(3,value+1));this.error.set('');}
   previous(){if(this.busy())return;this.step.update(value=>Math.max(1,value-1));this.error.set('');}
+  goToStep(target:number){
+    if(this.busy()||target<1||target>3)return;
+    if(target>this.step())for(let current=1;current<target;current++)if(!this.validate(current))return;
+    this.proposal.set(null);this.step.set(target);this.error.set('');
+  }
   edit(){this.proposal.set(null);this.step.set(1);this.error.set('');}
   private failure(error:unknown){return (error as {error?:{message?:string}})?.error?.message||'No pudimos completar la operación. Reintentá; no se reemplazó tu plan.';}
   async generate(){

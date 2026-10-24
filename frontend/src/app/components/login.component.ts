@@ -18,13 +18,13 @@ import { ApiEndpointService } from '../services/api-endpoint.service';
     <section class="auth-page">
       <form class="auth-card" (submit)="submit($event, email.value, password.value)">
         <span class="kicker">INICIAR SESIÓN</span>
-        <h2>Hola de nuevo.</h2>
-        <p>Ingresá con tu cuenta para continuar.</p>
+        <h2>Iniciá sesión</h2>
+        <p>Si ya tenés una cuenta de Gymbro, ingresá tus datos.</p>
         <label>Email<input #email type="email" autocomplete="email" placeholder="vos@email.com" required></label>
         <label>Contraseña<input #password type="password" autocomplete="current-password" placeholder="Mínimo 8 caracteres" minlength="8" required></label>
         @if (error()) { <div class="form-error">{{ error() }}</div> }
-        <button class="button primary" type="submit" [disabled]="loading()">{{ loading() ? 'Ingresando…' : 'Ingresar' }} <span>→</span></button>
-        <div class="switch">¿No tenés cuenta? <a routerLink="/registro">Crear cuenta</a></div>
+        <button class="button primary" type="submit" [disabled]="loading()">{{ loading() ? 'Ingresando…' : 'Iniciar sesión' }} <span>→</span></button>
+        <div class="switch">¿Es tu primera vez? <a class="button ghost" routerLink="/registro">Crear una cuenta nueva</a></div>
         <p class="switch"><a routerLink="/terminos">Términos</a> · <a routerLink="/privacidad">Privacidad</a></p>
         @if (endpoint.native) { <a class="connection-link" routerLink="/conexion">Configurar conexión al servidor</a> }
       </form>
