@@ -31,8 +31,8 @@ import {WelcomeInput,WelcomeProposal,WelcomeService} from '../services/welcome.s
         <div class="choices">@for(place of places;track place.value){<button type="button" [class.selected]="form().place===place.value" [attr.aria-pressed]="form().place===place.value" (click)="setField('place',place.value)">{{place.label}}</button>}</div>
         <fieldset><legend>¿Qué equipamiento tenés? El peso corporal siempre está disponible.</legend><div class="equipment">@for(item of equipment;track item.value){<label class="check"><input type="checkbox" [checked]="form().equipment.includes(item.value)" (change)="toggleEquipment(item.value)">{{item.label}}</label>}</div></fieldset>
         <div class="fields"><label>Sesiones por semana<select [value]="form().sessions" (change)="numberField('sessions',$any($event.target).value)"><option value="2">2 sesiones</option><option value="3">3 sesiones</option><option value="4">4 sesiones</option></select></label><label>Tiempo por sesión<select [value]="form().minutes" (change)="numberField('minutes',$any($event.target).value)">@for(minutes of durations;track minutes){<option [value]="minutes">{{minutes}} minutos</option>}</select></label></div>
-        <h3>Días disponibles</h3><p class="help">Elegí todos los días en que podrías entrenar. Usaremos {{form().sessions}} y dejaremos recuperación entre sesiones.</p>
-        <div class="week">@for(day of weekdays;track day.value){<button type="button" [class.selected]="available(day.value)" [attr.aria-pressed]="available(day.value)" (click)="toggleDay(day.value)">{{day.short}}</button>}</div>
+        <h3>Tus {{form().sessions}} días de entrenamiento</h3><p class="help" role="status">@if(replacingDay()!==null){Elegí otro día para reemplazar {{dayName(replacingDay()!)}}.}@else{Ya marcamos {{form().sessions}} días. Para cambiar uno, tocá el día marcado y después su reemplazo.}</p>
+        <div class="week">@for(day of weekdays;track day.value){<button type="button" [class.selected]="available(day.value)" [class.replacing]="replacingDay()===day.value" [attr.aria-label]="day.name + (replacingDay()===day.value ? ': elegí su reemplazo' : available(day.value) ? ': cambiar este día' : ': usar este día')" [attr.aria-pressed]="available(day.value)" [disabled]="busy() || (!available(day.value) && replacingDay()===null)" (click)="toggleDay(day.value)">{{day.short}}</button>}</div>
         @for(slot of form().availability;track slot.weekday){<div class="time-row"><b>{{dayName(slot.weekday)}}</b><label>Desde<input type="time" [value]="slot.start" (change)="changeTime(slot.weekday,'start',$any($event.target).value)"></label><label>Hasta<input type="time" [value]="slot.end" (change)="changeTime(slot.weekday,'end',$any($event.target).value)"></label></div>}
         <p class="help">Los días sin entrenamiento se proponen como descanso. No se pisan tus horarios existentes. Los descansos ya marcados se cambian desde Inicio.</p>
       }
@@ -64,6 +64,8 @@ export class WelcomeComponent implements OnInit {
   private readonly router=inject(Router);
   readonly step=signal(1);readonly loading=signal(true);readonly busy=signal(false);readonly error=signal('');readonly aiAvailable=signal(false);
   readonly proposal=signal<WelcomeProposal|null>(null);readonly restrictionAnswer=signal<''|'YES'|'NO'>('');
+  readonly replacingDay=signal<number|null>(null);
+  private customDays=false;
   readonly form=signal<WelcomeInput>({age:0,heightCm:this.auth.user()?.heightCm||0,weightKg:this.auth.user()?.currentKg||0,goal:'GENERAL',experience:'BEGINNER',place:'HOME',equipment:[],sessions:3,minutes:30,availability:[1,3,5].map(weekday=>({weekday,start:'18:00',end:'18:30'})),hasRestrictions:false,mode:'LOCAL',aiConsent:false});
   readonly places=[{value:'GYM' as const,label:'Gimnasio'},{value:'HOME' as const,label:'Casa'},{value:'PARK' as const,label:'Parque'}];
   readonly equipment=[{value:'DUMBBELLS',label:'Mancuernas'},{value:'BENCH',label:'Banco'},{value:'BARBELL',label:'Barra y discos'},{value:'CABLE',label:'Polea'},{value:'PULLUP',label:'Barra fija'}];
@@ -73,18 +75,38 @@ export class WelcomeComponent implements OnInit {
     try {
       const [status,draft]=await Promise.all([firstValueFrom(this.api.status()),firstValueFrom(this.api.draft())]);
       this.aiAvailable.set(status.aiAvailable);
-      if(draft){this.form.set(draft.preferences);this.restrictionAnswer.set(draft.preferences.hasRestrictions?'YES':'NO');this.proposal.set(draft.proposal);this.step.set(3);}
+      if(draft){this.form.set(draft.preferences);this.customDays=true;this.matchSessionDays();this.restrictionAnswer.set(draft.preferences.hasRestrictions?'YES':'NO');this.proposal.set(draft.proposal);this.step.set(3);}
     }catch{this.error.set('No pudimos cargar la configuración. Podés completar la ficha y reintentar.');}
     finally{this.loading.set(false);}
   }
   setField<K extends keyof WelcomeInput>(key:K,value:WelcomeInput[K]){if(this.busy())return;this.form.update(form=>({...form,[key]:value}));this.error.set('');}
   numberField(key:'age'|'heightCm'|'weightKg'|'sessions'|'minutes',raw:string){
+    if(this.busy())return;
     this.setField(key,Number(raw));
+    if(key==='sessions')this.matchSessionDays();
     if(key==='minutes'&&!this.busy())this.setField('availability',this.form().availability.map(slot=>({...slot,end:this.endAfter(slot.start)})));
   }
   toggleEquipment(item:string){const list=this.form().equipment;this.setField('equipment',list.includes(item)?list.filter(value=>value!==item):[...list,item]);}
   available(day:number){return this.form().availability.some(slot=>slot.weekday===day);}
-  toggleDay(weekday:number){const slots=this.form().availability;this.setField('availability',this.available(weekday)?slots.filter(slot=>slot.weekday!==weekday):[...slots,{weekday,start:'18:00',end:this.endAfter('18:00')}].sort((a,b)=>((a.weekday+6)%7)-((b.weekday+6)%7)));}
+  /** La cantidad elegida siempre tiene esa misma cantidad de días y horarios. */
+  private matchSessionDays(){
+    const defaults:Record<number,number[]>={2:[1,4],3:[1,3,5],4:[1,2,4,5]};
+    const preferred=defaults[this.form().sessions];if(!preferred)return;
+    const slots=this.form().availability;
+    const chosen=this.customDays?slots.map(slot=>slot.weekday).slice(0,this.form().sessions):[...preferred];
+    for(const day of [...preferred,1,2,3,4,5,6,0])if(chosen.length<this.form().sessions&&!chosen.includes(day))chosen.push(day);
+    const start=slots[0]?.start||'18:00';
+    this.setField('availability',chosen.map(weekday=>slots.find(slot=>slot.weekday===weekday)||{weekday,start,end:this.endAfter(start)}).sort((a,b)=>((a.weekday+6)%7)-((b.weekday+6)%7)));
+    this.replacingDay.set(null);
+  }
+  toggleDay(weekday:number){
+    if(this.busy())return;
+    if(this.available(weekday)){this.replacingDay.set(this.replacingDay()===weekday?null:weekday);return;}
+    if(this.replacingDay()===null)return;
+    const replaced=this.replacingDay();
+    this.setField('availability',this.form().availability.map(slot=>slot.weekday===replaced?{...slot,weekday}:slot).sort((a,b)=>((a.weekday+6)%7)-((b.weekday+6)%7)));
+    this.customDays=true;this.replacingDay.set(null);
+  }
   /** El final sigue la duración elegida; el usuario puede ampliarlo manualmente. */
   private endAfter(start:string):string {
     if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(start))return '';

@@ -5,5 +5,5 @@
 import { Component } from '@angular/core';
 
 // La vista vive en AppComponent para que el router no destruya sus relojes al navegar.
-@Component({ standalone: true, template: '' })
+@Component({ selector: 'app-workout-route', standalone: true, template: '' })
 export class WorkoutRouteComponent {}

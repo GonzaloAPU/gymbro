@@ -16,6 +16,7 @@ import {requireAuth} from './middleware/auth.js';
 import {requireActiveAccount} from './middleware/active-account.js';
 import {legalRouter} from './routes/legal.js';
 import {requireLegal} from './services/legal.js';
+import {passwordRecoveryRouter} from './routes/password-recovery.js';
 
 export const app = express();
 // Capacitor sirve los archivos instalados desde https://localhost dentro de Android.
@@ -27,14 +28,18 @@ app.use(express.json({ limit: '1mb' }));
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "smartgymbro-api" }));
 app.use('/api',(req,res,next)=>{
-  if(['/auth/register','/auth/login','/legal/documents','/legal/privacy','/legal/terms'].includes(req.path))return next();
+  // Recuperar acceso debe funcionar sin una sesión iniciada. Esto no habilita
+  // cambios libres: el POST de reset valida su propio JWT de recuperación.
+  if(['/auth/register','/auth/login','/auth/forgot-password','/auth/reset-password','/legal/documents','/legal/privacy','/legal/terms'].includes(req.path))return next();
   requireAuth(req,res,()=>requireActiveAccount(req,res,next));
 });
 app.use('/api/legal',legalRouter);
 app.use('/api',(req,res,next)=>{
-  if(['/auth/register','/auth/login','/auth/me'].includes(req.path)&&req.method!=='PATCH')return next();
+  if(['/auth/register','/auth/login','/auth/forgot-password','/auth/reset-password','/auth/me'].includes(req.path)&&req.method!=='PATCH')return next();
   requireLegal(req,res,next);
 });
+// Prefijo fijo: se suma a las rutas del router (/forgot-password y /reset-password).
+app.use('/api/auth',passwordRecoveryRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/routines", routinesRouter);
 app.use("/api/sessions", sessionsRouter);

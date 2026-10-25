@@ -4,11 +4,10 @@
  */
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { User, RoutineSchedule, RoutineDay, Routine, BodyWeightHistory, UserRestDay } from "../models/index.js";
 import { sequelize } from '../db.js';
-import { config } from "../config.js";
+import {sessionToken} from '../services/credentials.js';
 import { requireAuth } from "../middleware/auth.js";
 import {legalInput,recordLegalAcceptance} from '../services/legal.js';
 
@@ -29,7 +28,7 @@ authRouter.post("/register", async (req, res) => {
     await recordLegalAcceptance(account.id,legal,transaction);
     return account;
   });
-  const token = jwt.sign({ sub: user.id, email: user.email }, config.jwtSecret, { expiresIn: "7d" });
+  const token = sessionToken(user);
   res.status(201).json({ token, user: await publicUser(user) });
 });
 
@@ -40,7 +39,7 @@ authRouter.post("/login", async (req, res) => {
   if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
     return res.status(401).json({ message: "Email o contrasena incorrectos" });
   }
-  const token = jwt.sign({ sub: user.id, email: user.email }, config.jwtSecret, { expiresIn: "7d" });
+  const token = sessionToken(user);
   res.json({ token, user: await publicUser(user) });
 });
 
@@ -88,7 +87,7 @@ authRouter.patch("/me", requireAuth, async (req, res) => {
 
 /** Convierte el modelo a un objeto y excluye passwordHash antes de enviarlo al navegador. */
 async function publicUser(user) {
-  const { passwordHash: _passwordHash, ...safeUser } = user.toJSON();
+  const { passwordHash: _passwordHash, passwordChangedAt:_passwordChangedAt, ...safeUser } = user.toJSON();
   const [days,latest] = await Promise.all([
     UserRestDay.findAll({where:{userId:user.id},order:[['weekday','ASC']]}),
     BodyWeightHistory.findOne({where:{userId:user.id},order:[['recordedAt','DESC']]})

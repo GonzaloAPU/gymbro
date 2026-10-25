@@ -24,6 +24,7 @@ export class WorkoutStorageService implements OnDestroy {
   private readonly pendingKeys=signal(new Set<string>());
   readonly syncing=signal(false);
   readonly syncError=signal('');
+  readonly actionRequired=signal(false);
   readonly storageError=signal('');
   private activeSync=false;
   private readonly delivered=new Map<string,Set<string>>();
@@ -35,7 +36,7 @@ export class WorkoutStorageService implements OnDestroy {
     effect(() => {
       const scope = this.scope();
       untracked(() => {
-        this.syncError.set(''); this.pending.set(0); this.pendingKeys.set(new Set());
+        this.syncError.set(''); this.actionRequired.set(false); this.pending.set(0); this.pendingKeys.set(new Set());
         if (scope) {
           try { this.updateStatus(scope, this.read(scope)); }
           catch { /* Conserva el respaldo dañado para recuperación manual. */ }
@@ -151,16 +152,18 @@ export class WorkoutStorageService implements OnDestroy {
         while(this.scope()===scope) {
           const command=this.read(scope).queue[0];if(!command)break;
           const path=command.kind==='START'?'/api/sessions':command.kind==='EXERCISE'?`/api/sessions/${command.sessionId}/exercises`:command.kind==='FINISH'?`/api/sessions/${command.sessionId}/finish`:`/api/sessions/${command.sessionId}/exercises/${command.performedId}/sets${command.kind==='REPLACE'?'/'+command.body['setNumber']:''}`;
-          await firstValueFrom(this.http.request(command.kind==='REPLACE'?'PUT':'POST',path,{body:{...command.body,operationId:command.id}}).pipe(timeout(15000)));
+          await firstValueFrom(this.http.request(command.kind==='REPLACE'?'PUT':'POST',path,{body:{...command.body,operationId:command.id}}).pipe(timeout(75000)));
           if(this.scope()!==scope)break;
           await this.lock(`workout-state:${scope}`,()=>{
             const latest=this.read(scope);
             this.write(scope,{...latest,queue:latest.queue.filter(item=>item.id!==command.id)});
           });
           this.syncError.set('');
+          this.actionRequired.set(false);
         }
       });
     } catch(error:any) {
+      if(this.scope()===scope)this.actionRequired.set(error?.status>=400&&error?.status<500&&![408,429].includes(error.status));
       if(this.scope()===scope) this.syncError.set(error?.status===401?'Tu sesión de acceso venció. Volvé a ingresar con esta cuenta para sincronizar.':error?.status>=400&&error?.status<500&&![408,429].includes(error.status)?`El servidor rechazó un cambio: ${error.error?.message||'revisá los datos'}. El respaldo local se conserva.`:'Sin conexión con el servidor. Los cambios siguen guardados en este dispositivo.');
     } finally {
       this.activeSync=false;this.syncing.set(false);

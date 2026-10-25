@@ -3,7 +3,7 @@
  * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
  */
 import { Component, ElementRef, HostListener, OnDestroy, ViewChild, effect, inject, signal } from '@angular/core';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, NavigationError, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {adjacentTab,MAIN_TABS,swipeDirection,tabPath} from './tab-navigation';
 import {DashboardComponent} from './components/dashboard.component';
 import {ProgressComponent} from './components/progress.component';
@@ -22,6 +22,7 @@ import { AlarmSettingsComponent } from './components/alarm-settings.component';
   // HTML Angular: {{ }} muestra datos, [propiedad] enlaza valores y (evento) llama métodos.
   // @if y @for controlan bloques visibles y listas; #nombre referencia un elemento del formulario.
   template: `
+    @if(initialLoading()) {<div class="startup-screen" role="status" aria-live="polite"><span class="startup-mark" aria-hidden="true">SG</span><strong>Gymbro</strong>@if(initialError()){<p>No pudimos abrir Gymbro.</p><button class="button primary" type="button" (click)="retryStartup()">Reintentar</button>}@else{<span class="startup-spinner" aria-hidden="true"></span><p>Preparando tu espacio…</p>}</div>}
     <header class="topbar">
       <a class="brand" routerLink="/">
         <span class="brand-mark">SG</span>
@@ -80,6 +81,7 @@ import { AlarmSettingsComponent } from './components/alarm-settings.component';
   `,
   // CSS de este componente: disposición, colores y estados; @media adapta la vista a pantallas pequeñas.
   styles: [`
+    .startup-screen{position:fixed;inset:0;z-index:100;background:#090d18;color:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}.startup-mark{display:grid;place-items:center;width:70px;height:70px;border-radius:22px;background:#a3e635;color:#08110d;font-weight:900;font-size:24px}.startup-screen strong{font-size:28px}.startup-screen p{color:#94a3b8;font-size:14px}.startup-spinner{width:28px;height:28px;border:3px solid #263244;border-top-color:#a3e635;border-radius:50%;animation:startup-spin 1s linear infinite}@keyframes startup-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.startup-spinner{animation:none}}
     .tabbed{padding-bottom:0!important}.tab-viewport{position:relative;overflow:hidden;height:calc(100dvh - 144px - env(safe-area-inset-bottom));touch-action:pan-y pinch-zoom}
     .tab-pane{position:absolute;inset:0;width:100%;height:100%;box-sizing:border-box;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;background:var(--bg,#090d18);touch-action:pan-y pinch-zoom;z-index:1}
     .tab-pane.current{z-index:2}.dragging{cursor:grabbing;user-select:none}.settling .tab-pane{transition:transform 220ms cubic-bezier(.2,.75,.2,1)}
@@ -102,6 +104,9 @@ import { AlarmSettingsComponent } from './components/alarm-settings.component';
 export class AppComponent implements OnDestroy {
   // Dependencias y estado de la clase: inject obtiene servicios; signal conserva valores reactivos.
   readonly auth = inject(AuthService);
+  readonly initialLoading=signal(true);
+  readonly initialError=signal(false);
+  retryStartup():void {window.location.reload();}
   readonly alarmPanelOpen = signal(false);
   private readonly router = inject(Router);
   readonly workoutVisible = signal(false);
@@ -122,6 +127,7 @@ export class AppComponent implements OnDestroy {
     this.viewport?.addEventListener('click',this.stopDraggedClick,true);
   }
   private readonly navigation=this.router.events.subscribe(event=>{
+    if(event instanceof NavigationError&&this.initialLoading())this.initialError.set(true);
     if(!(event instanceof NavigationEnd))return;
     this.pointer=null;this.dragX.set(0);this.dragging.set(false);
     const index=MAIN_TABS.findIndex(path=>path===tabPath(event.urlAfterRedirects));
@@ -202,6 +208,8 @@ export class AppComponent implements OnDestroy {
   }
   /** Activa el panel autorizado sin recrear las vistas ni los cronómetros. */
   onRouteActivated(component: unknown): void {
+    this.initialLoading.set(false);
+    this.initialError.set(false);
     const index=component instanceof WorkoutRouteComponent?1:component instanceof TabRouteComponent?component.index:null;
     this.mainVisible.set(index!==null);this.workoutVisible.set(index===1);
     if(index!==null&&this.auth.isAuthenticated()){

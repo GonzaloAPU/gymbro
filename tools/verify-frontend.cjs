@@ -14,11 +14,13 @@ const checks = [
   'verify-alarms.cjs',
   'frontend-boundaries.test.cjs',
   'frontend-forms.test.cjs',
+  'frontend-password-recovery.test.cjs',
   'frontend-photo-errors.test.cjs',
   'frontend-profile-photo.test.cjs',
   'frontend-welcome.test.cjs',
   'frontend-legal.test.cjs',
   'frontend-navigation-cache.test.cjs',
+  'frontend-local-persistence.test.cjs',
   'frontend-session-isolation.test.cjs',
 ];
 for (const check of checks) {

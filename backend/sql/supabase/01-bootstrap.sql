@@ -7,7 +7,7 @@ THEN RAISE EXCEPTION 'El esquema gymbro ya existe: no se modifica. Usar migracio
 CREATE SCHEMA gymbro;
 SET LOCAL search_path TO gymbro, public;
 
-CREATE TABLE IF NOT EXISTS "gymbro"."users" ("id" UUID , "email" VARCHAR(255) NOT NULL UNIQUE, "password_hash" VARCHAR(255) NOT NULL, "name" VARCHAR(255) NOT NULL, "goal" VARCHAR(255), "height_cm" INTEGER, "gym_name" VARCHAR(255), "discipline" VARCHAR(255), "photo_url" TEXT, "leaderboard_opt_in" BOOLEAN NOT NULL DEFAULT false, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "deleted_at" TIMESTAMP WITH TIME ZONE, PRIMARY KEY ("id"));
+CREATE TABLE IF NOT EXISTS "gymbro"."users" ("id" UUID , "email" VARCHAR(255) NOT NULL UNIQUE, "password_hash" VARCHAR(255) NOT NULL, "password_changed_at" TIMESTAMP WITH TIME ZONE, "name" VARCHAR(255) NOT NULL, "goal" VARCHAR(255), "height_cm" INTEGER, "gym_name" VARCHAR(255), "discipline" VARCHAR(255), "photo_url" TEXT, "leaderboard_opt_in" BOOLEAN NOT NULL DEFAULT false, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "deleted_at" TIMESTAMP WITH TIME ZONE, PRIMARY KEY ("id"));
 
 CREATE TABLE IF NOT EXISTS "gymbro"."user_rest_days" ("id" UUID , "weekday" INTEGER NOT NULL, "user_id" UUID NOT NULL REFERENCES "gymbro"."users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, PRIMARY KEY ("id"));
 
@@ -147,6 +147,9 @@ GRANT SELECT, INSERT ON "gymbro".legal_acceptances TO gymbro_backend;
 REVOKE UPDATE, DELETE ON "gymbro".legal_acceptances FROM gymbro_backend;
 END IF; END $$;
 INSERT INTO "gymbro".schema_migrations(version) VALUES ('20261022_legal') ON CONFLICT DO NOTHING;
+
+ALTER TABLE "gymbro".users ADD COLUMN IF NOT EXISTS password_changed_at timestamptz;
+INSERT INTO "gymbro".schema_migrations(version) VALUES ('20261025_password_recovery') ON CONFLICT DO NOTHING;
 
 -- El esquema de la aplicación no se expone por REST/GraphQL de Supabase.
 REVOKE ALL ON SCHEMA gymbro FROM PUBLIC;

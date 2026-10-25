@@ -7,6 +7,7 @@ import {normalizeExerciseName} from '../backend/src/services/exercise-name.js';
 import {normalizeNameSql,exerciseGuardSql,tableChecks} from '../backend/src/services/schema-integrity.js';
 import {softDeleteSql} from '../backend/src/services/soft-delete.js';
 import {legalSchemaSql} from '../backend/src/services/legal-schema.js';
+import {passwordRecoverySql} from '../backend/src/services/password-recovery-schema.js';
 // Solo este proceso generador usa esta conexión ficticia, nunca abre un socket.
 process.env.DB_CONNECTION_MODE='LOCAL';process.env.DATABASE_URL='postgresql://unused:unused@localhost/unused';
 const {sequelize}=await import('../backend/src/db.js');
@@ -75,6 +76,8 @@ fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/03-soft-delete.s
 // Una instalación nueva ya queda en la versión actual antes de confirmar.
 statements.splice(statements.length-1,0,softDeleteSql('gymbro'));
 statements.splice(statements.length-1,0,legalSchemaSql('gymbro'));
+statements.splice(statements.length-1,0,passwordRecoverySql('gymbro'));
+fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/05-password-recovery.sql',import.meta.url)),`-- Aplicar antes de actualizar Render. Conserva usuarios y contraseñas existentes.\nBEGIN;\nSELECT pg_advisory_xact_lock(20261025);\n${passwordRecoverySql('gymbro')}\nCOMMIT;\n`);
 fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/04-legal-consents.sql',import.meta.url)),`-- Aplicar ANTES de actualizar Render. No borra datos ni acepta documentos por los usuarios.\nBEGIN;\nSELECT pg_advisory_xact_lock(20261023);\n${legalSchemaSql('gymbro')}\nCOMMIT;\nSELECT version FROM gymbro.schema_migrations WHERE version='20261022_legal';\n`);
 fs.writeFileSync(target,statements.join('\n\n')+'\n');
 await sequelize.close();

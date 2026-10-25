@@ -7,6 +7,7 @@ h3 { font-size: 17px; }
 .help { font-size: 13px; }
 .steps { display: flex; justify-content: space-between; list-style: none; padding: 0; gap: 8px; margin: 26px 0; font-size: 13px; color: var(--muted); }
 .steps .active { color: var(--lime); font-weight: 800; }
+.week button.replacing { outline: 2px solid var(--lime); outline-offset: 3px; }
 .steps button { background: transparent; border: 0; color: inherit; font: inherit; padding: 10px 0; cursor: pointer; }
 .steps button:focus-visible { outline: 2px solid var(--lime); outline-offset: 4px; }
 .steps button:disabled { opacity: .5; cursor: wait; }

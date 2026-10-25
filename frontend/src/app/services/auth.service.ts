@@ -45,17 +45,24 @@ export class AuthService {
   /** Envía credenciales, aplica un límite de espera y guarda token y usuario cuando la API responde correctamente. */
   login(credentials: { email: string; password: string }) {
     return this.http.post<AuthResponse>('/api/auth/login', credentials).pipe(
-      timeout(20000),
+      timeout(75000),
       catchError((error) => throwError(() => error.name === 'TimeoutError'
         ? new Error('El servidor tardó demasiado en responder. Intentá nuevamente.') : error)),
       tap((response) => this.saveSession(response)),
     );
   }
 
-  /** Solicita crear la cuenta y guarda la sesión devuelta; convierte la espera excesiva en un mensaje comprensible. */
+  /**
+   * Solicita el correo de recuperación sin modificar la sesión actual.
+   * POST envía {email} al backend; el interceptor agrega la dirección de API en Android.
+   * timeout limita la espera de esta petición a 75 s, no la vigencia del enlace.
+   */
+  forgotPassword(email:string){return this.http.post<{message:string}>('/api/auth/forgot-password',{email}).pipe(timeout(75000));}
+
+  /** Solicita crear la cuenta y guarda la sesión devuelta. */
   register(data: { name: string; email: string; password: string;legal:LegalInput }) {
     return this.http.post<AuthResponse>('/api/auth/register', data).pipe(
-      timeout(20000),
+      timeout(75000),
       catchError((error) => throwError(() => error.name === 'TimeoutError'
         ? new Error('El servidor tardó demasiado en responder. Intentá nuevamente.') : error)),
       tap((response) => this.saveSession(response)),

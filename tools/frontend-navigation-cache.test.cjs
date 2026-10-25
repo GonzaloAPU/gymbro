@@ -2,12 +2,14 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const {of,Subject,throwError,firstValueFrom}=require('rxjs');
 const {loadComponent}=require('./test-support/frontend.cjs');
 const {RequestCache,readPolicy,mutationGroups}=loadComponent('frontend/src/app/services/request-cache.ts');
+const {LocalReadCache,persistentRead}=loadComponent('frontend/src/app/services/local-read-cache.ts');
 const {adjacentTab,swipeDirection}=loadComponent('frontend/src/app/tab-navigation.ts');
 const clone=value=>JSON.parse(JSON.stringify(value));
 function interceptorFixture(){
   const fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
-  const auth={token:'token-a'},endpoint={native:true,server:()=> 'https://gymbro.test'};
-  class HttpResponse {constructor(body){this.body=body;}clone({body}){return new HttpResponse(body);}}
+  const auth={token:'token-a',user:()=>({id:auth.token})},endpoint={native:true,server:()=> 'https://gymbro.test'};
+  class HttpResponse {constructor(init){this.body=Object.hasOwn(init,'body')?init.body:init;}clone({body}){return new HttpResponse({body});}}
+  class IndexedReadRepository {constructor(){this.data=new Map();}async get(id){return this.data.get(id);}async put(entry){this.data.set(entry.id,entry);}async invalidateGroups(scope,groups,update){for(const [id,entry] of this.data)if(entry.scope===scope&&groups.includes(entry.group))this.data.set(id,update(entry));}}
   const exports={};
   vm.runInNewContext(ts.transpileModule(fs.readFileSync('frontend/src/app/interceptors/read-cache.interceptor.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{
     exports,require:name=>{
@@ -16,6 +18,7 @@ function interceptorFixture(){
       if(name.includes('auth.service'))return {AuthService:'auth'};
       if(name.includes('api-endpoint.service'))return {ApiEndpointService:'endpoint'};
       if(name.includes('request-cache'))return {RequestCache,readPolicy,mutationGroups};
+      if(name.includes('local-read-cache'))return {LocalReadCache,persistentRead,IndexedReadRepository};
       return require(name);
     },
   });

@@ -10,6 +10,7 @@ export const User = sequelize.define("User", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   passwordHash: { type: DataTypes.STRING, allowNull: false },
+  passwordChangedAt: {type:DataTypes.DATE,allowNull:true},
   name: { type: DataTypes.STRING, allowNull: false },
   goal: DataTypes.STRING,
   heightCm: DataTypes.INTEGER,

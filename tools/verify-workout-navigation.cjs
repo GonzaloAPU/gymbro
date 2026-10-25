@@ -13,6 +13,7 @@ const signal = initial => { let value = initial; const read = () => value; read.
 const authenticated = signal(true);
 const events = new Subject();
 class NavigationEnd { constructor(url) { this.urlAfterRedirects = url; } }
+class NavigationError {}
 class WorkoutRouteComponent {}
 class TabRouteComponent {constructor(index){this.index=index;}}
 let shell,now=1000;
@@ -30,7 +31,7 @@ class TestElement {
 const output = {};
 vm.runInNewContext(compiled, { exports: output, Date:class extends Date{static now(){return now;}},Element:TestElement,window:{innerWidth:400},getComputedStyle:element=>({overflowX:element.horizontal?'auto':'visible'}), require: name => {
   if (name === '@angular/core') return { Component: () => target => target, ViewChild:()=>()=>{}, HostListener:()=>()=>{},signal, computed: read => read, effect: run => { effects.push(run); run(); }, inject: token => token === 'auth' ? auth : router };
-  if (name === '@angular/router') return { Router: 'router', NavigationEnd };
+  if (name === '@angular/router') return { Router: 'router', NavigationEnd, NavigationError };
   if (name === '@angular/core/rxjs-interop') return { toSignal: (observable, options) => { const value = signal(options.initialValue); observable.subscribe(next => value.set(next)); return value; } };
   if (name==='./tab-navigation') {const out={};vm.runInNewContext(ts.transpileModule(fs.readFileSync('frontend/src/app/tab-navigation.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports:out});return out;}
   if (name.includes('alarm.service')) return {AlarmService:'alarms'};
@@ -55,7 +56,9 @@ const settle=()=>new Promise(resolve=>setImmediate(resolve));
 const click=()=>{let stopped=false;viewport.listeners.get('click')?.({preventDefault(){},stopImmediatePropagation(){stopped=true;}});return stopped;};
 (async()=>{
  assert.equal(shell.workoutVisited(),false);
+ assert.equal(shell.initialLoading(),true);events.next(new NavigationError());assert.equal(shell.initialError(),true,'El arranque fallido permite reintentar');
  await router.navigateByUrl('/');assert.equal(shell.mainVisible(),true);assert.equal(shell.workoutVisited(),true,'Las vistas se preparan tras pasar las guardas de una pestaña');
+ assert.equal(shell.initialLoading(),false);assert.equal(shell.initialError(),false,'La carga inicial termina al activar la primera vista');
  await router.navigateByUrl('/entrenamiento');assert.equal(shell.workoutVisible(),true);
  await router.navigateByUrl('/progreso');assert.equal(shell.workoutVisible(),false);assert.equal(shell.workoutVisited(),true);
  await router.navigateByUrl('/');

@@ -15,6 +15,7 @@ import {welcomeGuard} from './guards/welcome.guard';
 import {legalGuard} from './guards/legal.guard';
 
 export const routes: Routes = [
+  {path:'recuperar-contrasena',loadComponent:()=>import('./components/forgot-password.component').then(m=>m.ForgotPasswordComponent)},
   {path:'privacidad/ajustes',loadComponent:()=>import('./components/privacy-settings.component').then(m=>m.PrivacySettingsComponent),canActivate:[authGuard,legalGuard]},
   {path:'terminos',loadComponent:()=>import('./components/legal.component').then(m=>m.LegalComponent)},
   {path:'privacidad',data:{kind:'privacy'},loadComponent:()=>import('./components/legal.component').then(m=>m.LegalComponent)},

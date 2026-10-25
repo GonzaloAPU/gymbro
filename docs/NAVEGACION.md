@@ -36,37 +36,36 @@ El conjunto de paneles se identifica por la cuenta autorizada: cambiar de usuari
 recrea sus vistas. Una respuesta tardía de perfil o edición de la sesión anterior
 no puede reemplazar el perfil de la cuenta nueva ni reaparecer después de salir.
 
-## Caché de lectura
+## Lecturas locales y actualización de fondo
 
-`read-cache.interceptor.ts`, antes del interceptor de autenticación, reutiliza solo
-respuestas JSON correctas de rutas conocidas. La caché está **en memoria**, con un máximo
-de 100 entradas, aislada por sesión y servidor. Se vacía al cambiar de sesión/servidor
-en la próxima solicitud. No crea una copia persistente de la base ni sustituye a Supabase.
-Al cerrar el proceso se pierde esta caché; el respaldo y la cola offline del entrenamiento
-siguen usando el mecanismo existente, separado de estas lecturas.
+Las rutinas (con sus ejercicios y horarios), el perfil, el catálogo consultado,
+el resumen de progreso y el estado de bienvenida se conservan en IndexedDB.
+La clave incluye origen del servidor y cuenta, sin guardar tokens ni contraseñas.
+Al volver a abrir la app se entrega primero esa copia; si venció su vigencia,
+se consulta al servidor en segundo plano. Un fallo de red conserva los datos
+anteriores y no sustituye una pantalla útil por un error de sincronización.
 
-| Datos | Vigencia máxima |
-|---|---|
-| Perfil y rutinas | 60 segundos |
-| Catálogo de ejercicios | 5 minutos |
-| Resumen de progreso | 30 segundos |
-| Ranking | 15 segundos |
-| Estado de permisos | 30 segundos |
-| Estado de bienvenida | 60 segundos |
+Las consultas simultáneas iguales comparten la red. Perfil, rutinas y bienvenida
+se renuevan al vencer 60 segundos; catálogo, 5 minutos; progreso, 30 segundos.
+Volver al primer plano renueva perfil y rutinas. Recuperar conexión renueva las
+lecturas previamente utilizadas. El ranking usa solo caché en memoria de 15 segundos.
+Los permisos usan un recibo confirmado de la versión legal actual, limitado a
+7 días y separado por cuenta y servidor; su consulta de fondo no bloquea navegar.
 
-Al vencer una entrada, la siguiente consulta va al servidor. No hay actualización
-en segundo plano ni persistencia IndexedDB en esta etapa. Los cambios hechos en otro
-dispositivo pueden tardar hasta esa vigencia en aparecer.
+Las respuestas confirmadas de horarios, favoritos, perfil, creación de rutinas
+y ejercicios actualizan sus copias antes de volver a consultar. La invalidación
+impide que una respuesta anterior a la edición repueble el respaldo.
+Las series no provocan una consulta de progreso por cada registro: se renueva
+al sincronizar la finalización. El entrenamiento conserva su cola durable,
+identificadores estables y recuperación de relojes, separados de estas lecturas.
 
-Una escritura invalida antes y después las lecturas afectadas: horarios y favoritos
-invalidan rutinas; series invalidan progreso; peso invalida perfil/progreso; consentimientos
-invalidan permisos, perfil y ranking. No se cachean escrituras ni errores. Las solicitudes
-simultáneas iguales comparten la red y una respuesta anterior a una edición no vuelve a
-llenar la caché. Cada consumidor recibe su propia copia para no alterar los datos ajenos.
+La pantalla inicial aparece mientras arranca Angular y se autoriza la primera
+ruta; no introduce una espera artificial ni reaparece entre pestañas.
+La primera descarga y el acceso con credenciales nuevas requieren servidor.
+No se implementó una cola offline para editar el perfil, crear rutinas o registrar
+peso: esas escrituras siguen esperando confirmación del backend.
 
-El backend mantiene la validación de cuenta y consentimiento en cada operación;
-la caché de permisos solo acelera la navegación. El primer acceso aún depende de la red
-y de que Render esté activo: no se promete eliminar su tiempo de arranque.
+Ver [PERSISTENCIA-LOCAL.md](PERSISTENCIA-LOCAL.md) para alcance y verificación.
 
 ## Entrenamiento oculto
 
