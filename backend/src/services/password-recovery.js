@@ -121,7 +121,20 @@ export const recoveryDelivery={
         // 15000 son 15 SEGUNDOS de espera de red; no son la vigencia del enlace.
         signal:AbortSignal.timeout(15000),
       });
-      if(!response.ok)throw Error('No se pudo entregar el correo de recuperación.');
+      if(!response.ok){
+        // El proveedor puede incluir datos privados en su respuesta. Solo conservamos
+        // una categoría conocida y el estado HTTP; nunca imprimimos el texto recibido.
+        const detail=(await response.text()).toLowerCase();
+        let reason='rechazo del proveedor';
+        if(/non.browser|browser applications|api requests.*disabled/.test(detail))reason='habilitar solicitudes desde el servidor en EmailJS';
+        else if(/private key|access.?token/.test(detail))reason='revisar clave privada de EmailJS';
+        else if(/public key|user.?id/.test(detail))reason='revisar clave pública de EmailJS';
+        else if(/template/.test(detail))reason='revisar plantilla de EmailJS';
+        else if(/service/.test(detail))reason='revisar servicio de correo conectado en EmailJS';
+        else if(/quota|limit|too many/.test(detail))reason='cuota o límite de EmailJS alcanzado';
+        else if(/recipient|address/.test(detail))reason='revisar destinatario de la plantilla';
+        throw Object.assign(Error('No se pudo entregar el correo de recuperación.'),{deliveryDiagnostic:`EmailJS HTTP ${response.status}: ${reason}`});
+      }
     });
     deliveryTail=run;return run;
   },
@@ -189,5 +202,10 @@ export async function requestRecovery(email){
 
   // No espera la entrega para responder y no revela si existe la cuenta.
   // Los fallos se registran sin imprimir correo, token ni claves.
-  void recoveryDelivery.send(user.email,base.toString()).catch(()=>console.error('Falló la entrega de un correo de recuperación.'));
+  void recoveryDelivery.send(user.email,base.toString()).catch(error=>{
+    // No imprimir error.message ni el objeto completo: una falla de red también
+    // puede contener datos internos. Los diagnósticos de EmailJS son textos propios.
+    const diagnostic=error.deliveryDiagnostic||(error.name==='TimeoutError'?'tiempo de espera agotado':'fallo de conexión con EmailJS');
+    console.error('Falló la entrega de un correo de recuperación.',diagnostic);
+  });
 }

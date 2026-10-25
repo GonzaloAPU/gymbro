@@ -17,5 +17,17 @@ test('EmailJS: envía desde backend con plantilla, destinatario y clave privada'
 test('EmailJS: requiere configuración completa y no expone el error del proveedor',async t=>{
   configure(t);delete process.env.EMAILJS_PRIVATE_KEY;assert.equal(recoveryDelivery.configured(),false);process.env.EMAILJS_PRIVATE_KEY='private-test-only';
   t.mock.method(globalThis,'fetch',async()=>new Response('private-test-only',{status:403}));
-  await assert.rejects(recoveryDelivery.send('destino@example.invalid','https://api.example.invalid/#token=test'),error=>!error.message.includes('private-test-only'));
+  await assert.rejects(recoveryDelivery.send('destino@example.invalid','https://api.example.invalid/#token=test'),error=>{
+    assert.equal(error.deliveryDiagnostic,'EmailJS HTTP 403: rechazo del proveedor');
+    assert.ok(!JSON.stringify(error).includes('private-test-only'));return true;
+  });
+});
+
+test('EmailJS: diagnostica solicitudes del servidor deshabilitadas sin revelar la respuesta',async t=>{
+  configure(t);
+  t.mock.method(globalThis,'fetch',async()=>new Response('API requests are disabled for non-browser applications: private-test-only',{status:403}));
+  await assert.rejects(recoveryDelivery.send('destino@example.invalid','https://api.example.invalid/#token=test'),error=>{
+    assert.equal(error.deliveryDiagnostic,'EmailJS HTTP 403: habilitar solicitudes desde el servidor en EmailJS');
+    assert.ok(!JSON.stringify(error).includes('private-test-only'));return true;
+  });
 });
