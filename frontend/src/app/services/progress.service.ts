@@ -13,7 +13,7 @@ export interface StrengthRecord { id: string; maxWeightKg: number; repetitions: 
 // Contrato de datos: describe campos y tipos para detectar errores durante la compilación.
 export interface ProgressSummary { sessions: TrainingSession[]; weights: WeightEntry[]; records: StrengthRecord[]; totalCalories: number; completedSessions: number; }
 // Contrato de datos: describe campos y tipos para detectar errores durante la compilación.
-export interface LeaderboardUser { userId: string; name: string; weightKg: number; repetitions: number; achievedAt: string; rank: number; isCurrentUser: boolean; }
+export interface LeaderboardUser { exerciseName?: string; userId: string; name: string; weightKg: number; repetitions: number; achievedAt: string; rank: number; isCurrentUser: boolean; }
 // Contrato de datos: describe campos y tipos para detectar errores durante la compilación.
 export interface ExerciseLeaderboard { key: string; name: string; users: LeaderboardUser[]; }
 

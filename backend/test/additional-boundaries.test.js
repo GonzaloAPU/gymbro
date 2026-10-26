@@ -77,18 +77,18 @@ test('extra progreso: historial de peso se entrega cronológicamente',async t=>{
 });
 test('extra ranking: convierte valores SQL y distingue la marca propia',async t=>{
   t.mock.method(sequelize,'query',async()=>[
-    {category:'bench',userId:'owner',name:'Yo',weightKg:'80.50',repetitions:5,rank:'1'},
+    {category:'bench',userId:'owner',name:'Yo',exerciseName:'Press inclinado con mancuernas',weightKg:'80.50',repetitions:5,rank:'1'},
     {category:'bench',userId:'other',name:'Otra',weightKg:'70',repetitions:8,rank:'2'},
   ]);
   const request=await httpClient(t),result=await request('/progress/leaderboard');
   assert.equal(result.status,200);const users=result.data.exercises[0].users;
-  assert.equal(users[0].weightKg,80.5);assert.equal(users[0].rank,1);
+  assert.equal(users[0].weightKg,80.5);assert.equal(users[0].rank,1);assert.equal(users[0].exerciseName,'Press inclinado con mancuernas');
   assert.equal(users[0].isCurrentUser,true);assert.equal(users[1].isCurrentUser,false);
 });
-test('extra ranking: sin marcas conserva las cuatro categorías vacías',async t=>{
+test('extra ranking: sin marcas conserva las tres categorías vacías',async t=>{
   t.mock.method(sequelize,'query',async()=>[]);
   const request=await httpClient(t),result=await request('/progress/leaderboard');
   assert.equal(result.status,200);
-  assert.deepEqual(result.data.exercises.map(e=>e.key),['bench','squat','deadlift','romanian']);
+  assert.deepEqual(result.data.exercises.map(e=>e.key),['bench','squat','deadlift']);
   assert.ok(result.data.exercises.every(e=>e.users.length===0));
 });

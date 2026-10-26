@@ -28,7 +28,7 @@
     "test:recovery": "node tools/verify-workout-recovery.cjs",
     "test:alarms": "node tools/verify-alarms.cjs",
     "supabase:sql": "node tools/build-supabase-sql.mjs",
-    "supabase:test": "node --test tools/supabase-schema.test.mjs tools/personal-records-sql.test.mjs"
+    "supabase:test": "node --test tools/supabase-schema.test.mjs tools/personal-records-sql.test.mjs tools/leaderboard-sql.test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.16",
