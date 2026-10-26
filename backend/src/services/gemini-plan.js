@@ -1,7 +1,7 @@
 /** Adaptador Gemini: clave solo en backend, salida estructurada y validación posterior. */
 import {allowedCatalog,planningError,validateAIPlan,sessionGroups} from './welcome-planner.js';
 export const geminiAvailable=()=>process.env.GEMINI_ENABLED==='true'&&Boolean(process.env.GEMINI_API_KEY);
-const schema={type:'object',required:['sessions'],properties:{sessions:{type:'array',items:{type:'object',required:['exercises'],properties:{exercises:{type:'array',items:{type:'object',required:['exerciseId','targetSets','minReps','maxReps','restSeconds'],properties:{exerciseId:{type:'string'},targetSets:{type:'integer'},minReps:{type:'integer'},maxReps:{type:'integer'},restSeconds:{type:'integer'}}}}}}}}};
+const schema={type:'object',required:['sessions'],properties:{sessions:{type:'array',items:{type:'object',required:['exercises'],properties:{exercises:{type:'array',minItems:4,maxItems:4,items:{type:'object',required:['exerciseId','targetSets','minReps','maxReps','restSeconds'],properties:{exerciseId:{type:'string'},targetSets:{type:'integer'},minReps:{type:'integer'},maxReps:{type:'integer'},restSeconds:{type:'integer'}}}}}}}}};
 export async function generateGeminiPlan(input,catalog,base,fetchImpl=fetch){
   if(!geminiAvailable())throw planningError('La IA todavía no está configurada. Podés generar tu plan local.',503);
   if(!input.aiConsent)throw planningError('Confirmá el envío de los parámetros deportivos para usar la IA.',400);
@@ -10,7 +10,9 @@ export async function generateGeminiPlan(input,catalog,base,fetchImpl=fetch){
   const profile={goal:input.goal,experience:input.experience,place:input.place,equipment:input.equipment,sessions:input.sessions,minutes:input.minutes};
   const prompt=`Proponé un plan inicial de entrenamiento general, sin recomendaciones clínicas ni rehabilitación.
 Elegí exclusivamente exerciseId del catálogo provisto. No inventes ejercicios, cargas en kg ni consejos médicos.
-Cada sesión: 2 a 4 ejercicios únicos, 1 a 2 series, 6 a 15 repeticiones, descanso de 60 a 180 segundos.
+Cada sesión debe contener 4 ejercicios únicos como mínimo (en esta versión, exactamente 4).
+Usá 1 a 2 series, 6 a 15 repeticiones, descanso de 60 a 180 segundos.
+Si el tiempo es corto, reducí series, nunca la cantidad de ejercicios.
 Mantener intensidad inicial moderada. Gymbro aplica los límites individuales sin compartir datos corporales.
 Respetá estos grupos por sesión, en orden: ${JSON.stringify(sessionGroups(base.sessions.map(session=>session.slot)))}.
 UPPER: solo tren superior; LOWER: solo tren inferior; CORE: solo zona media; null: incluir superior e inferior.

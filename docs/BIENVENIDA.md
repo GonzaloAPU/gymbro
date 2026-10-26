@@ -19,6 +19,8 @@ El prototipo limita la generación con IA a tres intentos por cuenta cada diez m
 
 ## Reglas y alcance
 
+Cada sesión generada contiene cuatro ejercicios distintos como mínimo (el límite actual también es cuatro). Gemini recibe ese requisito y se rechazan respuestas con menos ejercicios. En el plan local, si el tiempo no alcanza se reducen las series hasta un mínimo de una, conservando los cuatro ejercicios y el horario solicitado.
+
 Un plan nuevo reemplaza las rutinas y el calendario anteriores al aceptarlo, dentro de una transacción. Generar, cancelar o fallar una propuesta no modifica la semana vigente. Las rutinas anteriores se archivan mediante borrado lógico: el historial de entrenamientos se conserva. Los descansos se recalculan desde la semana nueva, sin heredar bloqueos anteriores.
 
 Se permiten de dos a siete sesiones. Se prioriza separar sesiones de cuerpo completo; si los días elegidos son consecutivos, se distribuyen bloques de tren superior, inferior y zona media según la cantidad de sesiones. Gemini recibe esta distribución y el backend la valida. Elegir siete sesiones no obliga a inventar un día de descanso.

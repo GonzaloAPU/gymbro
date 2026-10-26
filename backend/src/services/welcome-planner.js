@@ -25,6 +25,8 @@ const choices=[
   ['Flexiones con rodillas apoyadas',[],'UPPER'],['Flexiones de brazos',[],'UPPER'],
   ['Elevación de talón unilateral',[],'LOWER'],['Crunch abdominal',[],'CORE'],
   ['Dead bug',[],'CORE'],['Bird dog',[],'CORE'],
+  ['Crunch inverso',[],'CORE'],['Zancadas sin peso',[],'LOWER'],
+  ['Flexiones contra la pared',[],'UPPER'],['Flexiones escapulares',[],'UPPER'],
   ['Peso muerto rumano con mancuernas',['DUMBBELLS'],'LOWER'],['Zancadas hacia atrás',['DUMBBELLS'],'LOWER'],
   ['Press militar',['DUMBBELLS'],'UPPER'],['Curl de biceps',['DUMBBELLS'],'UPPER'],
   ['Press banca con mancuernas',['DUMBBELLS','BENCH'],'UPPER'],
@@ -90,19 +92,24 @@ export function makeLocalPlan(input,catalog,existing=[]){
     const group=groups[index];
     let pool=allowed.filter(e=>!group||e.group===group);
     if(input.equipment.length)pool.sort((a,b)=>Number(a.equipment==='Peso corporal')-Number(b.equipment==='Peso corporal'));
-    if(pool.length<2)throw planningError('Faltan ejercicios compatibles en el catálogo. Actualizá la precarga o elegí otro equipamiento.');
+    if(pool.length<4)throw planningError('Faltan cuatro ejercicios compatibles en el catálogo. Actualizá la precarga o elegí otro equipamiento.');
     // Alterna variantes sin repetir el mismo ejercicio en una sesión.
     if(index%2)pool=[...pool.slice(1),pool[0]];
     if(!group){const upper=pool.find(e=>e.group==='UPPER'),lower=pool.find(e=>e.group==='LOWER'),core=pool.find(e=>e.group==='CORE');pool=[lower,upper,core,...pool].filter((e,i,all)=>e&&all.findIndex(other=>other?.id===e.id)===i);}
-    const exercises=pool.slice(0,input.minutes>=60?4:3).map(e=>prescription(input,e.id));
-    while(exercises.length>2&&estimateMinutes(exercises)>input.minutes)exercises.pop();
+    const exercises=pool.slice(0,4).map(e=>prescription(input,e.id));
+    // Conserva los cuatro ejercicios: ajusta series para respetar una sesión corta.
+    while(estimateMinutes(exercises)>input.minutes){
+      const adjustable=[...exercises].sort((a,b)=>b.targetSets-a.targetSets).find(exercise=>exercise.targetSets>1);
+      if(!adjustable)break;
+      adjustable.targetSets--;
+    }
     if(estimateMinutes(exercises)>input.minutes)throw planningError('La sesión no entra en el tiempo disponible. Aumentá su duración.');
     return {name:group?({UPPER:'Tren superior',LOWER:'Tren inferior',CORE:'Zona media'}[group])+` ${index+1}`:`Cuerpo completo ${index+1}`,slot,exercises};
   });
   return {name:`Mi primer plan · ${goalLabels[input.goal]}`,source:'LOCAL',sessions,
     restDays:[0,1,2,3,4,5,6].filter(day=>!slots.some(slot=>slot.weekday===day)&&!existing.some(slot=>slot.weekday===day))};
 }
-export const aiPlanSchema=z.object({sessions:z.array(z.object({exercises:z.array(z.object({exerciseId:z.string().uuid(),targetSets:z.number().int().min(1).max(3),minReps:z.number().int().min(6).max(15),maxReps:z.number().int().min(6).max(15),restSeconds:z.number().int().min(60).max(180)}).strict()).min(2).max(4)}).strict()).min(2).max(7)}).strict();
+export const aiPlanSchema=z.object({sessions:z.array(z.object({exercises:z.array(z.object({exerciseId:z.string().uuid(),targetSets:z.number().int().min(1).max(3),minReps:z.number().int().min(6).max(15),maxReps:z.number().int().min(6).max(15),restSeconds:z.number().int().min(60).max(180)}).strict()).min(4).max(4)}).strict()).min(2).max(7)}).strict();
 export function validateAIPlan(raw,input,catalog,base){
   const parsed=aiPlanSchema.safeParse(raw);if(!parsed.success)throw planningError('La IA devolvió un formato de plan inválido. Podés usar el plan local.',502);
   const allowed=allowedCatalog(input,catalog),ids=new Set(allowed.map(e=>e.id));

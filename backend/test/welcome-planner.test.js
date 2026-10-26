@@ -21,7 +21,7 @@ test('bienvenida: genera plan sin claves, con horarios y descanso complementario
   assert.ok(plan.sessions.every(s=>estimateMinutes(s.exercises)<=45&&s.exercises.every(e=>e.targetSets===2)));
 });
 test('bienvenida: casa sin equipo solo usa ejercicios de peso corporal',()=>{
-  assert.ok(allowedCatalog(input(),catalog).every(e=>['Peso corporal','Colchoneta'].includes(e.equipment)));
+  assert.ok(allowedCatalog(input(),catalog).every(e=>['Peso corporal','Colchoneta','Pared'].includes(e.equipment)));
 });
 test('bienvenida: press de banco requiere banco además de mancuernas',()=>{
   assert.ok(!allowedCatalog(input({equipment:['DUMBBELLS']}),catalog).some(e=>e.name==='Press banca con mancuernas'));
@@ -61,6 +61,18 @@ test('bienvenida: persona mayor conserva límite inicial de dos series',()=>{
 });
 test('bienvenida: 30 minutos alcanza sin alargar el horario elegido',()=>{
   const plan=makeLocalPlan(input({minutes:30}),catalog);assert.ok(plan.sessions.every(s=>estimateMinutes(s.exercises)<=30&&s.slot.end==='18:30'));
+  assert.ok(plan.sessions.every(session=>session.exercises.length===4));
+});
+
+test('bienvenida: cuatro ejercicios caben en 30 minutos también para fuerza y nivel intermedio',()=>{
+  const data=input({minutes:30,goal:'STRENGTH',experience:'INTERMEDIATE'}),plan=makeLocalPlan(data,catalog);
+  assert.ok(plan.sessions.every(session=>session.exercises.length===4&&estimateMinutes(session.exercises)<=30));
+  assert.doesNotThrow(()=>validateAIPlan(aiShape(plan),data,catalog,plan));
+});
+
+test('bienvenida: rechaza una respuesta de Gemini con menos de cuatro ejercicios',()=>{
+  const data=input(),plan=makeLocalPlan(data,catalog),raw=aiShape(structuredClone(plan));
+  raw.sessions[0].exercises.pop();assert.throws(()=>validateAIPlan(raw,data,catalog,plan),{status:502});
 });
 test('bienvenida: catálogo incompleto no produce una rutina vacía',()=>assert.throws(()=>makeLocalPlan(input(),[]),{status:422}));
 test('bienvenida: respuesta IA con ID inventado se rechaza',()=>{
