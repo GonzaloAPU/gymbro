@@ -79,6 +79,8 @@ test('Gemini: envía solo parámetros deportivos y valida la respuesta',async t=
   const result=await generateGeminiPlan(data,catalog,plan,async(url,options)=>{
     assert.ok(url.startsWith('https://generativelanguage.googleapis.com/'));const body=JSON.parse(options.body);
     assert.ok(!body.contents[0].parts[0].text.includes('18:00'));assert.ok(!body.contents[0].parts[0].text.includes('fake-test-key'));
+    const parameters=JSON.parse(body.contents[0].parts[0].text.split('Parámetros: ')[1].split('\nCatálogo: ')[0]);
+    assert.deepEqual(Object.keys(parameters).sort(),['equipment','experience','goal','minutes','place','sessions']);
     return {ok:true,json:async()=>({candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify(aiShape(plan))}]}}]})};
   });assert.equal(result.source,'GEMINI');assert.deepEqual(result.sessions.map(s=>s.slot),plan.sessions.map(s=>s.slot));
 });

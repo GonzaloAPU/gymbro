@@ -7,7 +7,7 @@ La ruta `/bienvenida` ofrece tres pasos: datos básicos y experiencia, lugar/equ
 - **LOCAL:** biblioteca de candidatos incluida en `backend/src/services/welcome-planner.js`. Resuelve IDs del catálogo oficial, adapta series/repeticiones/descansos y distribuye sesiones. No consulta proveedores ni genera claves. «Local» significa sin servicio de IA: el registro y la persistencia siguen requiriendo el backend de Gymbro.
 - **GEMINI:** solicita una propuesta al proveedor con formato JSON y valida sus IDs, equipamiento, series, repeticiones, duración, distribución y límites iniciales. Los horarios los calcula Gymbro. No se guarda ni se presenta como válida una respuesta que no supera las comprobaciones. El usuario puede elegir el plan local si hay errores o se agotó la cuota.
 
-Se envían a Gemini edad, altura, peso, objetivo, experiencia, lugar, equipamiento, cantidad de sesiones y minutos. No se envían nombre, correo, foto, identificador del usuario ni horarios exactos. La pantalla solicita consentimiento explícito. Esto minimiza datos, pero no promete anonimato ni sustituye las condiciones del proveedor.
+Se envían a Gemini objetivo, experiencia, lugar, equipamiento, cantidad de sesiones y minutos. No se envían edad, altura, peso, restricciones, nombre, correo, foto, identificador del usuario ni horarios exactos. La pantalla solicita consentimiento explícito. Las propuestas de Gemini usan como máximo dos series iniciales por ejercicio para conservar el límite conservador sin compartir la edad. Gymbro vuelve a validar el resultado. Esto minimiza datos, pero no promete anonimato ni sustituye las condiciones del proveedor.
 
 ## Configurar Gemini
 
