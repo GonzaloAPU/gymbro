@@ -1,5 +1,5 @@
 /** Adaptador Gemini: clave solo en backend, salida estructurada y validación posterior. */
-import {allowedCatalog,planningError,validateAIPlan} from './welcome-planner.js';
+import {allowedCatalog,planningError,validateAIPlan,sessionGroups} from './welcome-planner.js';
 export const geminiAvailable=()=>process.env.GEMINI_ENABLED==='true'&&Boolean(process.env.GEMINI_API_KEY);
 const schema={type:'object',required:['sessions'],properties:{sessions:{type:'array',items:{type:'object',required:['exercises'],properties:{exercises:{type:'array',items:{type:'object',required:['exerciseId','targetSets','minReps','maxReps','restSeconds'],properties:{exerciseId:{type:'string'},targetSets:{type:'integer'},minReps:{type:'integer'},maxReps:{type:'integer'},restSeconds:{type:'integer'}}}}}}}}};
 export async function generateGeminiPlan(input,catalog,base,fetchImpl=fetch){
@@ -12,7 +12,8 @@ export async function generateGeminiPlan(input,catalog,base,fetchImpl=fetch){
 Elegí exclusivamente exerciseId del catálogo provisto. No inventes ejercicios, cargas en kg ni consejos médicos.
 Cada sesión: 2 a 4 ejercicios únicos, 1 a 2 series, 6 a 15 repeticiones, descanso de 60 a 180 segundos.
 Mantener intensidad inicial moderada. Gymbro aplica los límites individuales sin compartir datos corporales.
-Con 4 sesiones alternar exclusivamente UPPER, LOWER, UPPER, LOWER; con 2 o 3 hacer cuerpo completo.
+Respetá estos grupos por sesión, en orden: ${JSON.stringify(sessionGroups(base.sessions.map(session=>session.slot)))}.
+UPPER: solo tren superior; LOWER: solo tren inferior; CORE: solo zona media; null: incluir superior e inferior.
 El calendario ya está calculado por el backend: no lo cambies. La duración estimada será
 8 minutos + suma(series*(45+descanso)/60 + 1 minuto por ejercicio), y no puede superar minutes.
 Devolvé solamente sessions con exercises y los campos del esquema.

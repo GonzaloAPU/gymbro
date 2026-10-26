@@ -19,6 +19,10 @@ El prototipo limita la generación con IA a tres intentos por cuenta cada diez m
 
 ## Reglas y alcance
 
+Un plan nuevo reemplaza las rutinas y el calendario anteriores al aceptarlo, dentro de una transacción. Generar, cancelar o fallar una propuesta no modifica la semana vigente. Las rutinas anteriores se archivan mediante borrado lógico: el historial de entrenamientos se conserva. Los descansos se recalculan desde la semana nueva, sin heredar bloqueos anteriores.
+
+Se permiten de dos a siete sesiones. Se prioriza separar sesiones de cuerpo completo; si los días elegidos son consecutivos, se distribuyen bloques de tren superior, inferior y zona media según la cantidad de sesiones. Gemini recibe esta distribución y el backend la valida. Elegir siete sesiones no obliga a inventar un día de descanso.
+
 Entrenamiento general para adultos de 18 a 85 años, con objetivos de condición física, fuerza o desarrollo muscular. La edad y experiencia limitan el volumen inicial; peso y altura se registran y se incluyen en la propuesta IA, pero no se usan para inventar una carga en kilos. No se prescriben tratamientos, diagnóstico, fisioterapia o rehabilitación. Dolor, lesión o restricciones derivan a creación manual con indicaciones profesionales.
 
 Los planes locales son propuestas iniciales de software, no programas clínicos ni plantillas con una certificación profesional atribuida. Requieren revisión de contenido por un profesional antes de una distribución pública amplia.

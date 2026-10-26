@@ -10,10 +10,6 @@ import {geminiAvailable,generateGeminiPlan} from '../services/gemini-plan.js';
 import {validateSchedule} from '../schedule.js';
 export const welcomeRouter=Router();welcomeRouter.use(requireAuth);
 const active=new Set(),aiRequests=new Map();
-async function assignments(userId,transaction){
-  const days=await RoutineDay.findAll({include:[{model:Routine,as:'routine',required:true,where:{userId}},{model:RoutineSchedule,as:'schedules'}],transaction});
-  return days.flatMap(day=>(day.schedules||[]).map(slot=>({weekday:slot.weekday,start:slot.start.slice(0,5),end:slot.end.slice(0,5)})));
-}
 function publicProposal(row,catalog){
   const result=structuredClone(row.proposal);result.sessions=result.sessions.map(session=>({...session,estimatedMinutes:estimateMinutes(session.exercises),exercises:session.exercises.map(e=>({...e,name:catalog.find(item=>item.id===e.exerciseId)?.name||'Ejercicio'}))}));
   return {id:row.id,...result};
@@ -41,9 +37,10 @@ welcomeRouter.post('/preview',async(req,res)=>{
   }
   active.add(userId);
   try {
-    const [catalog,existing,rest]=await Promise.all([Exercise.findAll({where:{createdByUserId:null}}),assignments(userId),UserRestDay.findAll({where:{userId}})]);
-    if(input.availability.some(slot=>rest.some(day=>day.weekday===slot.weekday)))throw planningError('Uno de los días elegidos ya está marcado como descanso. Cambialo en Inicio antes de continuar.',409);
-    const local=makeLocalPlan(input,catalog,existing);
+    // Una propuesta reemplaza la semana completa: no hereda horarios ni descansos
+    // anteriores. Hasta aceptarla, el plan vigente permanece intacto.
+    const catalog=await Exercise.findAll({where:{createdByUserId:null}});
+    const local=makeLocalPlan(input,catalog);
     const proposal=input.mode==='GEMINI'?await generateGeminiPlan(input,catalog,local):local;
     const row=await sequelize.transaction(async transaction=>{
       const user=await User.findByPk(userId,{transaction,lock:transaction.LOCK.UPDATE});
@@ -69,14 +66,14 @@ welcomeRouter.post('/accept',async(req,res)=>{
     const input=welcomeSchema.parse(row.preferences),proposal=row.proposal;
     // Una transacción usa una sola conexión: las consultas se ejecutan en orden.
     const catalog=await Exercise.findAll({where:{createdByUserId:null},transaction});
-    const existing=await assignments(userId,transaction);
-    const rest=await UserRestDay.findAll({where:{userId},transaction});
     const slots=proposal.sessions.map(session=>session.slot);
-    if(slots.some(slot=>rest.some(day=>day.weekday===slot.weekday)))throw planningError('El calendario cambió: uno de los días ahora es de descanso. Generá otra propuesta.',409);
-    validateSchedule(slots,existing);
+    validateSchedule(slots,[]);
     // Revalida los IDs y límites aun si la propuesta persistida vino de un proveedor.
     validateAIPlan({sessions:proposal.sessions.map(({exercises})=>({exercises}))},input,catalog,proposal);
     await Routine.update({active:false},{where:{userId},transaction});
+    // Borrado lógico del plan anterior. Conserva IDs y registros de entrenamientos;
+    // las consultas de biblioteca/calendario excluyen estas rutinas archivadas.
+    await Routine.destroy({where:{userId},transaction});
     const routine=await Routine.create({userId,name:proposal.name,goal:goalLabels[input.goal],active:true},{transaction});
     for(const [index,session]of proposal.sessions.entries()){
       const day=await RoutineDay.create({routineId:routine.id,name:session.name,dayNumber:index+1},{transaction});
@@ -86,7 +83,7 @@ welcomeRouter.post('/accept',async(req,res)=>{
     await user.update({heightCm:input.heightCm,goal:goalLabels[input.goal]},{transaction});
     const latest=await BodyWeightHistory.findOne({where:{userId},order:[['recordedAt','DESC']],transaction});
     if(!latest||Number(latest.weightKg)!==input.weightKg)await BodyWeightHistory.create({userId,weightKg:input.weightKg},{transaction});
-    const rests=[...new Set([...rest.map(day=>day.weekday),...proposal.restDays])].filter(day=>!slots.some(slot=>slot.weekday===day)&&!existing.some(slot=>slot.weekday===day));
+    const rests=[0,1,2,3,4,5,6].filter(day=>!slots.some(slot=>slot.weekday===day));
     await UserRestDay.destroy({where:{userId},transaction});
     await UserRestDay.bulkCreate(rests.map(weekday=>({userId,weekday})),{transaction});
     await row.update({acceptedAt:new Date(),routineId:routine.id},{transaction});

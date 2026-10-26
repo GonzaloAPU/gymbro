@@ -21,7 +21,7 @@ test('bienvenida: genera plan sin claves, con horarios y descanso complementario
   assert.ok(plan.sessions.every(s=>estimateMinutes(s.exercises)<=45&&s.exercises.every(e=>e.targetSets===2)));
 });
 test('bienvenida: casa sin equipo solo usa ejercicios de peso corporal',()=>{
-  assert.ok(allowedCatalog(input(),catalog).every(e=>e.equipment==='Peso corporal'));
+  assert.ok(allowedCatalog(input(),catalog).every(e=>['Peso corporal','Colchoneta'].includes(e.equipment)));
 });
 test('bienvenida: press de banco requiere banco además de mancuernas',()=>{
   assert.ok(!allowedCatalog(input({equipment:['DUMBBELLS']}),catalog).some(e=>e.name==='Press banca con mancuernas'));
@@ -31,9 +31,19 @@ test('bienvenida: nunca incluye ejercicios privados aunque tengan el mismo nombr
   assert.equal(allowedCatalog(input(),catalog.map(e=>({...e,createdByUserId:'other'}))).length,0);
 });
 test('bienvenida: dolor o restricciones impiden generación automática',()=>assert.throws(()=>makeLocalPlan(input({hasRestrictions:true}),catalog),{status:422}));
-test('bienvenida: la recuperación considera también domingo a lunes',()=>{
+test('bienvenida: domingo y lunes consecutivos alternan grupos sin exigir descanso',()=>{
   const data=input({sessions:2,availability:[0,1].map(weekday=>({weekday,start:'18:00',end:'19:00'}))});
-  assert.throws(()=>scheduleSessions(data),{status:422});
+  const plan=makeLocalPlan(data,catalog);
+  assert.equal(plan.sessions.length,2);
+  assert.match(plan.sessions[0].name,/superior/);assert.match(plan.sessions[1].name,/inferior/);
+  assert.doesNotThrow(()=>validateAIPlan(aiShape(plan),data,catalog,plan));
+});
+
+for(const count of [3,4,5,6,7])test(`bienvenida: ${count} días consecutivos generan un plan válido`,()=>{
+  const data=input({sessions:count,availability:[1,2,3,4,5,6,0].slice(0,count).map(weekday=>({weekday,start:'18:00',end:'19:00'}))});
+  const plan=makeLocalPlan(data,catalog);
+  assert.equal(plan.sessions.length,count);assert.equal(plan.restDays.length,7-count);
+  assert.doesNotThrow(()=>validateAIPlan(aiShape(plan),data,catalog,plan));
 });
 test('bienvenida: cuatro sesiones alternan tren superior e inferior',()=>{
   const data=input({sessions:4,availability:[1,2,4,5].map(weekday=>({weekday,start:'18:00',end:'19:00'}))});

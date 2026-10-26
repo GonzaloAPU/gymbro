@@ -30,11 +30,11 @@ import {WelcomeInput,WelcomeProposal,WelcomeService} from '../services/welcome.s
         <h2>¿Dónde y cuándo entrenás?</h2>
         <div class="choices">@for(place of places;track place.value){<button type="button" [class.selected]="form().place===place.value" [attr.aria-pressed]="form().place===place.value" (click)="setField('place',place.value)">{{place.label}}</button>}</div>
         <fieldset><legend>¿Qué equipamiento tenés? El peso corporal siempre está disponible.</legend><div class="equipment">@for(item of equipment;track item.value){<label class="check"><input type="checkbox" [checked]="form().equipment.includes(item.value)" (change)="toggleEquipment(item.value)">{{item.label}}</label>}</div></fieldset>
-        <div class="fields"><label>Sesiones por semana<select [value]="form().sessions" (change)="numberField('sessions',$any($event.target).value)"><option value="2">2 sesiones</option><option value="3">3 sesiones</option><option value="4">4 sesiones</option></select></label><label>Tiempo por sesión<select [value]="form().minutes" (change)="numberField('minutes',$any($event.target).value)">@for(minutes of durations;track minutes){<option [value]="minutes">{{minutes}} minutos</option>}</select></label></div>
+        <div class="fields"><label>Sesiones por semana<select [value]="form().sessions" (change)="numberField('sessions',$any($event.target).value)">@for(count of [2,3,4,5,6,7];track count){<option [value]="count">{{count}} sesiones</option>}</select></label><label>Tiempo por sesión<select [value]="form().minutes" (change)="numberField('minutes',$any($event.target).value)">@for(minutes of durations;track minutes){<option [value]="minutes">{{minutes}} minutos</option>}</select></label></div>
         <h3>Tus {{form().sessions}} días de entrenamiento</h3><p class="help" role="status">@if(replacingDay()!==null){Elegí otro día para reemplazar {{dayName(replacingDay()!)}}.}@else{Ya marcamos {{form().sessions}} días. Para cambiar uno, tocá el día marcado y después su reemplazo.}</p>
         <div class="week">@for(day of weekdays;track day.value){<button type="button" [class.selected]="available(day.value)" [class.replacing]="replacingDay()===day.value" [attr.aria-label]="day.name + (replacingDay()===day.value ? ': elegí su reemplazo' : available(day.value) ? ': cambiar este día' : ': usar este día')" [attr.aria-pressed]="available(day.value)" [disabled]="busy() || (!available(day.value) && replacingDay()===null)" (click)="toggleDay(day.value)">{{day.short}}</button>}</div>
         @for(slot of form().availability;track slot.weekday){<div class="time-row"><b>{{dayName(slot.weekday)}}</b><label>Desde<input type="time" [value]="slot.start" (change)="changeTime(slot.weekday,'start',$any($event.target).value)"></label><label>Hasta<input type="time" [value]="slot.end" (change)="changeTime(slot.weekday,'end',$any($event.target).value)"></label></div>}
-        <p class="help">Los días sin entrenamiento se proponen como descanso. No se pisan tus horarios existentes. Los descansos ya marcados se cambian desde Inicio.</p>
+        <p class="help">Al aceptar, esta semana reemplaza tus rutinas y horarios anteriores. Tu historial de entrenamientos se conserva. Los días libres quedan como descanso; podés entrenar los siete días.</p>
       }
       @if(step()===3 && !proposal()) {
         <h2>Elegí cómo preparar tu plan</h2>
@@ -47,6 +47,7 @@ import {WelcomeInput,WelcomeProposal,WelcomeService} from '../services/welcome.s
         <span class="source">{{plan.source==='GEMINI'?'PROPUESTA CON GEMINI':'PLAN LOCAL'}}</span><h2>Así queda tu semana</h2>
         @for(session of plan.sessions;track $index){<article class="session"><h3>{{dayName(session.slot.weekday)}} · {{session.slot.start}}–{{session.slot.end}}</h3><b>{{session.name}}</b><p class="help">{{session.estimatedMinutes}} min estimados de ejercicios, preparación y recuperación.</p><ul>@for(exercise of session.exercises;track exercise.exerciseId){<li><b>{{exercise.name}}</b><span>{{exercise.targetSets}} × {{exercise.minReps}}–{{exercise.maxReps}} repeticiones · {{exercise.restSeconds}} s de descanso</span></li>}</ul></article>}
         <p><b>Descanso:</b> {{restLabel(plan.restDays)}}</p><p class="help">Los tiempos son estimaciones. Empezá con una carga que puedas controlar; podés modificar los ejercicios después de guardar. Si aparece dolor, interrumpí el ejercicio.</p>
+        <p class="help">Al confirmar se reemplazan las rutinas y horarios anteriores. Se conserva tu historial de entrenamientos.</p>
         <button type="button" class="button primary full" [disabled]="busy()" (click)="accept()">{{busy()?'Guardando tu semana…':'Aceptar y empezar'}}</button>
         <button type="button" class="button ghost full" [disabled]="busy()" (click)="edit()">Cambiar datos y horarios</button>
       }
@@ -90,7 +91,7 @@ export class WelcomeComponent implements OnInit {
   available(day:number){return this.form().availability.some(slot=>slot.weekday===day);}
   /** La cantidad elegida siempre tiene esa misma cantidad de días y horarios. */
   private matchSessionDays(){
-    const defaults:Record<number,number[]>={2:[1,4],3:[1,3,5],4:[1,2,4,5]};
+    const defaults:Record<number,number[]>={2:[1,4],3:[1,3,5],4:[1,2,4,5],5:[1,2,3,4,5],6:[1,2,3,4,5,6],7:[1,2,3,4,5,6,0]};
     const preferred=defaults[this.form().sessions];if(!preferred)return;
     const slots=this.form().availability;
     const chosen=this.customDays?slots.map(slot=>slot.weekday).slice(0,this.form().sessions):[...preferred];

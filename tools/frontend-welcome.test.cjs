@@ -9,6 +9,12 @@ function fixture(){
   screen.numberField('age','30');screen.restrictionAnswer.set('NO');
   return {screen,state,pending,welcome,services};
 }
+
+test('bienvenida UI: siete sesiones marcan toda la semana y al reducir no quedan días extra',()=>{
+  const {screen}=fixture();screen.numberField('sessions','7');
+  assert.deepEqual(Array.from(screen.form().availability,slot=>slot.weekday),[1,2,3,4,5,6,0]);
+  screen.numberField('sessions','3');assert.equal(screen.form().availability.length,3);
+});
 test('bienvenida UI: precarga altura y peso sin inventar edad',()=>{const {screen}=fixture();screen.numberField('age','');assert.equal(screen.form().heightCm,170);assert.equal(screen.form().weightKg,70);assert.equal(screen.form().age,0);});
 test('bienvenida UI: edad inválida impide continuar',()=>{const {screen}=fixture();screen.numberField('age','17');screen.next();assert.equal(screen.step(),1);assert.ok(screen.error());});
 test('bienvenida UI: exige respuesta sobre restricciones',()=>{const {screen}=fixture();screen.restrictionAnswer.set('');screen.next();assert.equal(screen.step(),1);assert.ok(screen.error());});
