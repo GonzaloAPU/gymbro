@@ -18,7 +18,7 @@ for(const [label,changes]of [
 test('bienvenida: genera plan sin claves, con horarios y descanso complementario',()=>{
   const plan=makeLocalPlan(input(),catalog);assert.equal(plan.source,'LOCAL');assert.equal(plan.sessions.length,3);
   assert.deepEqual(plan.sessions.map(s=>s.slot.weekday),[1,3,5]);assert.deepEqual(plan.restDays,[0,2,4,6]);
-  assert.ok(plan.sessions.every(s=>estimateMinutes(s.exercises)<=45&&s.exercises.every(e=>e.targetSets===2)));
+  assert.ok(plan.sessions.every(s=>estimateMinutes(s.exercises)<=45&&s.exercises.every(e=>e.targetSets===3)));
 });
 test('bienvenida: casa sin equipo solo usa ejercicios de peso corporal',()=>{
   assert.ok(allowedCatalog(input(),catalog).every(e=>['Peso corporal','Colchoneta','Pared'].includes(e.equipment)));
@@ -56,17 +56,16 @@ test('bienvenida: mueve el inicio dentro de la ventana para no pisar una reserva
 test('bienvenida: no ofrece un cuarto bloque en un día ocupado',()=>{
   assert.throws(()=>scheduleSessions(input(),[1,2,3].map(i=>({weekday:1,start:`0${i}:00`,end:`0${i}:30`}))),{status:422});
 });
-test('bienvenida: persona mayor conserva límite inicial de dos series',()=>{
-  const plan=makeLocalPlan(input({age:65,experience:'INTERMEDIATE'}),catalog);assert.ok(plan.sessions.every(s=>s.exercises.every(e=>e.targetSets<=2)));
+test('bienvenida: conserva el mínimo solicitado de tres series',()=>{
+  const plan=makeLocalPlan(input({age:65,experience:'INTERMEDIATE'}),catalog);assert.ok(plan.sessions.every(s=>s.exercises.every(e=>e.targetSets===3)));
 });
-test('bienvenida: 30 minutos alcanza sin alargar el horario elegido',()=>{
-  const plan=makeLocalPlan(input({minutes:30}),catalog);assert.ok(plan.sessions.every(s=>estimateMinutes(s.exercises)<=30&&s.slot.end==='18:30'));
-  assert.ok(plan.sessions.every(session=>session.exercises.length===4));
+test('bienvenida: no reduce series ni cambia el horario si 30 minutos no alcanzan',()=>{
+  assert.throws(()=>makeLocalPlan(input({minutes:30}),catalog),/45 minutos/);
 });
 
-test('bienvenida: cuatro ejercicios caben en 30 minutos también para fuerza y nivel intermedio',()=>{
-  const data=input({minutes:30,goal:'STRENGTH',experience:'INTERMEDIATE'}),plan=makeLocalPlan(data,catalog);
-  assert.ok(plan.sessions.every(session=>session.exercises.length===4&&estimateMinutes(session.exercises)<=30));
+test('bienvenida: cuatro ejercicios de tres series caben en 45 minutos para fuerza',()=>{
+  const data=input({minutes:45,goal:'STRENGTH',experience:'INTERMEDIATE'}),plan=makeLocalPlan(data,catalog);
+  assert.ok(plan.sessions.every(session=>session.exercises.length===4&&session.exercises.every(e=>e.targetSets===3)&&estimateMinutes(session.exercises)<=45));
   assert.doesNotThrow(()=>validateAIPlan(aiShape(plan),data,catalog,plan));
 });
 
@@ -83,8 +82,8 @@ test('bienvenida: respuesta IA con ejercicios repetidos se rechaza',()=>{
   const data=input(),plan=makeLocalPlan(data,catalog),raw=aiShape(structuredClone(plan));raw.sessions[0].exercises[1]=raw.sessions[0].exercises[0];
   assert.throws(()=>validateAIPlan(raw,data,catalog,plan),{status:502});
 });
-test('bienvenida: IA no puede superar series para principiantes',()=>{
-  const data=input(),plan=makeLocalPlan(data,catalog),raw=aiShape(structuredClone(plan));raw.sessions[0].exercises[0].targetSets=3;
+test('bienvenida: IA no puede ofrecer menos de tres series',()=>{
+  const data=input(),plan=makeLocalPlan(data,catalog),raw=aiShape(structuredClone(plan));raw.sessions[0].exercises[0].targetSets=2;
   assert.throws(()=>validateAIPlan(raw,data,catalog,plan),{status:502});
 });
 test('bienvenida: IA no puede cambiar cantidad de sesiones',()=>{

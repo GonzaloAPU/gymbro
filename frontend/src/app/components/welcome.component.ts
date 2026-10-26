@@ -70,10 +70,10 @@ export class WelcomeComponent implements OnInit {
   readonly savedFields=signal(new Set<string>());readonly editingSaved=signal(false);readonly weightFromHistory=signal(false);
   fieldLocked(field:string):boolean {return field==='weightKg'?this.weightFromHistory():this.savedFields().has(field)&&!this.editingSaved();}
   private customDays=false;
-  readonly form=signal<WelcomeInput>({age:0,heightCm:this.auth.user()?.heightCm||0,weightKg:this.auth.user()?.currentKg||0,goal:'GENERAL',experience:'BEGINNER',place:'HOME',equipment:[],sessions:3,minutes:30,availability:[1,3,5].map(weekday=>({weekday,start:'18:00',end:'18:30'})),hasRestrictions:false,mode:'LOCAL',aiConsent:false});
+  readonly form=signal<WelcomeInput>({age:0,heightCm:this.auth.user()?.heightCm||0,weightKg:this.auth.user()?.currentKg||0,goal:'GENERAL',experience:'BEGINNER',place:'HOME',equipment:[],sessions:3,minutes:45,availability:[1,3,5].map(weekday=>({weekday,start:'18:00',end:'18:45'})),hasRestrictions:false,mode:'LOCAL',aiConsent:false});
   readonly places=[{value:'GYM' as const,label:'Gimnasio'},{value:'HOME' as const,label:'Casa'},{value:'PARK' as const,label:'Parque'}];
   readonly equipment=[{value:'DUMBBELLS',label:'Mancuernas'},{value:'BENCH',label:'Banco'},{value:'BARBELL',label:'Barra y discos'},{value:'CABLE',label:'Polea'},{value:'PULLUP',label:'Barra fija'}];
-  readonly durations=[30,45,60,75,90];
+  readonly durations=[45,60,75,90];
   readonly weekdays=[{value:1,short:'L',name:'Lunes'},{value:2,short:'M',name:'Martes'},{value:3,short:'X',name:'Miércoles'},{value:4,short:'J',name:'Jueves'},{value:5,short:'V',name:'Viernes'},{value:6,short:'S',name:'Sábado'},{value:0,short:'D',name:'Domingo'}];
   async ngOnInit(){
     this.applySavedProfile(this.auth.user());
@@ -89,10 +89,12 @@ export class WelcomeComponent implements OnInit {
           goal:this.profileGoal(profile?.goal)||draft.preferences.goal});
         this.customDays=true;this.matchSessionDays();
         this.restrictionAnswer.set(draft.preferences.hasRestrictions?'YES':'NO');
-        this.proposal.set(draft.proposal);this.step.set(draft.proposal?3:1);
+        const proposal=draft.proposal?.sessions?.every(session=>session.exercises.length>=4&&session.exercises.every(exercise=>exercise.targetSets>=3))?draft.proposal:null;
+        this.proposal.set(proposal);this.step.set(proposal?3:1);
         this.savedFields.set(new Set(['age','heightCm','goal','experience']));
       }else{const goal=this.profileGoal(this.auth.user()?.goal);if(goal)this.setField('goal',goal);}
       this.applySavedProfile(draft?.profile||this.auth.user());
+      if(this.form().minutes<45){this.numberField('minutes','45');this.proposal.set(null);this.step.set(1);}
       if(preferAI){this.proposal.set(null);this.step.set(1);if(status.aiAvailable)this.setField('mode','GEMINI');}
     }catch{this.error.set('No pudimos cargar la configuración. Podés completar la ficha y reintentar.');}
     finally{this.loading.set(false);}
@@ -153,6 +155,7 @@ export class WelcomeComponent implements OnInit {
       if(!this.restrictionAnswer()){this.error.set('Respondé la pregunta sobre lesiones y restricciones.');return false;}
       if(input.hasRestrictions){this.error.set('Para estas condiciones, creá una rutina con indicaciones profesionales.');return false;}
     }else{
+      if(input.minutes<45){this.error.set('Elegí al menos 45 minutos para cuatro ejercicios de tres series.');return false;}
       if(input.availability.length<input.sessions){this.error.set('Elegí al menos tantos días disponibles como sesiones.');return false;}
       const minutes=(value:string)=>Number(value.slice(0,2))*60+Number(value.slice(3));
       if(input.availability.some(slot=>!/^([01]\d|2[0-3]):[0-5]\d$/.test(slot.start)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(slot.end)||minutes(slot.end)-minutes(slot.start)<input.minutes)){this.error.set('Cada rango debe alcanzar para la sesión completa, sin cruzar medianoche.');return false;}

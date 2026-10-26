@@ -7,7 +7,7 @@ La ruta `/bienvenida` ofrece tres pasos: datos básicos y experiencia, lugar/equ
 - **LOCAL:** biblioteca de candidatos incluida en `backend/src/services/welcome-planner.js`. Resuelve IDs del catálogo oficial, adapta series/repeticiones/descansos y distribuye sesiones. No consulta proveedores ni genera claves. «Local» significa sin servicio de IA: el registro y la persistencia siguen requiriendo el backend de Gymbro.
 - **GEMINI:** solicita una propuesta al proveedor con formato JSON y valida sus IDs, equipamiento, series, repeticiones, duración, distribución y límites iniciales. Los horarios los calcula Gymbro. No se guarda ni se presenta como válida una respuesta que no supera las comprobaciones. El usuario puede elegir el plan local si hay errores o se agotó la cuota.
 
-Se envían a Gemini objetivo, experiencia, lugar, equipamiento, cantidad de sesiones y minutos. No se envían edad, altura, peso, restricciones, nombre, correo, foto, identificador del usuario ni horarios exactos. La pantalla solicita consentimiento explícito. Las propuestas de Gemini usan como máximo dos series iniciales por ejercicio para conservar el límite conservador sin compartir la edad. Gymbro vuelve a validar el resultado. Esto minimiza datos, pero no promete anonimato ni sustituye las condiciones del proveedor.
+Se envían a Gemini objetivo, experiencia, lugar, equipamiento, cantidad de sesiones y minutos. No se envían edad, altura, peso, restricciones, nombre, correo, foto, identificador del usuario ni horarios exactos. La pantalla solicita consentimiento explícito. Las propuestas de Gemini usan tres series por ejercicio, sin compartir la edad. Gymbro vuelve a validar el resultado. Esto minimiza datos, pero no promete anonimato ni sustituye las condiciones del proveedor.
 
 ## Configurar Gemini
 
@@ -19,7 +19,7 @@ El prototipo limita la generación con IA a tres intentos por cuenta cada diez m
 
 ## Reglas y alcance
 
-Cada sesión generada contiene cuatro ejercicios distintos como mínimo (el límite actual también es cuatro). Gemini recibe ese requisito y se rechazan respuestas con menos ejercicios. En el plan local, si el tiempo no alcanza se reducen las series hasta un mínimo de una, conservando los cuatro ejercicios y el horario solicitado.
+Cada sesión generada contiene cuatro ejercicios distintos como mínimo (el límite actual también es cuatro). Gemini recibe ese requisito y se rechazan respuestas con menos ejercicios. Cada ejercicio tiene tres series como mínimo (el límite actual también es tres). Si el tiempo no alcanza, se solicita aumentar la duración sin reducir ejercicios ni series. La interfaz ofrece duraciones desde 45 minutos.
 
 Un plan nuevo reemplaza las rutinas y el calendario anteriores al aceptarlo, dentro de una transacción. Generar, cancelar o fallar una propuesta no modifica la semana vigente. Las rutinas anteriores se archivan mediante borrado lógico: el historial de entrenamientos se conserva. Los descansos se recalculan desde la semana nueva, sin heredar bloqueos anteriores.
 

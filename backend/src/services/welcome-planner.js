@@ -83,7 +83,7 @@ export function sessionGroups(slots){
 }
 export function prescription(input,id){
   const gentle=input.experience==='BEGINNER'||input.age>=60;
-  return {exerciseId:id,targetSets:gentle?2:3,minReps:input.goal==='STRENGTH'&&!gentle?6:8,maxReps:input.goal==='STRENGTH'&&!gentle?8:12,restSeconds:input.goal==='STRENGTH'?120:90};
+  return {exerciseId:id,targetSets:3,minReps:input.goal==='STRENGTH'&&!gentle?6:8,maxReps:input.goal==='STRENGTH'&&!gentle?8:12,restSeconds:input.goal==='STRENGTH'?120:90};
 }
 export function makeLocalPlan(input,catalog,existing=[]){
   if(input.hasRestrictions)throw planningError('Con dolor, lesión o restricciones necesitás una indicación profesional. Podés crear tu rutina manualmente.');
@@ -97,19 +97,13 @@ export function makeLocalPlan(input,catalog,existing=[]){
     if(index%2)pool=[...pool.slice(1),pool[0]];
     if(!group){const upper=pool.find(e=>e.group==='UPPER'),lower=pool.find(e=>e.group==='LOWER'),core=pool.find(e=>e.group==='CORE');pool=[lower,upper,core,...pool].filter((e,i,all)=>e&&all.findIndex(other=>other?.id===e.id)===i);}
     const exercises=pool.slice(0,4).map(e=>prescription(input,e.id));
-    // Conserva los cuatro ejercicios: ajusta series para respetar una sesión corta.
-    while(estimateMinutes(exercises)>input.minutes){
-      const adjustable=[...exercises].sort((a,b)=>b.targetSets-a.targetSets).find(exercise=>exercise.targetSets>1);
-      if(!adjustable)break;
-      adjustable.targetSets--;
-    }
-    if(estimateMinutes(exercises)>input.minutes)throw planningError('La sesión no entra en el tiempo disponible. Aumentá su duración.');
+    if(estimateMinutes(exercises)>input.minutes)throw planningError('Para cuatro ejercicios con tres series, elegí al menos 45 minutos por sesión.');
     return {name:group?({UPPER:'Tren superior',LOWER:'Tren inferior',CORE:'Zona media'}[group])+` ${index+1}`:`Cuerpo completo ${index+1}`,slot,exercises};
   });
   return {name:`Mi primer plan · ${goalLabels[input.goal]}`,source:'LOCAL',sessions,
     restDays:[0,1,2,3,4,5,6].filter(day=>!slots.some(slot=>slot.weekday===day)&&!existing.some(slot=>slot.weekday===day))};
 }
-export const aiPlanSchema=z.object({sessions:z.array(z.object({exercises:z.array(z.object({exerciseId:z.string().uuid(),targetSets:z.number().int().min(1).max(3),minReps:z.number().int().min(6).max(15),maxReps:z.number().int().min(6).max(15),restSeconds:z.number().int().min(60).max(180)}).strict()).min(4).max(4)}).strict()).min(2).max(7)}).strict();
+export const aiPlanSchema=z.object({sessions:z.array(z.object({exercises:z.array(z.object({exerciseId:z.string().uuid(),targetSets:z.number().int().min(3).max(3),minReps:z.number().int().min(6).max(15),maxReps:z.number().int().min(6).max(15),restSeconds:z.number().int().min(60).max(180)}).strict()).min(4).max(4)}).strict()).min(2).max(7)}).strict();
 export function validateAIPlan(raw,input,catalog,base){
   const parsed=aiPlanSchema.safeParse(raw);if(!parsed.success)throw planningError('La IA devolvió un formato de plan inválido. Podés usar el plan local.',502);
   const allowed=allowedCatalog(input,catalog),ids=new Set(allowed.map(e=>e.id));
@@ -120,7 +114,7 @@ export function validateAIPlan(raw,input,catalog,base){
     if(!requiredGroups[index]){const groups=session.exercises.map(e=>allowed.find(item=>item.id===e.exerciseId)?.group);if(!groups.includes('UPPER')||!groups.includes('LOWER'))throw planningError('La IA no distribuyó el trabajo de cuerpo completo.',502);}
     for(const exercise of session.exercises){
       const group=allowed.find(e=>e.id===exercise.exerciseId)?.group;
-      if(!ids.has(exercise.exerciseId)||exercise.maxReps<exercise.minReps||((input.age>=60||input.experience==='BEGINNER')&&exercise.targetSets>2)||(requiredGroups[index]&&group!==requiredGroups[index]))throw planningError('La IA no respetó las restricciones del plan.',502);
+      if(!ids.has(exercise.exerciseId)||exercise.maxReps<exercise.minReps||(requiredGroups[index]&&group!==requiredGroups[index]))throw planningError('La IA no respetó las restricciones del plan.',502);
     }
     if(estimateMinutes(session.exercises)>input.minutes)throw planningError('La propuesta de IA supera tu tiempo disponible.',502);
     return {...base.sessions[index],exercises:session.exercises};
