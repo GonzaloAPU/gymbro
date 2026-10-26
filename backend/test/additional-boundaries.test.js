@@ -57,6 +57,7 @@ async function summaryFixture(t,{weights=[],calories=null,count=0}={}) {
     [TrainingSession,'findAll',[]],[BodyWeightHistory,'findAll',weights],
     [StrengthRecord,'findAll',[]],[TrainingSession,'sum',calories],[TrainingSession,'count',count],
   ])t.mock.method(model,method,async(...args)=>{queries.push({method,options:args.at(-1)});return result;});
+  t.mock.method(sequelize,'query',async(_sql,options)=>{queries.push({method:'query',options});return [];});
   return {queries,request:await httpClient(t)};
 }
 test('extra progreso: cuenta nueva devuelve listas vacías y totales cero',async t=>{
@@ -67,7 +68,7 @@ test('extra progreso: todas las consultas del resumen se limitan al propietario'
   const {request,queries}=await summaryFixture(t,{calories:'123.5',count:25});
   const result=await request('/progress/summary');assert.equal(result.status,200);
   assert.equal(result.data.totalCalories,123.5);assert.equal(result.data.completedSessions,25);
-  assert.equal(queries.length,5);for(const query of queries)assert.equal(query.options.where.userId,'owner');
+  assert.equal(queries.length,5);for(const query of queries)assert.equal(query.method==='query'?query.options.replacements.userId:query.options.where.userId,'owner');
   for(const query of queries.filter(q=>q.method==='sum'||q.method==='count'))assert.equal(query.options.where.status,'COMPLETED');
 });
 test('extra progreso: historial de peso se entrega cronológicamente',async t=>{

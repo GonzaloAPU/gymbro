@@ -6,11 +6,12 @@ import { Component, Input, OnChanges, SimpleChanges, computed, inject, OnInit, s
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { ExerciseLeaderboard, ProgressService, WeightEntry, StrengthRecord } from '../services/progress.service';
 import { AuthService } from '../services/auth.service';
+import {RouterLink} from '@angular/router';
 
 @Component({
   selector:'app-progress',
   standalone: true,
-  imports: [DatePipe, DecimalPipe],
+  imports: [DatePipe, DecimalPipe,RouterLink],
   // Todas las métricas y mediciones se obtienen de la API; no se muestran gráficas de ejemplo.
   // HTML Angular: {{ }} muestra datos, [propiedad] enlaza valores y (evento) llama métodos.
   // @if y @for controlan bloques visibles y listas; #nombre referencia un elemento del formulario.
@@ -19,14 +20,14 @@ import { AuthService } from '../services/auth.service';
       @if(summaryLoading()) {<p role="status">Cargando tu progreso…</p>} @if(summaryError()) {<p class="summary-error" role="alert">{{summaryError()}}</p><button class="button ghost" type="button" (click)="loadSummary()">Reintentar</button>}
       <div class="metrics"><article><span>CALORÍAS QUEMADAS</span><strong>{{calories() | number:'1.0-0'}}<small> kcal</small></strong><em>Estimadas · todas tus sesiones completadas</em></article><article><span>PESO CORPORAL</span><strong>{{showWeight() ? weight() : '•••'}}<small> kg</small></strong><button class="weight-toggle" type="button" (click)="toggleWeight()" [attr.aria-pressed]="showWeight()">{{showWeight() ? 'Ocultar peso' : 'Mostrar peso'}}</button></article><article><span>VOLUMEN TOTAL</span><strong>{{ volume() }}<small>t</small></strong><em>sesiones recientes</em></article><article><span>ENTRENAMIENTOS</span><strong>{{ sessions() }}</strong><em>completados</em></article></div>
       <div class="content"><article class="chart"><span class="kicker">TUS MEDICIONES</span><h2>Historial de peso</h2><form class="weight-form" (submit)="registerWeight($event, measurement.value, measurementDate.value)"><label>Peso de hoy (kg)<input #measurement type="number" min="0.01" max="500" step="0.01" required placeholder="Ej. 72,5" [value]="weightDraft()" (input)="weightDraft.set($any($event.target).value)" [disabled]="weightSaving()"></label><label>Fecha y hora<input #measurementDate type="datetime-local" required [value]="measurementDateDraft()" (input)="measurementDateDraft.set($any($event.target).value)" [disabled]="weightSaving()"></label><button type="submit" class="button primary" [disabled]="weightSaving()">{{weightSaving() ? 'Guardando…' : 'Registrar peso'}}</button></form>@if(weightError()) {<p class="summary-error" role="alert">{{weightError()}}</p>}@if(weightSaved()) {<p class="weight-success" role="status">Medición guardada.</p>}<p class="history-help">Últimas 30 mediciones, con fecha y hora.</p><p class="history-help">Se muestra cuando elegís hacer visible tu peso.</p>@for(entry of weights(); track entry.id) {<div class="weight-entry"><time>{{entry.recordedAt | date:'dd/MM/yyyy HH:mm'}}</time><strong>@if(showWeight()) {{{entry.weightKg | number:'1.1-1'}}} @else {•••}<small> kg</small></strong></div>} @empty {<p class="empty">Todavía no tenés mediciones de peso registradas.</p>}</article>
-      <article class="records"><span class="kicker">RÉCORDS RECIENTES</span><h2>Mejores marcas</h2>@for(record of records();track record.name){<div><span>{{record.name}}<small>{{record.date}}</small></span><strong>{{record.value}} <i>kg</i></strong></div>} @empty {<p class="empty">Todavía no hay récords registrados.</p>}</article></div>
+      <article class="records"><span class="kicker">RÉCORDS RECIENTES</span><h2>Mejores marcas</h2><p class="history-help">Mayor carga por ejercicio en tus sesiones completadas. Las series sin carga no generan marcas de fuerza.</p>@for(record of records();track record.name){<div><span>{{record.name}}<small>{{record.date}}</small></span><strong>{{record.value}} <i>kg</i></strong></div>} @empty {<p class="empty">Todavía no hay récords registrados.</p>}</article></div>
       <section class="leaderboard" aria-labelledby="ranking-title"><div class="ranking-head"><div><span class="kicker">LA COMUNIDAD LEVANTA</span><h2 id="ranking-title">Ranking de fuerza</h2></div><button type="button" (click)="loadLeaderboard()" [disabled]="rankingLoading()">↻ Actualizar</button></div>
         <p>Mayor carga de cada usuario en una serie registrada de una sesión completada. Los empates en peso comparten posición.</p>
-        <div class="ranking-tabs" role="tablist" aria-label="Ejercicio del ranking">@for (exercise of leaderboards(); track exercise.key) {<button type="button" role="tab" [attr.aria-selected]="selectedExercise() === exercise.key" [class.active]="selectedExercise() === exercise.key" (click)="selectedExercise.set(exercise.key)">{{exercise.name}}</button>}</div>
+        @if(auth.user()?.leaderboardOptIn===false){<p class="ranking-note">Tu participación en el ranking público está desactivada. Tus marcas personales se muestran arriba. <a routerLink="/privacidad/ajustes">Gestionar participación</a></p>}<div class="ranking-tabs" role="tablist" aria-label="Ejercicio del ranking">@for (exercise of leaderboards(); track exercise.key) {<button type="button" role="tab" [attr.aria-selected]="selectedExercise() === exercise.key" [class.active]="selectedExercise() === exercise.key" (click)="selectedExercise.set(exercise.key)">{{exercise.name}}</button>}</div>
         @if (rankingLoading()) {<p role="status">Cargando marcas de la comunidad…</p>} @else if (rankingError()) {<p class="ranking-error" role="alert">{{rankingError()}}</p>} @else {
           <div class="ranking-scroll"><table><caption>{{selectedBoard()?.name}} · mejores marcas</caption><thead><tr><th>POSICIÓN</th><th>USUARIO</th><th>PESO</th><th>REPS</th><th>FECHA</th></tr></thead><tbody>@for (user of selectedBoard()?.users || []; track user.userId) {<tr [class.my-rank]="user.isCurrentUser"><td><span class="rank-number" [class.podium]="user.rank <= 3">{{user.rank}}</span></td><td><b>{{user.name}}</b>@if (user.isCurrentUser) {<span class="you-label">Vos</span>}</td><td><strong>{{user.weightKg | number:'1.0-2'}} <small>kg</small></strong></td><td>{{user.repetitions}}</td><td>{{user.achievedAt | date:'dd/MM/yyyy'}}</td></tr>} @empty {<tr><td colspan="5" class="empty-ranking">Todavía no hay marcas de este ejercicio en sesiones completadas.</td></tr>}</tbody></table></div>
         }
-        <p class="ranking-note">Peso muerto convencional y rumano tienen rankings separados. Las marcas son las registradas por los usuarios.</p>
+        <p class="ranking-note">El ranking compara press de banca, sentadilla y pesos muertos con barra. Las variantes con mancuernas o peso corporal no se mezclan. Convencional y rumano tienen rankings separados.</p>
       </section>
     </section>
   `,
@@ -43,7 +44,7 @@ export class ProgressComponent implements OnInit, OnChanges {
 
   // Dependencias y estado de la clase: inject obtiene servicios; signal conserva valores reactivos.
   private readonly progress = inject(ProgressService);
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
   // datetime-local usa la hora del dispositivo; al enviar se convierte a UTC.
   readonly measurementDateDraft = signal(this.localDateTime());
   private localDateTime(): string {
@@ -107,7 +108,7 @@ export class ProgressComponent implements OnInit, OnChanges {
       this.volume.set((summary.sessions.reduce((sum, session) => sum + Number(session.totalVolumeKg || 0), 0) / 1000).toFixed(1));
       this.sessions.set(summary.completedSessions);
       const best = new Map<string, StrengthRecord>();
-      for (const record of summary.records) if (!best.has(record.exercise.name) || Number(best.get(record.exercise.name)!.estimatedOneRm) < Number(record.estimatedOneRm)) best.set(record.exercise.name, record);
+      for (const record of summary.records) if (!best.has(record.exercise.name) || Number(best.get(record.exercise.name)!.maxWeightKg) < Number(record.maxWeightKg)) best.set(record.exercise.name, record);
       this.records.set([...best.values()].map(record => ({ name:record.exercise.name, date:new Date(record.achievedAt).toLocaleDateString('es-AR',{day:'2-digit',month:'short'}).toUpperCase(), value:Number(record.maxWeightKg) })));
       this.summaryLoading.set(false);
     }, error: () => { this.summaryLoading.set(false); this.summaryError.set('No pudimos cargar tu progreso. Intentá nuevamente.'); }});

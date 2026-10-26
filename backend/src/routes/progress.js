@@ -6,8 +6,9 @@ import { Router } from "express";
 import { z } from "zod";
 import { sequelize } from "../db.js";
 import { requireAuth } from "../middleware/auth.js";
-import { BodyWeightHistory, Exercise, StrengthRecord, TrainingSession, User, PerformedSet, PerformedExercise } from "../models/index.js";
+import { BodyWeightHistory, Exercise, TrainingSession, User, PerformedSet, PerformedExercise } from "../models/index.js";
 import { QueryTypes } from 'sequelize';
+import {personalRecordsSql} from '../services/personal-records.js';
 
 export const progressRouter = Router();
 progressRouter.use(requireAuth);
@@ -48,10 +49,11 @@ progressRouter.get('/leaderboard', async (req, res) => {
 
 // GET /summary: Ejecuta consultas independientes en paralelo; los totales no dependen del límite de sesiones recientes.
 progressRouter.get("/summary", async (req, res) => {
+  const quote=model=>sequelize.getQueryInterface().queryGenerator.quoteTable(model.getTableName());
   const [sessions, weights, records, totalCalories, completedSessions] = await Promise.all([
     TrainingSession.findAll({ where: { userId: req.auth.sub, status: "COMPLETED" }, order: [["startedAt", "DESC"]], limit: 12 }),
     BodyWeightHistory.findAll({ where: { userId: req.auth.sub }, order: [["recordedAt", "DESC"]], limit: 30 }),
-    StrengthRecord.findAll({ where: { userId: req.auth.sub }, include: [{ model: Exercise, as: "exercise", paranoid:false }], order: [["estimatedOneRm", "DESC"]], limit: 8 }),
+    sequelize.query(personalRecordsSql({sets:quote(PerformedSet),performed:quote(PerformedExercise),sessions:quote(TrainingSession),exercises:quote(Exercise)}),{replacements:{userId:req.auth.sub},type:QueryTypes.SELECT}),
     TrainingSession.sum('calories', { where: { userId: req.auth.sub, status: 'COMPLETED' } }),
     TrainingSession.count({ where: { userId: req.auth.sub, status: 'COMPLETED' } }),
   ]);

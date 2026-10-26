@@ -10,6 +10,8 @@ import jwt from 'jsonwebtoken';
 import { app } from '../src/app.js';
 import { config } from '../src/config.js';
 import { TrainingSession, BodyWeightHistory, StrengthRecord } from '../src/models/index.js';
+import {sequelize} from '../src/db.js';
+import {httpClient} from '../test-support/http.js';
 
 test('profile summary uses lifetime totals independently of recent sessions', async t => {
   const originals = [TrainingSession.findAll, TrainingSession.sum, TrainingSession.count, BodyWeightHistory.findAll, StrengthRecord.findAll];
@@ -18,6 +20,7 @@ test('profile summary uses lifetime totals independently of recent sessions', as
   TrainingSession.count = async () => 27;
   BodyWeightHistory.findAll = async () => [];
   StrengthRecord.findAll = async () => [];
+  t.mock.method(sequelize,'query',async(_sql,options)=>{assert.equal(options.replacements.userId,'profile-owner');return [];});
   t.mock.method(accountAccess,'isActive',async()=>true);
   t.mock.method(legalAccess,'status',async()=>({needsAcceptance:false,sportsDataConsent:true}));
   const server = app.listen(0, '127.0.0.1');
@@ -32,4 +35,17 @@ test('profile summary uses lifetime totals independently of recent sessions', as
   assert.equal(summary.totalCalories, 8979.2);
   assert.equal(summary.completedSessions, 27);
   assert.equal(summary.sessions.length, 1);
+});
+
+test('marcas personales: el resumen devuelve las series históricas sin depender de strength_records',async t=>{
+  for(const method of ['findAll','sum','count'])t.mock.method(TrainingSession,method,async()=>method==='findAll'?[]:0);
+  t.mock.method(BodyWeightHistory,'findAll',async()=>[]);
+  t.mock.method(StrengthRecord,'findAll',()=>assert.fail('No consultar una tabla de marcas que no se actualiza'));
+  const record={id:'set',maxWeightKg:'80',repetitions:8,estimatedOneRm:'101.33',achievedAt:'2026-10-26',exercise:{id:'exercise',name:'Press banca'}};
+  t.mock.method(sequelize,'query',async(sql,options)=>{
+    assert.equal(options.replacements.userId,'owner');assert.ok(sql.includes("s.status='COMPLETED'"));
+    assert.ok(!sql.includes('leaderboard_opt_in'));return [record];
+  });
+  const request=await httpClient(t),response=await request('/progress/summary');
+  assert.equal(response.status,200);assert.deepEqual(response.data.records,[record]);
 });

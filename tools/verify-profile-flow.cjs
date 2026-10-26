@@ -12,7 +12,7 @@ const user = { id:'test',name:'Lucía',photoUrl:'existing-photo',currentKg:65 };
 const auth = { user:()=>user, updateProfile: value => { payload=value; request=new Subject(); return request; }, refreshProfile:()=>of(user) };
 const router = { navigateByUrl:url=>{navigated=url;} };
 const summary = { totalCalories:11213,completedSessions:101,sessions:[{totalVolumeKg:1000}],weights:[],records:[
-  { id:'old',exercise:{name:'Sentadilla'},maxWeightKg:60,estimatedOneRm:75,achievedAt:'2026-10-01' },
+  { id:'old',exercise:{name:'Sentadilla'},maxWeightKg:60,estimatedOneRm:999,achievedAt:'2026-10-01' },
   { id:'new',exercise:{name:'Sentadilla'},maxWeightKg:80,estimatedOneRm:100,achievedAt:'2026-10-20' },
 ] };
 const progress = { getSummary:()=>of(summary),getLeaderboard:()=>of({exercises:[]}) };
