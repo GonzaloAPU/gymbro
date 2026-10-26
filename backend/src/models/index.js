@@ -60,6 +60,8 @@ export const Exercise = sequelize.define("Exercise", {
   muscleGroup: { type: DataTypes.STRING, allowNull: false },
   equipment: { type: DataTypes.STRING, allowNull: false },
   movementPattern: DataTypes.STRING,
+  description: DataTypes.TEXT,
+  videoUrl: DataTypes.TEXT,
   trainingType: { type: DataTypes.STRING, allowNull: false, defaultValue: "POWER" },
 }, { timestamps:true, createdAt:false, updatedAt:false, paranoid:true, hooks: {
   // La base también normaliza mediante trigger: protege escrituras fuera de Sequelize.

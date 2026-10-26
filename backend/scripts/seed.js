@@ -14,7 +14,7 @@ try {
   const catalog = [];
   for (const data of exerciseData) {
     const [exercise] = await Exercise.findOrCreate({ where: { name: data.name, createdByUserId:null }, defaults: data });
-    await exercise.update(data);
+    await exercise.update({...data,description:exercise.description||data.description,videoUrl:exercise.videoUrl||data.videoUrl});
     catalog.push(exercise);
   }
 

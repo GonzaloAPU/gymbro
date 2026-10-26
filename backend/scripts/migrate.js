@@ -7,6 +7,7 @@ import { migrateWelcome } from './migrations/20261021-welcome.js';
 import {migrateSoftDelete} from './migrations/20261022-soft-delete.js';
 import {migrateLegal} from './migrations/20261022-legal.js';
 import {migratePasswordRecovery} from './migrations/20261025-password-recovery.js';
+import {migrateExerciseGuides} from './migrations/20261025-exercise-guides.js';
 try {
  await sequelize.authenticate();
  await normalizeSchema();
@@ -15,5 +16,6 @@ try {
  await migrateSoftDelete();
  await migrateLegal();
  await migratePasswordRecovery();
+ await migrateExerciseGuides();
  console.log('Migraciones verificadas: esquema normalizado.');
 } finally { await sequelize.close(); }

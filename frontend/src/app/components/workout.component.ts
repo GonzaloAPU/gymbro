@@ -23,6 +23,8 @@ interface CompletedSeries {
 }
 
 interface WorkoutExercise {
+  description?: string | null;
+  videoUrl?: string | null;
   id: string;
   name: string;
   muscle: string;
@@ -72,7 +74,8 @@ interface WorkoutExercise {
           }
           @else {<p>Completaste este ejercicio. Continuá cuando estés listo.</p><button type="button" class="start-next" (click)="nextExercise()" [disabled]="saving()">{{nextActionLabel()}}</button>}
           <details class="timer-settings"><summary>Editar serie</summary><div class="active-series-fields"><label>Cantidad de series<input type="number" [min]="minimumSets()" max="1000" step="1" [value]="current().sets" [disabled]="saving()" (change)="configureSets($any($event.target))"></label></div><p>Para este entrenamiento; tu rutina base se conserva.</p>@if((!current().trainingType || current().trainingType === 'POWER') && (phase() === 'work' || nextSetIndex() >= 0)) {@let editIndex = phase() === 'work' ? seriesIndex()! : nextSetIndex();<div class="active-series-fields"><label>Peso (kg)<input type="number" min="0" step="0.5" [value]="setDraft(editIndex).weight" (input)="updateSetDraft(editIndex, 'weight', $any($event.target).value)" [disabled]="saving()"></label><label>Repeticiones<input type="number" min="1" step="1" [value]="setDraft(editIndex).reps" (input)="updateSetDraft(editIndex, 'reps', $any($event.target).value)" [disabled]="saving()"></label></div>}<p>Pausá el reloj en curso para cambiar su duración. El tiempo transcurrido se conserva.</p><div class="active-series-fields"><label>Serie (segundos)<input type="number" min="1" max="3600" step="1" [value]="current().workSeconds" [disabled]="saving() || (phase() === 'work' && running() && !seriesPaused())" (change)="configureTimer('work', $any($event.target).value)"></label><label>Descanso (segundos)<input type="number" min="0" max="3600" step="1" [value]="restSeconds()" [disabled]="saving() || (phase() === 'rest' && running())" (change)="configureTimer('rest', $any($event.target).value)"></label></div></details>
-          @if(error() && phase() !== 'work') {<p class="error" role="alert">{{error()}}</p>}
+            @if(current().description){<details><summary>Cómo hacer este ejercicio</summary><p>{{current().description}}</p>@if(tutorialUrl()){<a [href]="tutorialUrl()" target="_blank" rel="noopener noreferrer">Ver tutorial en {{tutorialUrl()!.includes('tiktok.com')?'TikTok':'YouTube'}} ↗</a>}</details>}
+            @if(error() && phase() !== 'work') {<p class="error" role="alert">{{error()}}</p>}
           <details class="linked-settings"><summary>Encadenar de 2 a 4 ejercicios</summary><p>Elegí el orden: una serie de A, después B (y C o D si los agregás). Descansás al cerrar la ronda. Cada serie empieza al tocar Iniciar.</p>@for(exercise of exercises; track exercise.id; let i=$index) {<label><input type="checkbox" [checked]="linkedExercises().includes(i)" [attr.aria-label]="exercise.name" (change)="toggleLinkedExercise(i)" [disabled]="phase() !== 'idle' || saving() || chainRoundActive() || (!linkedExercises().includes(i) && linkedExercises().length >= 4)">{{exercise.name}} @if(linkedExercises().includes(i)) {<b>{{linkedExercises().indexOf(i)+1}}</b>}</label>}<p>@if(linkedExercises().length === 1) {Elegí otro ejercicio para activar el grupo.} @else if(linkedExercises().length >= 2) {Se omiten los ejercicios que ya completaron todas sus series.}</p><label>Descanso entre rondas (segundos)<input type="number" min="0" max="3600" step="1" [value]="linkedRestSeconds()" (change)="configureLinkedRest($any($event.target).value)" [disabled]="phase() !== 'idle' || saving() || chainRoundActive()"></label><button type="button" class="repeat-record" (click)="clearLinkedExercises()" [disabled]="phase() !== 'idle' || saving() || chainRoundActive()">Quitar grupo</button></details>
         </div>
       }
@@ -383,7 +386,7 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
     if(this.selectedPlanKey!==key)this.setCountOverrides.clear();
     this.recovered=false; this.selectedPlanKey = key; this.routineDayId = entry.day.id;
     this.routineName.set(entry.day.name);
-    this.exercises = entry.day.exercises.map(item => ({id:item.exercise.id,name:item.exercise.name,muscle:item.exercise.muscleGroup,sets:item.targetSets,reps:`${item.minReps}-${item.maxReps}`,rest:item.restSeconds,done:0,trainingType:item.exercise.trainingType,workSeconds:item.exercise.trainingType !== 'POWER' && item.targetDurationMinutes ? Math.min(3600, Math.max(1, Math.round(item.targetDurationMinutes*60))) : 45}));
+    this.exercises = entry.day.exercises.map(item => ({id:item.exercise.id,name:item.exercise.name,description:item.exercise.description,videoUrl:item.exercise.videoUrl,muscle:item.exercise.muscleGroup,sets:item.targetSets,reps:`${item.minReps}-${item.maxReps}`,rest:item.restSeconds,done:0,trainingType:item.exercise.trainingType,workSeconds:item.exercise.trainingType !== 'POWER' && item.targetDurationMinutes ? Math.min(3600, Math.max(1, Math.round(item.targetDurationMinutes*60))) : 45}));
     for(const exercise of this.exercises)exercise.sets=this.setCountOverrides.get(exercise.id)??exercise.sets;
     this.active.set(0); this.completed.set(new Set()); this.sessionFinished.set(false); this.sessionId.set(null);
     this.elapsed.set(0); this.elapsedMilliseconds.set(0); this.accumulatedMs = 0;
@@ -394,6 +397,10 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Devuelve el ejercicio seleccionado por el índice activo. */
   current(): WorkoutExercise { return this.exercises[this.active()]; }
+  tutorialUrl():string|null {
+    const link=this.current()?.videoUrl;
+    return link&&/^https:\/\/(?:www\.tiktok\.com\/@[\w.-]+\/video\/\d+|www\.youtube\.com\/(?:shorts\/[\w-]{11}|watch\?v=[\w-]{11})|youtu\.be\/[\w-]{11})$/.test(link)?link:null;
+  }
   /** Convierte segundos a horas:minutos:segundos con dos dígitos por parte. */
   format(seconds:number): string { return [Math.floor(seconds/3600), Math.floor(seconds/60)%60, seconds%60].map(value => String(value).padStart(2,'0')).join(':'); }
   /** Extrae la parte de milisegundos y la completa a tres dígitos. */

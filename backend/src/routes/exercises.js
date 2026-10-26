@@ -8,6 +8,7 @@ import { Exercise } from "../models/index.js";
 import { requireAuth } from "../middleware/auth.js";
 import { normalizeExerciseName, exerciseScope } from '../services/exercise-access.js';
 import { sequelize } from '../db.js';
+import {exerciseVideoPattern} from '../services/exercise-video-url.js';
 
 export const exercisesRouter = Router();
 exercisesRouter.use(requireAuth);
@@ -19,6 +20,8 @@ exercisesRouter.post('/', async (req, res) => {
     muscleGroup: z.string().trim().min(2).max(255),
     equipment: z.string().trim().min(2).max(255),
     movementPattern: z.string().trim().max(255).nullable().optional(),
+    description: z.string().trim().min(10).max(1500).nullable().optional(),
+    videoUrl: z.string().regex(exerciseVideoPattern,'Usá el enlace directo de un video de YouTube o TikTok.').nullable().optional(),
     trainingType: z.enum(['POWER', 'AEROBIC', 'ANAEROBIC']),
   }).parse(req.body);
   const normalizedName = normalizeExerciseName(input.name);

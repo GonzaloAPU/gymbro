@@ -20,12 +20,25 @@ test('Supabase: 16 tablas y 190 ejercicios oficiales',async()=>{
   assert.deepEqual(names,exerciseData.map(e=>e.name).sort());
 });
 test('Supabase: no copia datos personales al instalador',()=>{assert.ok(!sql.includes('passwordHash'));assert.ok(!/INSERT INTO [^;]*users/i.test(sql));assert.ok(!sql.includes('data:image/'));});
-test('Supabase: seis migraciones registradas',async()=>assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,6));
+test('Supabase: siete migraciones registradas',async()=>assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,7));
 test('Supabase: recuperación agrega columna sin modificar hashes y permite repetir migración',async()=>{
   const migration=fs.readFileSync(new URL('../backend/sql/supabase/05-password-recovery.sql',import.meta.url),'utf8');await db.exec(migration);await db.exec(migration);
   const saved=(await db.query('SELECT password_hash,password_changed_at FROM gymbro.users WHERE id=$1',[user])).rows[0];assert.equal(saved.password_hash,'not-a-real-hash');assert.equal(saved.password_changed_at,null);
 });
 test('Supabase: no modifica tablas de public',async()=>assert.equal((await db.query("SELECT count(*)::int AS total FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")).rows[0].total,0));
+
+test('Supabase: guías completan datos faltantes y conservan ediciones al repetir',async()=>{
+  assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.exercises WHERE description IS NOT NULL')).rows[0].total,190);
+  const migration=fs.readFileSync(new URL('../backend/sql/supabase/06-exercise-guides.sql',import.meta.url),'utf8');
+  const original=(await db.query("SELECT description,video_url FROM gymbro.exercises WHERE name='Sentadilla'")).rows[0];
+  assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.exercises WHERE video_url IS NOT NULL')).rows[0].total,190);
+  await db.exec("UPDATE gymbro.exercises SET description='Guía editada',video_url='https://www.tiktok.com/@test/video/123' WHERE name='Sentadilla'; UPDATE gymbro.exercises SET description=NULL WHERE name='Press banca';");
+  await db.exec(migration);await db.exec(migration);
+  const saved=(await db.query("SELECT description,video_url FROM gymbro.exercises WHERE name='Sentadilla'")).rows[0];
+  assert.equal(saved.description,'Guía editada');assert.equal(saved.video_url,'https://www.tiktok.com/@test/video/123');
+  assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.exercises WHERE description IS NOT NULL')).rows[0].total,190);
+  await db.query("UPDATE gymbro.exercises SET description=$1,video_url=$2 WHERE name='Sentadilla'",[original.description,original.video_url]);
+});
 test('Supabase: anon y authenticated no pueden acceder al esquema',async()=>{
   for(const role of ['anon','authenticated','service_role'])assert.equal((await db.query("SELECT has_schema_privilege($1,'gymbro','USAGE') AS allowed",[role])).rows[0].allowed,false);
 });
@@ -85,7 +98,7 @@ test('Supabase: migración incremental sirve para el instalador anterior y no pi
     await old.exec(patch);await old.exec(patch);
     assert.deepEqual((await old.query('SELECT id FROM gymbro.exercises ORDER BY id')).rows,before);
     assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.exercises WHERE deleted_at IS NULL')).rows[0].total,190);
-    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,6);
+    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,7);
   }finally{await old.close();}
 });
 test('Supabase: migración legal se puede repetir sin crear consentimientos ni publicar cuentas',async()=>{
@@ -100,7 +113,7 @@ test('Supabase: migración legal se puede repetir sin crear consentimientos ni p
     await old.exec(patch);await old.exec(patch);
     assert.equal((await old.query('SELECT leaderboard_opt_in FROM gymbro.users WHERE id=$1',[id])).rows[0].leaderboard_opt_in,false);
     assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.legal_acceptances')).rows[0].total,0);
-    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,6);
+    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,7);
   }finally{await old.close();}
 });
 test('Supabase: backend registra recibos pero no puede alterarlos ni borrarlos',async()=>{

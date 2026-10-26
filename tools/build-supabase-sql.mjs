@@ -8,6 +8,7 @@ import {normalizeNameSql,exerciseGuardSql,tableChecks} from '../backend/src/serv
 import {softDeleteSql} from '../backend/src/services/soft-delete.js';
 import {legalSchemaSql} from '../backend/src/services/legal-schema.js';
 import {passwordRecoverySql} from '../backend/src/services/password-recovery-schema.js';
+import {exerciseGuidesSql} from '../backend/src/services/exercise-guides-schema.js';
 // Solo este proceso generador usa esta conexión ficticia, nunca abre un socket.
 process.env.DB_CONNECTION_MODE='LOCAL';process.env.DATABASE_URL='postgresql://unused:unused@localhost/unused';
 const {sequelize}=await import('../backend/src/db.js');
@@ -48,7 +49,7 @@ INSERT INTO gymbro.schema_migrations(version) VALUES ('20261020_normalize'),('20
 const exercises=exerciseData.map(e=>{
   const name=normalizeExerciseName(e.name),hash=createHash('sha256').update('gymbro-official:'+name).digest('hex');
   const id=`${hash.slice(0,8)}-${hash.slice(8,12)}-5${hash.slice(13,16)}-a${hash.slice(17,20)}-${hash.slice(20,32)}`;
-  return {id,name:e.name,normalized_name:name,muscle_group:e.muscleGroup,equipment:e.equipment,movement_pattern:e.movementPattern,training_type:e.trainingType,created_by_user_id:null};
+  return {id,name:e.name,normalized_name:name,muscle_group:e.muscleGroup,equipment:e.equipment,movement_pattern:e.movementPattern,description:e.description,video_url:e.videoUrl,training_type:e.trainingType,created_by_user_id:null};
 });
 if(new Set(exercises.map(e=>e.normalized_name)).size!==190)throw Error('El catálogo debe contener 190 nombres únicos');
 statements.push(generator.bulkInsertQuery({tableName:'exercises',schema:'gymbro'},exercises,{}));
@@ -77,6 +78,8 @@ fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/03-soft-delete.s
 statements.splice(statements.length-1,0,softDeleteSql('gymbro'));
 statements.splice(statements.length-1,0,legalSchemaSql('gymbro'));
 statements.splice(statements.length-1,0,passwordRecoverySql('gymbro'));
+statements.splice(statements.length-1,0,exerciseGuidesSql('gymbro'));
+fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/06-exercise-guides.sql',import.meta.url)),`-- Completa el catálogo oficial sin modificar rutinas, usuarios ni guías existentes.\nBEGIN;\nSELECT pg_advisory_xact_lock(2026102501);\n${exerciseGuidesSql('gymbro')}\nCOMMIT;\nSELECT count(*) AS ejercicios, count(description) AS con_descripcion, count(video_url) AS con_video FROM gymbro.exercises WHERE created_by_user_id IS NULL AND deleted_at IS NULL;\n`);
 fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/05-password-recovery.sql',import.meta.url)),`-- Aplicar antes de actualizar Render. Conserva usuarios y contraseñas existentes.\nBEGIN;\nSELECT pg_advisory_xact_lock(20261025);\n${passwordRecoverySql('gymbro')}\nCOMMIT;\n`);
 fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/04-legal-consents.sql',import.meta.url)),`-- Aplicar ANTES de actualizar Render. No borra datos ni acepta documentos por los usuarios.\nBEGIN;\nSELECT pg_advisory_xact_lock(20261023);\n${legalSchemaSql('gymbro')}\nCOMMIT;\nSELECT version FROM gymbro.schema_migrations WHERE version='20261022_legal';\n`);
 fs.writeFileSync(target,statements.join('\n\n')+'\n');

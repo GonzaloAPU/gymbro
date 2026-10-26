@@ -1,6 +1,7 @@
 /** Catálogo inicial reutilizable; no contiene sesiones ni datos personales. */
 import { outdoorExercises } from './outdoor-exercises.js';
 import { homeParkExpansion } from './home-park-expansion.js';
+import {exerciseGuides} from './exercise-guides.js';
 const baseExercises = [
   { name: "Sentadilla", muscleGroup: "Piernas", equipment: "Barra", movementPattern: "Sentadilla", trainingType: "POWER" },
   { name: "Press banca", muscleGroup: "Pecho", equipment: "Barra", movementPattern: "Empuje horizontal", trainingType: "POWER" },
@@ -695,4 +696,4 @@ export const exerciseData = [...baseExercises, ...outdoorExercises, ...homeParkE
     "movementPattern": "Flexión plantar",
     "trainingType": "POWER"
   }
-]];
+]].map(exercise=>({...exercise,...exerciseGuides[exercise.name]}));

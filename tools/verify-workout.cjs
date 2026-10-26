@@ -48,6 +48,13 @@ vm.runInNewContext(compiled, {
 });
 const workout = new exportsObject.WorkoutComponent();
 workout.ngOnInit();
+for(const videoUrl of ['https://www.youtube.com/shorts/JZA1_vAc7go','https://www.youtube.com/watch?v=JZA1_vAc7go','https://youtu.be/JZA1_vAc7go']){
+  workout.current().videoUrl=videoUrl;assert.equal(workout.tutorialUrl(),videoUrl);
+}
+for(const videoUrl of ['javascript:alert(1)','https://www.youtube.com.evil.invalid/shorts/JZA1_vAc7go','https://www.youtube.com/results?search_query=squat']){
+  workout.current().videoUrl=videoUrl;assert.equal(workout.tutorialUrl(),null);
+}
+delete workout.current().videoUrl;
 assert.equal(starts, 0, 'Opening the page must not create a session');
 assert.equal(ticks.size, 0, 'Opening the page must not start the timer');
 assert.equal(workout.format(0), '00:00:00');

@@ -11,6 +11,8 @@ import { HttpClient } from '@angular/common/http';
 export interface Exercise {
   createdByUserId?: string | null;
   movementPattern?: string | null;
+  description?: string | null;
+  videoUrl?: string | null;
   id: string;
   name: string;
   muscleGroup: string;
