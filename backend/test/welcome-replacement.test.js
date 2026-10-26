@@ -17,14 +17,15 @@ test('bienvenida: reemplaza rutinas y descansos al aceptar y conserva el histori
   t.mock.method(User,'findByPk',async()=>({update:async()=>{}}));
   t.mock.method(Exercise,'findAll',async()=>catalog);
   const row={preferences,proposal,update:async values=>Object.assign(row,values)};
-  t.mock.method(WelcomePlan,'findOne',async()=>row);
+  t.mock.method(WelcomePlan,'findOne',async options=>{assert.equal(options.where.userId,'owner');return row;});
   t.mock.method(Routine,'update',async()=>{});
   t.mock.method(Routine,'destroy',async options=>{assert.equal(options.where.userId,'owner');assert.equal(options.transaction,transaction);assert.notEqual(options.force,true);calls.push('archive');});
   t.mock.method(Routine,'create',async()=>{calls.push('create');return {id:'new-routine'};});
   t.mock.method(RoutineDay,'create',async()=>({id:randomUUID()}));
   t.mock.method(RoutineExercise,'bulkCreate',async()=>{});
   const schedules=[];t.mock.method(RoutineSchedule,'create',async slot=>schedules.push(slot));
-  t.mock.method(BodyWeightHistory,'findOne',async()=>({weightKg:70}));
+  t.mock.method(BodyWeightHistory,'findOne',async options=>{assert.equal(options.where.userId,'owner');assert.deepEqual(options.order,[['recordedAt','DESC']]);return {weightKg:65};});
+  t.mock.method(BodyWeightHistory,'create',()=>assert.fail('Un plan viejo no debe sobrescribir el historial de pesos'));
   t.mock.method(UserRestDay,'destroy',async()=>{});
   let rests;t.mock.method(UserRestDay,'bulkCreate',async values=>{rests=values;});
   t.mock.method(TrainingSession,'destroy',()=>assert.fail('No borrar historial'));
@@ -36,4 +37,8 @@ test('bienvenida: reemplaza rutinas y descansos al aceptar y conserva el histori
   assert.deepEqual(rests.map(day=>day.weekday),[0,4,5,6]);
   assert.equal((await request('/welcome/accept','POST',{proposalId:id})).status,200);
   assert.deepEqual(calls,['archive','create']); // Reintentar no vuelve a reemplazar.
+  const saved=await request('/welcome/draft');
+  assert.equal(saved.status,200);assert.equal(saved.data.preferences.age,30);
+  assert.equal(saved.data.proposal,null);assert.equal(saved.data.preferences.aiConsent,false);
+  assert.equal(saved.data.profile.currentKg,65);
 });

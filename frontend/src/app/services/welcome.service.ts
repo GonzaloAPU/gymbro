@@ -15,7 +15,7 @@ export interface WelcomeProposal {
 export class WelcomeService {
   private readonly http=inject(HttpClient);
   status(){return this.http.get<{needed:boolean;aiAvailable:boolean;hasRoutines:boolean}>('/api/welcome/status');}
-  draft(){return this.http.get<{preferences:WelcomeInput;proposal:WelcomeProposal}|null>('/api/welcome/draft');}
+  draft(){return this.http.get<{preferences:WelcomeInput|null;proposal:WelcomeProposal|null;profile?:{heightCm?:number|null;currentKg?:number|null;goal?:string|null}}|null>('/api/welcome/draft');}
   preview(input:WelcomeInput){return this.http.post<WelcomeProposal>('/api/welcome/preview',input).pipe(timeout(45000));}
   accept(proposalId:string){return this.http.post<{routineId:string}>('/api/welcome/accept',{proposalId}).pipe(timeout(25000));}
   skip(){return this.http.post('/api/welcome/skip',{}).pipe(timeout(15000));}

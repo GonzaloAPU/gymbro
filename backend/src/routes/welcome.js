@@ -19,10 +19,19 @@ welcomeRouter.get('/status',async(req,res)=>{
   res.json({needed:count===0&&!row?.acceptedAt&&!row?.skippedAt,aiAvailable:geminiAvailable(),hasRoutines:count>0});
 });
 welcomeRouter.get('/draft',async(req,res)=>{
-  const row=await WelcomePlan.findOne({where:{userId:req.auth.sub}});
-  if(!row||row.acceptedAt||row.skippedAt)return res.json(null);
+  const userId=req.auth.sub;
+  const [row,user,latest]=await Promise.all([
+    WelcomePlan.findOne({where:{userId}}),User.findByPk(userId),
+    BodyWeightHistory.findOne({where:{userId},order:[['recordedAt','DESC']]}),
+  ]);
+  if(!user)throw planningError('Usuario no encontrado',404);
+  const profile={heightCm:user.heightCm,goal:user.goal,currentKg:latest?Number(latest.weightKg):null};
+  if(!row||!welcomeSchema.safeParse(row.preferences).success)return res.json({preferences:null,proposal:null,profile});
+  // Conserva la ficha del último plan sin volver a ofrecer una propuesta ya usada.
+  // No requiere otra tabla: estas preferencias ya pertenecen a la cuenta autenticada.
+  if(row.acceptedAt||row.skippedAt)return res.json({preferences:{...row.preferences,aiConsent:false},proposal:null,profile});
   const catalog=await Exercise.findAll({where:{createdByUserId:null}});
-  res.json({preferences:row.preferences,proposal:publicProposal(row,catalog)});
+  res.json({preferences:row.preferences,proposal:publicProposal(row,catalog),profile});
 });
 welcomeRouter.post('/preview',async(req,res)=>{
   const input=welcomeSchema.parse(req.body),userId=req.auth.sub;
@@ -82,7 +91,9 @@ welcomeRouter.post('/accept',async(req,res)=>{
     }
     await user.update({heightCm:input.heightCm,goal:goalLabels[input.goal]},{transaction});
     const latest=await BodyWeightHistory.findOne({where:{userId},order:[['recordedAt','DESC']],transaction});
-    if(!latest||Number(latest.weightKg)!==input.weightKg)await BodyWeightHistory.create({userId,weightKg:input.weightKg},{transaction});
+    // Una propuesta vieja no puede reemplazar el último pesaje registrado en Progreso.
+    // Solo crea el peso inicial si la cuenta todavía no tiene historial.
+    if(!latest)await BodyWeightHistory.create({userId,weightKg:input.weightKg},{transaction});
     const rests=[0,1,2,3,4,5,6].filter(day=>!slots.some(slot=>slot.weekday===day));
     await UserRestDay.destroy({where:{userId},transaction});
     await UserRestDay.bulkCreate(rests.map(weekday=>({userId,weekday})),{transaction});

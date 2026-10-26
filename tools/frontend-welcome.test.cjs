@@ -16,6 +16,36 @@ test('bienvenida UI: siete sesiones marcan toda la semana y al reducir no quedan
   screen.numberField('sessions','3');assert.equal(screen.form().availability.length,3);
 });
 test('bienvenida UI: precarga altura y peso sin inventar edad',()=>{const {screen}=fixture();screen.numberField('age','');assert.equal(screen.form().heightCm,170);assert.equal(screen.form().weightKg,70);assert.equal(screen.form().age,0);});
+
+test('bienvenida UI: reutiliza edad y experiencia y prioriza las medidas actuales del perfil',async()=>{
+  const {screen,welcome,services}=fixture();
+  const preferences={...screen.form(),age:42,heightCm:160,weightKg:80,experience:'INTERMEDIATE',goal:'GENERAL',aiConsent:true};
+  welcome.draft=()=>of({preferences,proposal:null});
+  services.auth.user=()=>({heightCm:175,currentKg:75,goal:'Ganar fuerza'});
+  await screen.ngOnInit();
+  assert.equal(screen.form().age,42);assert.equal(screen.form().experience,'INTERMEDIATE');
+  assert.equal(screen.form().heightCm,175);assert.equal(screen.form().weightKg,75);
+  assert.equal(screen.form().goal,'STRENGTH');assert.equal(screen.form().aiConsent,false);
+  assert.equal(screen.proposal(),null);assert.equal(screen.step(),1);
+  assert.equal(screen.fieldLocked('age'),true);assert.equal(screen.fieldLocked('heightCm'),true);
+  assert.equal(screen.fieldLocked('weightKg'),true);assert.equal(screen.fieldLocked('experience'),true);
+  screen.editingSaved.set(true);assert.equal(screen.fieldLocked('age'),false);assert.equal(screen.fieldLocked('weightKg'),true);
+});
+
+test('bienvenida UI: toma el último pesaje del servidor aunque el perfil local esté desactualizado',async()=>{
+  const {screen,welcome}=fixture();
+  welcome.draft=()=>of({preferences:null,proposal:null,profile:{heightCm:160,currentKg:68,goal:'Ganar fuerza'}});
+  screen.numberField('age','');await screen.ngOnInit();
+  assert.equal(screen.form().weightKg,68);assert.equal(screen.form().heightCm,160);
+  assert.equal(screen.form().age,0);assert.equal(screen.fieldLocked('age'),false);
+  assert.equal(screen.fieldLocked('heightCm'),true);assert.equal(screen.fieldLocked('weightKg'),true);
+});
+
+test('bienvenida UI: sin ficha previa mantiene la edad vacía y recupera el objetivo del perfil',async()=>{
+  const {screen,services}=fixture();screen.numberField('age','');
+  services.auth.user=()=>({heightCm:170,currentKg:70,goal:'Desarrollar músculo'});
+  await screen.ngOnInit();assert.equal(screen.form().age,0);assert.equal(screen.form().goal,'MUSCLE');
+});
 test('bienvenida UI: edad inválida impide continuar',()=>{const {screen}=fixture();screen.numberField('age','17');screen.next();assert.equal(screen.step(),1);assert.ok(screen.error());});
 test('bienvenida UI: exige respuesta sobre restricciones',()=>{const {screen}=fixture();screen.restrictionAnswer.set('');screen.next();assert.equal(screen.step(),1);assert.ok(screen.error());});
 test('bienvenida UI: restricciones bloquean el plan automático',()=>{const {screen,state}=fixture();screen.setField('hasRestrictions',true);screen.next();assert.equal(screen.step(),1);assert.equal(state.previews.length,0);});

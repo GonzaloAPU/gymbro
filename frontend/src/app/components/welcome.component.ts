@@ -15,13 +15,14 @@ import {WelcomeInput,WelcomeProposal,WelcomeService} from '../services/welcome.s
       @if(error()) {<p class="notice error" role="alert">{{error()}}</p>}
       <div class="card">
       @if(step()===1) {
-        <h2>Tu punto de partida</h2><div class="fields">
-          <label>Edad<input type="number" min="18" max="85" inputmode="numeric" [value]="form().age||''" (input)="numberField('age',$any($event.target).value)" placeholder="Años"></label>
-          <label>Altura (cm)<input type="number" min="100" max="250" inputmode="numeric" [value]="form().heightCm||''" (input)="numberField('heightCm',$any($event.target).value)" placeholder="Ej. 170"></label>
-          <label>Peso (kg)<input type="number" min="30" max="300" step="0.1" inputmode="decimal" [value]="form().weightKg||''" (input)="numberField('weightKg',$any($event.target).value)" placeholder="Ej. 70"></label>
+        <h2>Tu punto de partida</h2><p class="help">Los datos guardados están bloqueados. Completá los campos que faltan.</p><button type="button" class="button ghost" (click)="editingSaved.set(!editingSaved())">{{editingSaved()?'Bloquear datos guardados':'Editar datos guardados'}}</button><div class="fields">
+          <label>Edad<input type="number" min="18" max="85" inputmode="numeric" [disabled]="fieldLocked('age')" [value]="form().age||''" (input)="numberField('age',$any($event.target).value)" placeholder="Años"></label>
+          <label>Altura (cm)<input type="number" min="100" max="250" inputmode="numeric" [disabled]="fieldLocked('heightCm')" [value]="form().heightCm||''" (input)="numberField('heightCm',$any($event.target).value)" placeholder="Ej. 170"></label>
+          <label>Peso (kg)<input type="number" min="30" max="300" step="0.1" inputmode="decimal" [disabled]="fieldLocked('weightKg')" [value]="form().weightKg||''" (input)="numberField('weightKg',$any($event.target).value)" placeholder="Ej. 70"></label>
         </div>
-        <label>¿Qué querés lograr?<select [value]="form().goal" (change)="setField('goal',$any($event.target).value)"><option value="GENERAL">Mejorar mi condición física</option><option value="STRENGTH">Ganar fuerza</option><option value="MUSCLE">Desarrollar músculo</option></select></label>
-        <label>Experiencia<select [value]="form().experience" (change)="setField('experience',$any($event.target).value)"><option value="BEGINNER">Estoy empezando o retomando</option><option value="INTERMEDIATE">Entreno regularmente</option></select></label>
+        @if(weightFromHistory()){<p class="help">Peso actualizado desde tu última medición. Para cambiarlo, <a routerLink="/progreso">registrá tu peso en Progreso</a>.</p>}
+        <label>¿Qué querés lograr?<select [disabled]="fieldLocked('goal')" [value]="form().goal" (change)="setField('goal',$any($event.target).value)"><option value="GENERAL">Mejorar mi condición física</option><option value="STRENGTH">Ganar fuerza</option><option value="MUSCLE">Desarrollar músculo</option></select></label>
+        <label>Experiencia<select [disabled]="fieldLocked('experience')" [value]="form().experience" (change)="setField('experience',$any($event.target).value)"><option value="BEGINNER">Estoy empezando o retomando</option><option value="INTERMEDIATE">Entreno regularmente</option></select></label>
         <fieldset><legend>¿Tenés dolor, una lesión o restricciones para entrenar?</legend><label class="check"><input type="radio" name="restrictions" [checked]="restrictionAnswer()==='NO'" (change)="restrictionAnswer.set('NO');setField('hasRestrictions',false)">No</label><label class="check"><input type="radio" name="restrictions" [checked]="restrictionAnswer()==='YES'" (change)="restrictionAnswer.set('YES');setField('hasRestrictions',true)">Sí</label></fieldset>
         @if(form().hasRestrictions) {<p class="notice">La generación automática es para entrenamiento general. Para estas condiciones necesitás indicaciones profesionales. Podés <a routerLink="/rutinas/nueva">crear tu rutina manualmente</a>.</p>}
         <p class="help">Este prototipo genera planes iniciales para adultos de 18 a 85 años. No calcula cargas en kilos ni tratamientos de rehabilitación.</p>
@@ -66,6 +67,8 @@ export class WelcomeComponent implements OnInit {
   readonly step=signal(1);readonly loading=signal(true);readonly busy=signal(false);readonly error=signal('');readonly aiAvailable=signal(false);
   readonly proposal=signal<WelcomeProposal|null>(null);readonly restrictionAnswer=signal<''|'YES'|'NO'>('');
   readonly replacingDay=signal<number|null>(null);
+  readonly savedFields=signal(new Set<string>());readonly editingSaved=signal(false);readonly weightFromHistory=signal(false);
+  fieldLocked(field:string):boolean {return field==='weightKg'?this.weightFromHistory():this.savedFields().has(field)&&!this.editingSaved();}
   private customDays=false;
   readonly form=signal<WelcomeInput>({age:0,heightCm:this.auth.user()?.heightCm||0,weightKg:this.auth.user()?.currentKg||0,goal:'GENERAL',experience:'BEGINNER',place:'HOME',equipment:[],sessions:3,minutes:30,availability:[1,3,5].map(weekday=>({weekday,start:'18:00',end:'18:30'})),hasRestrictions:false,mode:'LOCAL',aiConsent:false});
   readonly places=[{value:'GYM' as const,label:'Gimnasio'},{value:'HOME' as const,label:'Casa'},{value:'PARK' as const,label:'Parque'}];
@@ -73,12 +76,37 @@ export class WelcomeComponent implements OnInit {
   readonly durations=[30,45,60,75,90];
   readonly weekdays=[{value:1,short:'L',name:'Lunes'},{value:2,short:'M',name:'Martes'},{value:3,short:'X',name:'Miércoles'},{value:4,short:'J',name:'Jueves'},{value:5,short:'V',name:'Viernes'},{value:6,short:'S',name:'Sábado'},{value:0,short:'D',name:'Domingo'}];
   async ngOnInit(){
+    this.applySavedProfile(this.auth.user());
+    const preferAI=this.router.getCurrentNavigation?.()?.extras.state?.['planMode']==='GEMINI';
     try {
       const [status,draft]=await Promise.all([firstValueFrom(this.api.status()),firstValueFrom(this.api.draft())]);
       this.aiAvailable.set(status.aiAvailable);
-      if(draft){this.form.set(draft.preferences);this.customDays=true;this.matchSessionDays();this.restrictionAnswer.set(draft.preferences.hasRestrictions?'YES':'NO');this.proposal.set(draft.proposal);this.step.set(3);}
+      if(draft?.preferences){
+        const profile=draft.profile||this.auth.user();
+        this.form.set({...draft.preferences,aiConsent:false,
+          heightCm:profile?.heightCm||draft.preferences.heightCm,
+          weightKg:profile?.currentKg||draft.preferences.weightKg,
+          goal:this.profileGoal(profile?.goal)||draft.preferences.goal});
+        this.customDays=true;this.matchSessionDays();
+        this.restrictionAnswer.set(draft.preferences.hasRestrictions?'YES':'NO');
+        this.proposal.set(draft.proposal);this.step.set(draft.proposal?3:1);
+        this.savedFields.set(new Set(['age','heightCm','goal','experience']));
+      }else{const goal=this.profileGoal(this.auth.user()?.goal);if(goal)this.setField('goal',goal);}
+      this.applySavedProfile(draft?.profile||this.auth.user());
+      if(preferAI){this.proposal.set(null);this.step.set(1);if(status.aiAvailable)this.setField('mode','GEMINI');}
     }catch{this.error.set('No pudimos cargar la configuración. Podés completar la ficha y reintentar.');}
     finally{this.loading.set(false);}
+  }
+  private applySavedProfile(profile:{heightCm?:number|null;currentKg?:number|null;goal?:string|null}|null):void {
+    const fields=new Set(this.savedFields());const goal=this.profileGoal(profile?.goal);
+    if(profile?.heightCm){this.setField('heightCm',profile.heightCm);fields.add('heightCm');}
+    if(profile?.currentKg)this.setField('weightKg',profile.currentKg);
+    this.weightFromHistory.set(!!profile?.currentKg);
+    if(goal){this.setField('goal',goal);fields.add('goal');}
+    this.savedFields.set(fields);
+  }
+  private profileGoal(value?:string|null):WelcomeInput['goal']|null {
+    return value==='Ganar fuerza'?'STRENGTH':value==='Desarrollar músculo'?'MUSCLE':value==='Mejorar mi condición física'?'GENERAL':null;
   }
   setField<K extends keyof WelcomeInput>(key:K,value:WelcomeInput[K]){if(this.busy())return;this.form.update(form=>({...form,[key]:value}));this.error.set('');}
   numberField(key:'age'|'heightCm'|'weightKg'|'sessions'|'minutes',raw:string){
