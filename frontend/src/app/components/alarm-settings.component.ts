@@ -1,5 +1,5 @@
 /** Permisos y preferencias de avisos en este dispositivo. */
-import {Component,inject} from '@angular/core';
+import {Component, inject, ChangeDetectionStrategy} from '@angular/core';
 import {AlarmService} from '../services/alarm.service';
 @Component({
   selector:'app-alarm-settings',standalone:true,
@@ -12,6 +12,7 @@ import {AlarmService} from '../services/alarm.service';
     @if(!alarms.native) {<p class="help">En la web, mantené la página abierta. Android puede programar los avisos del dispositivo.</p>}
     @if(alarms.message()) {<p class="help" role="status">{{alarms.message()}}</p>}
   </section>`,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles:[`.alarms{margin-top:22px;padding:24px;border:1px solid var(--line);border-radius:20px;background:var(--surface)}h2{font-size:23px;margin:0 0 12px}p{font-size:13px;color:var(--muted);line-height:1.6}label{display:flex;align-items:center;gap:12px;font-size:14px;line-height:1.5;margin:18px 0}input{accent-color:var(--lime);width:22px;height:22px;flex-shrink:0}.buttons{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 0}.help{margin-bottom:0}.button{font-size:13px}`],
 })
 export class AlarmSettingsComponent {readonly alarms=inject(AlarmService);}

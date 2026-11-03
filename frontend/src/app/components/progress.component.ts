@@ -2,7 +2,7 @@
  * Pantalla de progreso y rankings. Consume el resumen y el ranking por ejercicio; el volumen mostrado se calcula sobre las sesiones recientes recibidas.
  * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
  */
-import { Component, Input, OnChanges, SimpleChanges, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, computed, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { ExerciseLeaderboard, ProgressService, WeightEntry, StrengthRecord } from '../services/progress.service';
 import { AuthService } from '../services/auth.service';
@@ -32,6 +32,7 @@ import {RouterLink} from '@angular/router';
     </section>
   `,
   // CSS de este componente: disposición, colores y estados; @media adapta la vista a pantallas pequeñas.
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles:[`
     .weight-form{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:22px 0}.weight-form label{display:flex;flex:1;min-width:140px;flex-direction:column;gap:8px;font-size:13px}.weight-form input{width:100%;box-sizing:border-box;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--text);font-size:18px}.weight-form button{min-height:48px}.weight-success{color:var(--lime);font-size:13px}
     .progress .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.weight-toggle{border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:transparent;color:var(--muted);cursor:pointer}.weight-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 0;border-top:1px solid var(--line)}.weight-entry time,.history-help{font-size:13px;color:var(--muted)}.weight-entry strong{font-size:20px}.weight-entry small{font-size:12px;color:var(--muted)}.summary-error{color:#fca5a5}.metrics em{line-height:1.6}.progress h1{font-size:clamp(34px,5vw,54px)}@media(max-width:550px){.progress .metrics{grid-template-columns:1fr}}

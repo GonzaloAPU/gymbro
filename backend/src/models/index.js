@@ -10,6 +10,8 @@ export const User = sequelize.define("User", {
   id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   passwordHash: { type: DataTypes.STRING, allowNull: false },
+  aiWeekStart: {type:DataTypes.DATE,allowNull:true},
+  aiWeeklyUsed: {type:DataTypes.INTEGER,allowNull:false,defaultValue:0,validate:{min:0,max:3}},
   passwordChangedAt: {type:DataTypes.DATE,allowNull:true},
   name: { type: DataTypes.STRING, allowNull: false },
   goal: DataTypes.STRING,

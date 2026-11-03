@@ -29,7 +29,7 @@ vm.runInNewContext(compiled, {
   exports: exportsObject,
   crypto:require('node:crypto'),
   require: name => {
-    if (name === '@angular/core') return {
+    if (name === '@angular/core') return { ChangeDetectionStrategy:{Eager:1,OnPush:0},
       Component: () => target => target, Input: () => () => {}, HostListener:()=>()=>{},effect:()=>{},
       signal: initial => { let value = initial; const read = () => value; read.set = next => { value = next; }; return read; },
       inject: token => token === 'routine' ? routineService : token === 'session' ? sessionService : token === 'storage' ? storageMock : token === 'alarms' ? alarmMock : router,

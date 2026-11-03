@@ -1,5 +1,5 @@
 /** Configuración técnica opcional; el APK ya incluye el servidor de producción. */
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiEndpointService } from '../services/api-endpoint.service';
 
@@ -18,6 +18,7 @@ import { ApiEndpointService } from '../services/api-endpoint.service';
       <a class="button ghost" routerLink="/login">Volver a ingresar</a>
     </section>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`.connection{max-width:520px;padding-block:40px}.eyebrow{color:var(--lime);font-weight:800}.connection p{color:var(--muted);line-height:1.6}.connection label{display:block;margin-top:28px}.connection input{width:100%;padding:16px;margin-top:10px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);color:var(--text)}.connection button{width:100%}`],
 })
 export class ConnectionComponent {

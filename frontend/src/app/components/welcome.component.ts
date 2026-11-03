@@ -1,5 +1,5 @@
 /** Bienvenida guiada: datos, disponibilidad y propuesta antes de guardar el plan completo. */
-import {Component,OnInit,inject,signal} from '@angular/core';
+import {Component, OnInit, inject, signal, ChangeDetectionStrategy} from '@angular/core';
 import {Router,RouterLink} from '@angular/router';
 import {firstValueFrom} from 'rxjs';
 import {AuthService} from '../services/auth.service';
@@ -31,7 +31,7 @@ import {WelcomeInput,WelcomeProposal,WelcomeService} from '../services/welcome.s
         <h2>¿Dónde y cuándo entrenás?</h2>
         <div class="choices">@for(place of places;track place.value){<button type="button" [class.selected]="form().place===place.value" [attr.aria-pressed]="form().place===place.value" (click)="setField('place',place.value)">{{place.label}}</button>}</div>
         <fieldset><legend>¿Qué equipamiento tenés? El peso corporal siempre está disponible.</legend><div class="equipment">@for(item of equipment;track item.value){<label class="check"><input type="checkbox" [checked]="form().equipment.includes(item.value)" (change)="toggleEquipment(item.value)">{{item.label}}</label>}</div></fieldset>
-        <div class="fields"><label>Sesiones por semana<select [value]="form().sessions" (change)="numberField('sessions',$any($event.target).value)">@for(count of [2,3,4,5,6,7];track count){<option [value]="count">{{count}} sesiones</option>}</select></label><label>Tiempo por sesión<select [value]="form().minutes" (change)="numberField('minutes',$any($event.target).value)">@for(minutes of durations;track minutes){<option [value]="minutes">{{minutes}} minutos</option>}</select></label></div>
+        <div class="fields"><label>Sesiones por semana<select [value]="form().sessions" (change)="numberField('sessions',$any($event.target).value)">@for(count of [2,3,4,5,6,7];track count){<option [value]="count" [selected]="form().sessions===count">{{count}} sesiones</option>}</select></label><label>Tiempo por sesión<select [value]="form().minutes" (change)="numberField('minutes',$any($event.target).value)">@for(minutes of durations;track minutes){<option [value]="minutes" [selected]="form().minutes===minutes">{{minutes}} minutos</option>}</select></label></div>
         <h3>Tus {{form().sessions}} días de entrenamiento</h3><p class="help" role="status">@if(replacingDay()!==null){Elegí otro día para reemplazar {{dayName(replacingDay()!)}}.}@else{Ya marcamos {{form().sessions}} días. Para cambiar uno, tocá el día marcado y después su reemplazo.}</p>
         <div class="week">@for(day of weekdays;track day.value){<button type="button" [class.selected]="available(day.value)" [class.replacing]="replacingDay()===day.value" [attr.aria-label]="day.name + (replacingDay()===day.value ? ': elegí su reemplazo' : available(day.value) ? ': cambiar este día' : ': usar este día')" [attr.aria-pressed]="available(day.value)" [disabled]="busy() || (!available(day.value) && replacingDay()===null)" (click)="toggleDay(day.value)">{{day.short}}</button>}</div>
         @for(slot of form().availability;track slot.weekday){<div class="time-row"><b>{{dayName(slot.weekday)}}</b><label>Desde<input type="time" [value]="slot.start" (change)="changeTime(slot.weekday,'start',$any($event.target).value)"></label><label>Hasta<input type="time" [value]="slot.end" (change)="changeTime(slot.weekday,'end',$any($event.target).value)"></label></div>}
@@ -40,8 +40,9 @@ import {WelcomeInput,WelcomeProposal,WelcomeService} from '../services/welcome.s
       @if(step()===3 && !proposal()) {
         <h2>Elegí cómo preparar tu plan</h2>
         <div class="modes"><button type="button" [class.selected]="form().mode==='LOCAL'" (click)="setField('mode','LOCAL')"><b>Plan local</b><span>Plantillas incluidas en Gymbro. Sin enviar parámetros a una IA.</span></button><button type="button" [disabled]="!aiAvailable()" [class.selected]="form().mode==='GEMINI'" (click)="setField('mode','GEMINI')"><b>Con Gemini</b><span>{{aiAvailable()?'Propuesta de IA validada con nuestro catálogo.':'Disponible cuando se configure la IA en el servidor.'}}</span></button></div>
+        @if(aiAvailable()&&aiRemaining()!==null){<p role="status">Te quedan {{aiRemaining()}} de 3 generaciones con IA esta semana. Se renuevan los lunes.</p>}
         @if(form().mode==='GEMINI'){<label class="check consent"><input type="checkbox" [checked]="form().aiConsent" (change)="setField('aiConsent',$any($event.target).checked)">Acepto enviar a Google objetivo, experiencia, lugar, equipamiento, cantidad de sesiones y tiempo disponible para generar esta propuesta. No se envían edad, altura, peso, restricciones, nombre, correo, foto ni horarios exactos.</label>}
-        <button type="button" class="button primary full" [disabled]="busy()" (click)="generate()">{{busy()?'Preparando tu plan…':'Preparar mi plan'}}</button>
+        <button type="button" class="button primary full" [disabled]="busy() || (form().mode==='GEMINI' && aiRemaining()===0)" (click)="generate()">{{busy()?'Preparando tu plan…':'Preparar mi plan'}}</button>
         @if(error() && form().mode==='GEMINI'){<button type="button" class="button ghost full" [disabled]="busy()" (click)="setField('mode','LOCAL');generate()">Usar el plan local</button>}
       }
       @if(proposal();as plan) {
@@ -57,6 +58,7 @@ import {WelcomeInput,WelcomeProposal,WelcomeService} from '../services/welcome.s
       <button type="button" class="skip" [disabled]="busy()" (click)="skip()">Prefiero armar mi rutina después</button>
     }
   </section>`,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl:'./welcome.component.scss',
 })
 export class WelcomeComponent implements OnInit {
@@ -64,7 +66,7 @@ export class WelcomeComponent implements OnInit {
   private readonly api=inject(WelcomeService);
   private readonly routines=inject(RoutineService);
   private readonly router=inject(Router);
-  readonly step=signal(1);readonly loading=signal(true);readonly busy=signal(false);readonly error=signal('');readonly aiAvailable=signal(false);
+  readonly step=signal(1);readonly loading=signal(true);readonly busy=signal(false);readonly error=signal('');readonly aiAvailable=signal(false);readonly aiRemaining=signal<number|null>(null);
   readonly proposal=signal<WelcomeProposal|null>(null);readonly restrictionAnswer=signal<''|'YES'|'NO'>('');
   readonly replacingDay=signal<number|null>(null);
   readonly savedFields=signal(new Set<string>());readonly editingSaved=signal(false);readonly weightFromHistory=signal(false);
@@ -80,7 +82,7 @@ export class WelcomeComponent implements OnInit {
     const preferAI=this.router.getCurrentNavigation?.()?.extras.state?.['planMode']==='GEMINI';
     try {
       const [status,draft]=await Promise.all([firstValueFrom(this.api.status()),firstValueFrom(this.api.draft())]);
-      this.aiAvailable.set(status.aiAvailable);
+      this.aiAvailable.set(status.aiAvailable);this.aiRemaining.set(status.aiQuota?.remaining??null);
       if(draft?.preferences){
         const profile=draft.profile||this.auth.user();
         this.form.set({...draft.preferences,aiConsent:false,
@@ -175,7 +177,7 @@ export class WelcomeComponent implements OnInit {
     if(this.busy()||!this.validate(1)||!this.validate(2))return;
     if(this.form().mode==='GEMINI'&&(!this.aiAvailable()||!this.form().aiConsent)){this.error.set('Activá el consentimiento o elegí el plan local.');return;}
     this.busy.set(true);this.error.set('');
-    try{this.proposal.set(await firstValueFrom(this.api.preview(this.form())));}
+    try{const result=await firstValueFrom(this.api.preview(this.form()));this.proposal.set(result);if(result.aiQuota)this.aiRemaining.set(result.aiQuota.remaining);}
     catch(error){this.error.set(this.failure(error));}
     finally{this.busy.set(false);}
   }

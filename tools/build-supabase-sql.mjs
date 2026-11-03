@@ -1,3 +1,4 @@
+import {aiQuotaSql} from '../backend/src/services/ai-quota-schema.js';
 /** Genera un instalador limpio desde los modelos actuales. No conecta a ninguna base. */
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
@@ -78,6 +79,7 @@ fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/03-soft-delete.s
 statements.splice(statements.length-1,0,softDeleteSql('gymbro'));
 statements.splice(statements.length-1,0,legalSchemaSql('gymbro'));
 statements.splice(statements.length-1,0,passwordRecoverySql('gymbro'));
+statements.splice(statements.length-1,0,aiQuotaSql('gymbro'));
 statements.splice(statements.length-1,0,exerciseGuidesSql('gymbro'));
 fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/06-exercise-guides.sql',import.meta.url)),`-- Completa el catálogo oficial sin modificar rutinas, usuarios ni guías existentes.\nBEGIN;\nSELECT pg_advisory_xact_lock(2026102501);\n${exerciseGuidesSql('gymbro')}\nCOMMIT;\nSELECT count(*) AS ejercicios, count(description) AS con_descripcion, count(video_url) AS con_video FROM gymbro.exercises WHERE created_by_user_id IS NULL AND deleted_at IS NULL;\n`);
 fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/05-password-recovery.sql',import.meta.url)),`-- Aplicar antes de actualizar Render. Conserva usuarios y contraseñas existentes.\nBEGIN;\nSELECT pg_advisory_xact_lock(20261025);\n${passwordRecoverySql('gymbro')}\nCOMMIT;\n`);
@@ -85,3 +87,10 @@ fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/04-legal-consent
 fs.writeFileSync(target,statements.join('\n\n')+'\n');
 await sequelize.close();
 console.log('OK: instalador Supabase generado desde modelos, restricciones y catálogo.');
+
+fs.writeFileSync(fileURLToPath(new URL('../backend/sql/supabase/07-ai-weekly-quota.sql',import.meta.url)),`-- Aplicar antes de actualizar Render.
+BEGIN;
+SELECT pg_advisory_xact_lock(20261026);
+${aiQuotaSql('gymbro')}
+COMMIT;
+`);

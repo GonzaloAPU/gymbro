@@ -33,7 +33,7 @@ function load(file){
   const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,experimentalDecorators:true}}).outputText;
   vm.runInNewContext(code,{exports,require:name=>{
     if(name.includes('alarm.service'))return {AlarmService:'alarms'};
-    if(name==='@angular/core')return {Component:()=>target=>target,Injectable:()=>target=>target,Input:()=>()=>{},HostListener:()=>()=>{},effect:()=>{},untracked:callback=>callback(),signal,inject:token=>{
+    if(name==='@angular/core')return { ChangeDetectionStrategy:{Eager:1,OnPush:0},Component:()=>target=>target,Injectable:()=>target=>target,Input:()=>()=>{},HostListener:()=>()=>{},effect:()=>{},untracked:callback=>callback(),signal,inject:token=>{
       if(token==='alarms')return {trackTimer(){},timerExpired(){},unlockAudio(){}};if(token==='auth')return auth;if(token==='endpoint')return endpoint;if(token==='http')return http;if(token==='routine')return routine;
       if(token?.name==='WorkoutStorageService')return store;if(token?.name==='SessionService')return sessions;
       return {navigateByUrl(){}};

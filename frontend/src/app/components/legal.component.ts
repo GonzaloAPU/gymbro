@@ -1,4 +1,4 @@
-import {Component,inject} from '@angular/core';
+import {Component, inject, ChangeDetectionStrategy} from '@angular/core';
 import {ActivatedRoute,RouterLink} from '@angular/router';
 import {legalDocuments} from '../services/legal.service';
 @Component({standalone:true,imports:[RouterLink],template:`
@@ -7,7 +7,8 @@ import {legalDocuments} from '../services/legal.service';
   <p>Responsable: {{documents.operator}} · Contacto: {{documents.email}}</p>
   <p>Versión {{documents.version}} · Actualizado: {{documents.updatedAt}}</p>
   @for(section of sections;track section.title){<section><h2>{{section.title}}</h2><p>{{section.text}}</p></section>}
-  </main>`,styles:[`.legal{max-width:760px;padding-block:30px 70px}.legal p{line-height:1.8;white-space:pre-line;overflow-wrap:anywhere;color:var(--muted)}.legal h2{font-size:20px;margin-top:28px}.legal a{color:var(--lime)}`]})
+  </main>`,changeDetection: ChangeDetectionStrategy.Eager,
+styles:[`.legal{max-width:760px;padding-block:30px 70px}.legal p{line-height:1.8;white-space:pre-line;overflow-wrap:anywhere;color:var(--muted)}.legal h2{font-size:20px;margin-top:28px}.legal a{color:var(--lime)}`]})
 export class LegalComponent {
   readonly documents=legalDocuments;
   readonly privacy=inject(ActivatedRoute).snapshot.data['kind']==='privacy';

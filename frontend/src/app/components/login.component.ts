@@ -2,7 +2,7 @@
  * Formulario de ingreso. Evita la recarga del navegador, muestra el estado de espera y navega al inicio cuando AuthService guarda la sesión.
  * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
  */
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
@@ -32,6 +32,7 @@ import { ApiEndpointService } from '../services/api-endpoint.service';
     </section>
   `,
   // CSS de este componente: disposición, colores y estados; @media adapta la vista a pantallas pequeñas.
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [loginStyles()],
 })
 export class LoginComponent {

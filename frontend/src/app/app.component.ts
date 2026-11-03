@@ -2,7 +2,7 @@
  * Estructura común y carrusel: conserva las cuatro vistas principales y mueve sus paneles con el dedo. Las rutas mantienen sus guardas; los formularios secundarios se muestran fuera del carrusel.
  * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
  */
-import { Component, ElementRef, HostListener, OnDestroy, ViewChild, effect, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, ViewChild, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { NavigationEnd, NavigationError, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {adjacentTab,MAIN_TABS,swipeDirection,tabPath} from './tab-navigation';
 import {DashboardComponent} from './components/dashboard.component';
@@ -80,6 +80,7 @@ import { AlarmSettingsComponent } from './components/alarm-settings.component';
     }
   `,
   // CSS de este componente: disposición, colores y estados; @media adapta la vista a pantallas pequeñas.
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .startup-screen{position:fixed;inset:0;z-index:100;background:#090d18;color:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}.startup-mark{display:grid;place-items:center;width:70px;height:70px;border-radius:22px;background:#a3e635;color:#08110d;font-weight:900;font-size:24px}.startup-screen strong{font-size:28px}.startup-screen p{color:#94a3b8;font-size:14px}.startup-spinner{width:28px;height:28px;border:3px solid #263244;border-top-color:#a3e635;border-radius:50%;animation:startup-spin 1s linear infinite}@keyframes startup-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.startup-spinner{animation:none}}
     .tabbed{padding-bottom:0!important}.tab-viewport{position:relative;overflow:hidden;height:calc(100dvh - 144px - env(safe-area-inset-bottom));touch-action:pan-y pinch-zoom}

@@ -2,7 +2,7 @@
  * Entrenamiento y máquina de estados: idle=espera, work=serie, rest=descanso. Conserva datos al cambiar de pestaña interna porque AppComponent mantiene esta instancia. El respaldo local permite recuperarlo después de recargar o cerrar la app.
  * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
  */
-import { Component, Input, inject, OnChanges, OnDestroy, OnInit, SimpleChanges, signal, effect, HostListener } from '@angular/core';
+import { Component, Input, inject, OnChanges, OnDestroy, OnInit, SimpleChanges, signal, effect, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { map, of, switchMap } from 'rxjs';
 import { Routine, RoutineDay, ScheduleSlot, RoutineService } from '../services/routine.service';
@@ -58,7 +58,7 @@ interface WorkoutExercise {
       }
       @if (exercises.length && !sessionFinished()) {
         <div class="next-action" aria-label="Siguiente paso del entrenamiento"><span class="kicker">{{phase() === 'rest' ? 'AHORA DESCANSÁ' : phase() === 'work' ? 'SERIE EN CURSO' : 'EMPEZÁ POR ACÁ'}}</span><div class="exercise-heading"><h2>{{phase() === 'rest' ? 'Recuperá para la próxima serie' : phase() === 'work' ? current().name : nextSetIndex() >= 0 ? current().name + ' · Serie ' + (nextSetIndex()+1) : 'Ejercicio completo'}}</h2>@if(current().description){<button type="button" class="description-button" (click)="descriptionFor.set(descriptionFor()===current().id?null:current().id)" [attr.aria-expanded]="descriptionFor()===current().id" [attr.aria-label]="'Descripción de ' + current().name">Descripción</button>}@if(tutorialUrl();as video){@if(!video.includes('tiktok.com')){<a class="youtube-link" [href]="video" target="_blank" rel="noopener noreferrer" [attr.aria-label]="'Ver ' + current().name + ' en YouTube'" title="Ver tutorial en YouTube"><svg viewBox="0 0 28 20" width="28" height="20" aria-hidden="true"><rect width="28" height="20" rx="6" fill="#ff0033"/><path d="M11 5.5 19 10l-8 4.5Z" fill="white"/></svg></a>}}</div>@if(descriptionFor()===current().id && current().description){<p class="exercise-description">{{current().description}}</p>}
-          @if(exercises.length > 1) {<label class="exercise-picker">Ejercicio<select [value]="active()" (change)="chooseExercise(+$any($event.target).value)" [disabled]="phase() !== 'idle' || saving() || chainRoundActive()">@for(exercise of exercises; track exercise.id; let i=$index) {<option [value]="i">{{exercise.name}} · {{exercise.done}}/{{exercise.sets}} series</option>}</select></label>}
+          @if(exercises.length > 1) {<label class="exercise-picker">Ejercicio<select [value]="active()" (change)="chooseExercise(+$any($event.target).value)" [disabled]="phase() !== 'idle' || saving() || chainRoundActive()">@for(exercise of exercises; track exercise.id; let i=$index) {<option [value]="i" [selected]="active()===i">{{exercise.name}} · {{exercise.done}}/{{exercise.sets}} series</option>}</select></label>}
           @if(linkedExercises().length >= 2) {<p class="linked-label">{{linkedLabel()}}<br>Sin descanso entre ejercicios · {{linkedRestSeconds()}} s al terminar la ronda.</p>}
           @if (phase() === 'idle' && nextSetIndex() >= 0) {<button type="button" class="start-next" (click)="startSeries(nextSetIndex())" [disabled]="saving()">▶ Iniciar serie {{nextSetIndex()+1}}</button>}
           @else if (phase() === 'work') {
@@ -82,7 +82,7 @@ interface WorkoutExercise {
       @if (sessionFinished()) {<p role="status" class="saved-message">Sesión guardada. Podés revisar tus series o iniciar una nueva sesión.</p>}
       @if (error()) {<div class="error" role="alert">{{error()}}</div>}
       @if (planNotice()) {<p class="plan-notice" role="status">{{planNotice()}}</p>}
-      @if (todayPlan().length) {<div class="today-plan"><label>Tu plan de hoy<select [value]="selectedPlanKey" (change)="selectPlannedWorkout($any($event.target).value)" [disabled]="saving() || (!!sessionId() && !sessionFinished())">@for (entry of todayPlan(); track entry.key) {<option [value]="entry.key">{{entry.slot.start}} – {{entry.slot.end}} · {{entry.day.name}} · {{entry.routine.name}}</option>}</select></label></div>}
+      @if (todayPlan().length) {<div class="today-plan"><label>Tu plan de hoy<select [value]="selectedPlanKey" (change)="selectPlannedWorkout($any($event.target).value)" [disabled]="saving() || (!!sessionId() && !sessionFinished())">@for (entry of todayPlan(); track entry.key) {<option [value]="entry.key" [selected]="selectedPlanKey===entry.key">{{entry.slot.start}} – {{entry.slot.end}} · {{entry.day.name}} · {{entry.routine.name}}</option>}</select></label></div>}
       @if (exercises.length) {
         <div class="session-log">
 
@@ -96,6 +96,7 @@ interface WorkoutExercise {
     </section>
   `,
   // CSS de este componente: disposición, colores y estados; @media adapta la vista a pantallas pequeñas.
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`.exercise-heading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.exercise-heading strong,.exercise-heading h2{margin:0!important}.description-button{min-height:40px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--lime);font:inherit;font-size:12px;cursor:pointer}.youtube-link{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border-radius:8px}.description-button:focus-visible,.youtube-link:focus-visible{outline:2px solid var(--lime);outline-offset:3px}.exercise-description{margin:8px 0;font-size:14px;line-height:1.6;color:var(--muted)}.routine-video-icon{display:inline-flex;vertical-align:middle;margin-left:6px}
     .sync-notice{margin:0 0 20px;padding:14px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:13px;line-height:1.6}.sync-notice button{display:block;margin-top:8px;border:0;background:transparent;color:var(--lime);padding:8px 0;cursor:pointer}.linked-settings{margin-top:18px;border-top:1px solid var(--line);padding-top:16px}.linked-settings summary{font-size:14px;cursor:pointer}.linked-settings p,.linked-label{font-size:13px;line-height:1.6;color:var(--muted)}.linked-settings label{display:flex;align-items:center;gap:10px;margin:14px 0;font-size:14px}.linked-settings input[type=checkbox]{width:22px;min-height:22px;height:22px;accent-color:var(--lime)}.linked-settings input[type=number]{width:90px;min-width:0;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--text)}.linked-settings b{color:var(--lime)}
     .completed-log .log-empty{display:block;background:transparent;border-color:var(--line)}

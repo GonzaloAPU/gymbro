@@ -30,7 +30,7 @@ class TestElement {
 }
 const output = {};
 vm.runInNewContext(compiled, { exports: output, Date:class extends Date{static now(){return now;}},Element:TestElement,window:{innerWidth:400},getComputedStyle:element=>({overflowX:element.horizontal?'auto':'visible'}), require: name => {
-  if (name === '@angular/core') return { Component: () => target => target, ViewChild:()=>()=>{}, HostListener:()=>()=>{},signal, computed: read => read, effect: run => { effects.push(run); run(); }, inject: token => token === 'auth' ? auth : router };
+  if (name === '@angular/core') return { ChangeDetectionStrategy:{Eager:1,OnPush:0}, Component: () => target => target, ViewChild:()=>()=>{}, HostListener:()=>()=>{},signal, computed: read => read, effect: run => { effects.push(run); run(); }, inject: token => token === 'auth' ? auth : router };
   if (name === '@angular/router') return { Router: 'router', NavigationEnd, NavigationError };
   if (name === '@angular/core/rxjs-interop') return { toSignal: (observable, options) => { const value = signal(options.initialValue); observable.subscribe(next => value.set(next)); return value; } };
   if (name==='./tab-navigation') {const out={};vm.runInNewContext(ts.transpileModule(fs.readFileSync('frontend/src/app/tab-navigation.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports:out});return out;}

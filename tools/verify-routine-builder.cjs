@@ -15,7 +15,7 @@ const output = {};
 vm.runInNewContext(ts.transpileModule(fs.readFileSync('frontend/src/app/components/routine-builder.component.ts','utf8'), {
   compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,experimentalDecorators:true},
 }).outputText, { exports:output, window:{scrollTo(){}}, require: name => {
-  if(name==='@angular/core') return {Component:()=>target=>target,signal,computed:fn=>fn,inject:token=>token==='exercises'?exercises:token==='routines'?routines:router};
+  if(name==='@angular/core') return { ChangeDetectionStrategy:{Eager:1,OnPush:0},Component:()=>target=>target,signal,computed:fn=>fn,inject:token=>token==='exercises'?exercises:token==='routines'?routines:router};
   if(name==='@angular/router') return {Router:'router'};
   if(name.includes('exercise.service')) return {ExerciseService:'exercises'};
   if(name.includes('routine.service')) return {RoutineService:'routines'};

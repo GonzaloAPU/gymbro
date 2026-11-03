@@ -12,7 +12,7 @@ function loadComponent(file,services={},globals={}) {
   vm.runInNewContext(compiled.get(absolute),{
     exports,window:{scrollTo(){}},...globals,
     require:name=>{
-      if(name==='@angular/core')return {Injectable:()=>target=>target,Component:()=>target=>target,Input:()=>()=>{},signal,computed:read=>read,inject:token=>{
+      if(name==='@angular/core')return { ChangeDetectionStrategy:{Eager:1,OnPush:0},Injectable:()=>target=>target,Component:()=>target=>target,Input:()=>()=>{},signal,computed:read=>read,inject:token=>{
         if(!(token in services))throw Error(`Falta simular ${token}`);return services[token];
       }};
       if(name==='@angular/router')return {Router:'router'};

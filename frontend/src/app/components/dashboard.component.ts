@@ -2,7 +2,7 @@
  * Inicio semanal: calendario, biblioteca de rutinas y acceso al entrenamiento. Las signals reflejan respuestas del servidor; los cambios de calendario se validan aquí y nuevamente en la API.
  * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
  */
-import { Component, Input, OnChanges, SimpleChanges, inject, OnInit, signal } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { Routine, RoutineDay, RoutineService, ScheduleSlot } from '../services/routine.service';
@@ -40,6 +40,7 @@ import { Routine, RoutineDay, RoutineService, ScheduleSlot } from '../services/r
     </section>
   `,
   // CSS de este componente: disposición, colores y estados; @media adapta la vista a pantallas pequeñas.
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`.calendar-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.calendar-header h2{margin:8px 0}.create-week-ai{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:10px;background:var(--lime);color:#101709!important;font-size:12px;font-weight:750;text-decoration:none;text-align:center}.create-week-ai:hover{filter:brightness(1.06)}.exercise-heading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.exercise-heading strong,.exercise-heading h2{margin:0!important}.description-button{min-height:40px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--lime);font:inherit;font-size:12px;cursor:pointer}.youtube-link{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border-radius:8px}.description-button:focus-visible,.youtube-link:focus-visible{outline:2px solid var(--lime);outline-offset:3px}.exercise-description{margin:8px 0;font-size:14px;line-height:1.6;color:var(--muted)}
     .more-routines{display:block;width:100%;margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--lime);font-size:14px;font-weight:700;cursor:pointer}.more-routines:hover{background:#a3e6350a}
     /* Inicio en una sola columna: calendario, biblioteca y acceso al entrenamiento. */

@@ -20,7 +20,7 @@ test('Supabase: 16 tablas y 190 ejercicios oficiales',async()=>{
   assert.deepEqual(names,exerciseData.map(e=>e.name).sort());
 });
 test('Supabase: no copia datos personales al instalador',()=>{assert.ok(!sql.includes('passwordHash'));assert.ok(!/INSERT INTO [^;]*users/i.test(sql));assert.ok(!sql.includes('data:image/'));});
-test('Supabase: siete migraciones registradas',async()=>assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,7));
+test('Supabase: ocho migraciones registradas',async()=>assert.equal((await db.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,8));
 test('Supabase: recuperación agrega columna sin modificar hashes y permite repetir migración',async()=>{
   const migration=fs.readFileSync(new URL('../backend/sql/supabase/05-password-recovery.sql',import.meta.url),'utf8');await db.exec(migration);await db.exec(migration);
   const saved=(await db.query('SELECT password_hash,password_changed_at FROM gymbro.users WHERE id=$1',[user])).rows[0];assert.equal(saved.password_hash,'not-a-real-hash');assert.equal(saved.password_changed_at,null);
@@ -98,7 +98,7 @@ test('Supabase: migración incremental sirve para el instalador anterior y no pi
     await old.exec(patch);await old.exec(patch);
     assert.deepEqual((await old.query('SELECT id FROM gymbro.exercises ORDER BY id')).rows,before);
     assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.exercises WHERE deleted_at IS NULL')).rows[0].total,190);
-    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,7);
+    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,8);
   }finally{await old.close();}
 });
 test('Supabase: migración legal se puede repetir sin crear consentimientos ni publicar cuentas',async()=>{
@@ -113,7 +113,7 @@ test('Supabase: migración legal se puede repetir sin crear consentimientos ni p
     await old.exec(patch);await old.exec(patch);
     assert.equal((await old.query('SELECT leaderboard_opt_in FROM gymbro.users WHERE id=$1',[id])).rows[0].leaderboard_opt_in,false);
     assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.legal_acceptances')).rows[0].total,0);
-    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,7);
+    assert.equal((await old.query('SELECT count(*)::int AS total FROM gymbro.schema_migrations')).rows[0].total,8);
   }finally{await old.close();}
 });
 test('Supabase: backend registra recibos pero no puede alterarlos ni borrarlos',async()=>{
@@ -124,4 +124,11 @@ test('Supabase: backend registra recibos pero no puede alterarlos ni borrarlos',
     await assert.rejects(db.query('UPDATE gymbro.legal_acceptances SET sports_data_consent=true WHERE id=$1',[id]),/permission denied/);
     await assert.rejects(db.query('DELETE FROM gymbro.legal_acceptances WHERE id=$1',[id]),/permission denied/);
   }finally{await db.exec('RESET ROLE');}
+});
+
+test('Supabase: cupo semanal se instala repetidamente sin perder consumo',async()=>{
+ const migration=fs.readFileSync(new URL('../backend/sql/supabase/07-ai-weekly-quota.sql',import.meta.url),'utf8');
+ await db.exec(migration);await db.query('UPDATE gymbro.users SET ai_weekly_used=2 WHERE id=$1',[user]);await db.exec(migration);
+ const row=(await db.query('SELECT ai_weekly_used,password_hash FROM gymbro.users WHERE id=$1',[user])).rows[0];assert.equal(row.ai_weekly_used,2);assert.equal(row.password_hash,'not-a-real-hash');
+ await assert.rejects(db.query('UPDATE gymbro.users SET ai_weekly_used=4 WHERE id=$1',[user]));
 });

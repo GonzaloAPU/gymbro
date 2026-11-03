@@ -8,6 +8,7 @@ import {User,UserRestDay,BodyWeightHistory,Exercise,Routine,RoutineDay,RoutineEx
 import {welcomeSchema,makeLocalPlan,goalLabels,planningError,estimateMinutes,validateAIPlan} from '../services/welcome-planner.js';
 import {geminiAvailable,generateGeminiPlan} from '../services/gemini-plan.js';
 import {validateSchedule} from '../schedule.js';
+import {aiQuota,consumeAiGeneration} from '../services/ai-quota.js';
 export const welcomeRouter=Router();welcomeRouter.use(requireAuth);
 const active=new Set(),aiRequests=new Map();
 function publicProposal(row,catalog){
@@ -15,8 +16,8 @@ function publicProposal(row,catalog){
   return {id:row.id,...result};
 }
 welcomeRouter.get('/status',async(req,res)=>{
-  const [row,count]=await Promise.all([WelcomePlan.findOne({where:{userId:req.auth.sub}}),Routine.count({where:{userId:req.auth.sub}})]);
-  res.json({needed:count===0&&!row?.acceptedAt&&!row?.skippedAt,aiAvailable:geminiAvailable(),hasRoutines:count>0});
+  const [row,count,user]=await Promise.all([WelcomePlan.findOne({where:{userId:req.auth.sub}}),Routine.count({where:{userId:req.auth.sub}}),User.findByPk(req.auth.sub)]);
+  res.json({needed:count===0&&!row?.acceptedAt&&!row?.skippedAt,aiAvailable:geminiAvailable(),aiQuota:aiQuota(user),hasRoutines:count>0});
 });
 welcomeRouter.get('/draft',async(req,res)=>{
   const userId=req.auth.sub;
@@ -48,19 +49,23 @@ welcomeRouter.post('/preview',async(req,res)=>{
   try {
     // Una propuesta reemplaza la semana completa: no hereda horarios ni descansos
     // anteriores. Hasta aceptarla, el plan vigente permanece intacto.
-    const catalog=await Exercise.findAll({where:{createdByUserId:null}});
-    const local=makeLocalPlan(input,catalog);
-    const proposal=input.mode==='GEMINI'?await generateGeminiPlan(input,catalog,local):local;
+    let catalog,remainingQuota;
     const row=await sequelize.transaction(async transaction=>{
       const user=await User.findByPk(userId,{transaction,lock:transaction.LOCK.UPDATE});
       if(!user)throw planningError('Usuario no encontrado',404);
+      catalog=await Exercise.findAll({where:{createdByUserId:null},transaction});
+      const local=makeLocalPlan(input,catalog);
+      const proposal=input.mode==='GEMINI'
+        ?await consumeAiGeneration(user,transaction,()=>generateGeminiPlan(input,catalog,local))
+        :local;
+      if(input.mode==='GEMINI')remainingQuota=aiQuota(user);
       const existing=await WelcomePlan.findOne({where:{userId},transaction});
       // Cada propuesta usa ID nuevo: una pestaña vieja no puede aceptar otra propuesta.
       const values={id:randomUUID(),userId,preferences:input,proposal,source:proposal.source,acceptedAt:null,skippedAt:null,routineId:null};
       if(existing){await existing.destroy({transaction});}
       return WelcomePlan.create(values,{transaction});
     });
-    res.json(publicProposal(row,catalog));
+    res.json({...publicProposal(row,catalog),...(remainingQuota?{aiQuota:remainingQuota}:{})});
   }finally{active.delete(userId);}
 });
 welcomeRouter.post('/accept',async(req,res)=>{

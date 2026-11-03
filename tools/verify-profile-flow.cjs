@@ -20,7 +20,7 @@ function load(file) {
   const exports = {};
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,experimentalDecorators:true}}).outputText, {
     exports,localStorage,require:name=>{
-      if(name==='@angular/core') return {Component:()=>target=>target,Input:()=>()=>{},signal,computed:fn=>fn,inject:token=>token==='auth'?auth:token==='progress'?progress:router};
+      if(name==='@angular/core') return { ChangeDetectionStrategy:{Eager:1,OnPush:0},Component:()=>target=>target,Input:()=>()=>{},signal,computed:fn=>fn,inject:token=>token==='auth'?auth:token==='progress'?progress:router};
       if(name==='@angular/router') return {Router:'router'};
       if(name==='@angular/common'||name==='@angular/common/http') return {};
       if(name.includes('alarm-settings.component'))return {AlarmSettingsComponent:class {}};

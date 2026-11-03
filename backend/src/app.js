@@ -19,6 +19,11 @@ import {requireLegal} from './services/legal.js';
 import {passwordRecoveryRouter} from './routes/password-recovery.js';
 
 export const app = express();
+app.disable('x-powered-by');
+app.use('/api',(_req,res,next)=>{
+  res.set({'X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY','Referrer-Policy':'no-referrer','Cache-Control':'no-store'});
+  next();
+});
 // Capacitor sirve los archivos instalados desde https://localhost dentro de Android.
 // Conservamos una lista explícita para no abrir la API a cualquier sitio.
 app.use(cors({ origin: [config.frontendUrl, 'https://localhost'] }));

@@ -1,5 +1,5 @@
 /** Permite aceptar una versión nueva o retirar el permiso para futuras cargas deportivas. */
-import {Component,inject,signal} from '@angular/core';
+import {Component, inject, signal, ChangeDetectionStrategy} from '@angular/core';
 import {Router,RouterLink} from '@angular/router';
 import {firstValueFrom} from 'rxjs';
 import {AuthService} from '../services/auth.service';
@@ -19,7 +19,8 @@ import {LegalService,legalDocuments} from '../services/legal.service';
   <button class="button primary" (click)="save()" [disabled]="saving()">Guardar mi decisión</button>
   <a routerLink="/perfil">Volver al perfil</a> · <button class="button" (click)="logout()">Salir de mi cuenta</button>
   <p>Para solicitar acceso, corrección o eliminación escribí a {{documents.email}}. No envíes tu contraseña.</p></main>
-  `,styles:[`.consent{max-width:720px;padding-block:30px 70px}.consent p{line-height:1.7;color:var(--muted)}label{display:flex;gap:12px;align-items:flex-start;margin:22px 0;line-height:1.6}input{margin-top:6px;min-width:20px;min-height:20px}details{padding:18px;border:1px solid var(--line);border-radius:14px;margin:12px 0}summary{cursor:pointer;color:var(--lime)}h2{font-size:18px}.button{margin:8px}a{color:var(--lime)}`]})
+  `,changeDetection: ChangeDetectionStrategy.Eager,
+styles:[`.consent{max-width:720px;padding-block:30px 70px}.consent p{line-height:1.7;color:var(--muted)}label{display:flex;gap:12px;align-items:flex-start;margin:22px 0;line-height:1.6}input{margin-top:6px;min-width:20px;min-height:20px}details{padding:18px;border:1px solid var(--line);border-radius:14px;margin:12px 0}summary{cursor:pointer;color:var(--lime)}h2{font-size:18px}.button{margin:8px}a{color:var(--lime)}`]})
 export class ConsentComponent {
   private readonly legal=inject(LegalService);private readonly router=inject(Router);private readonly auth=inject(AuthService);
   readonly documents=legalDocuments;readonly terms=signal(false);readonly privacy=signal(false);readonly adult=signal(false);readonly sports=signal(false);

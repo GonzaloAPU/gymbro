@@ -7,7 +7,7 @@ THEN RAISE EXCEPTION 'El esquema gymbro ya existe: no se modifica. Usar migracio
 CREATE SCHEMA gymbro;
 SET LOCAL search_path TO gymbro, public;
 
-CREATE TABLE IF NOT EXISTS "gymbro"."users" ("id" UUID , "email" VARCHAR(255) NOT NULL UNIQUE, "password_hash" VARCHAR(255) NOT NULL, "password_changed_at" TIMESTAMP WITH TIME ZONE, "name" VARCHAR(255) NOT NULL, "goal" VARCHAR(255), "height_cm" INTEGER, "gym_name" VARCHAR(255), "discipline" VARCHAR(255), "photo_url" TEXT, "leaderboard_opt_in" BOOLEAN NOT NULL DEFAULT false, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "deleted_at" TIMESTAMP WITH TIME ZONE, PRIMARY KEY ("id"));
+CREATE TABLE IF NOT EXISTS "gymbro"."users" ("id" UUID , "email" VARCHAR(255) NOT NULL UNIQUE, "password_hash" VARCHAR(255) NOT NULL, "ai_week_start" TIMESTAMP WITH TIME ZONE, "ai_weekly_used" INTEGER NOT NULL DEFAULT 0, "password_changed_at" TIMESTAMP WITH TIME ZONE, "name" VARCHAR(255) NOT NULL, "goal" VARCHAR(255), "height_cm" INTEGER, "gym_name" VARCHAR(255), "discipline" VARCHAR(255), "photo_url" TEXT, "leaderboard_opt_in" BOOLEAN NOT NULL DEFAULT false, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL, "deleted_at" TIMESTAMP WITH TIME ZONE, PRIMARY KEY ("id"));
 
 CREATE TABLE IF NOT EXISTS "gymbro"."user_rest_days" ("id" UUID , "weekday" INTEGER NOT NULL, "user_id" UUID NOT NULL REFERENCES "gymbro"."users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, PRIMARY KEY ("id"));
 
@@ -150,6 +150,15 @@ INSERT INTO "gymbro".schema_migrations(version) VALUES ('20261022_legal') ON CON
 
 ALTER TABLE "gymbro".users ADD COLUMN IF NOT EXISTS password_changed_at timestamptz;
 INSERT INTO "gymbro".schema_migrations(version) VALUES ('20261025_password_recovery') ON CONFLICT DO NOTHING;
+
+ALTER TABLE "gymbro".users ADD COLUMN IF NOT EXISTS ai_week_start timestamptz;
+ALTER TABLE "gymbro".users ADD COLUMN IF NOT EXISTS ai_weekly_used integer NOT NULL DEFAULT 0;
+DO $$ BEGIN
+ IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='"gymbro".users'::regclass AND conname='users_ai_weekly_used_range') THEN
+ ALTER TABLE "gymbro".users ADD CONSTRAINT users_ai_weekly_used_range CHECK (ai_weekly_used BETWEEN 0 AND 3);
+ END IF;
+END $$;
+INSERT INTO "gymbro".schema_migrations(version) VALUES ('20261026_ai_weekly_quota') ON CONFLICT DO NOTHING;
 
 ALTER TABLE "gymbro".exercises ADD COLUMN IF NOT EXISTS description text;
 ALTER TABLE "gymbro".exercises ADD COLUMN IF NOT EXISTS video_url text;

@@ -12,6 +12,10 @@ test("health endpoint responds without database access", async (t) => {
   const { port } = server.address();
   const response = await fetch(`http://127.0.0.1:${port}/api/health`);
   assert.equal(response.status, 200);
+  assert.equal(response.headers.get('x-powered-by'),null);
+  assert.equal(response.headers.get('x-content-type-options'),'nosniff');
+  assert.equal(response.headers.get('x-frame-options'),'DENY');
+  assert.equal(response.headers.get('cache-control'),'no-store');
   assert.deepEqual(await response.json(), { status: "ok", service: "smartgymbro-api" });
   // Android usa este origen aunque el backend esté en otra máquina de la red.
   const native = await fetch(`http://127.0.0.1:${port}/api/health`, { headers: { Origin: 'https://localhost' } });

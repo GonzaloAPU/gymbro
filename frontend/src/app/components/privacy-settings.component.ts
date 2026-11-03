@@ -1,4 +1,4 @@
-import {Component,OnInit,inject,signal} from '@angular/core';
+import {Component, OnInit, inject, signal, ChangeDetectionStrategy} from '@angular/core';
 import {RouterLink} from '@angular/router';
 import {firstValueFrom} from 'rxjs';
 import {AuthService} from '../services/auth.service';
@@ -14,7 +14,8 @@ import {LegalService,LegalStatus,legalDocuments} from '../services/legal.service
   <p>Para solicitar una copia, corrección o eliminación de tus datos y de tu cuenta, escribí a {{email}} desde el correo de tu cuenta. Verificaremos tu identidad; nunca envíes contraseñas.</p>
   <a class="button" [href]="contact">Solicitar acceso o eliminación por correo</a>
   <p>Retirar el permiso deportivo bloquea futuras cargas y te retira del ranking. No borra automáticamente el historial ni las copias de seguridad.</p>
-  <a routerLink="/perfil">Volver al perfil</a></main>`,styles:[`.settings{max-width:720px;padding-block:30px 70px}p,label{line-height:1.8;color:var(--muted)}label{display:flex;gap:14px;align-items:center;margin:24px 0}input{min-width:22px;min-height:22px}a{color:var(--lime)}`]})
+  <a routerLink="/perfil">Volver al perfil</a></main>`,changeDetection: ChangeDetectionStrategy.Eager,
+styles:[`.settings{max-width:720px;padding-block:30px 70px}p,label{line-height:1.8;color:var(--muted)}label{display:flex;gap:14px;align-items:center;margin:24px 0}input{min-width:22px;min-height:22px}a{color:var(--lime)}`]})
 export class PrivacySettingsComponent implements OnInit {
   readonly auth=inject(AuthService);readonly saving=signal(false);readonly message=signal('');
   private readonly legal=inject(LegalService);

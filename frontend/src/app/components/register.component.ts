@@ -2,7 +2,7 @@
  * Formulario de registro: verifica campos y confirmación de contraseña antes de solicitar la cuenta. La validación definitiva se realiza en la API.
  * Guía de estudio general: docs/GUIA-DE-ESTUDIO.md.
  */
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
@@ -37,6 +37,7 @@ import {legalDocuments} from '../services/legal.service';
     </section>
   `,
   // CSS de este componente: disposición, colores y estados; @media adapta la vista a pantallas pequeñas.
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .register-card .check{flex-direction:row;align-items:flex-start;font-size:12px;font-weight:400;line-height:1.6;gap:12px}.check input{min-width:20px;min-height:20px;margin-top:3px}details{font-size:13px;line-height:1.8;border:1px solid var(--line);padding:12px;border-radius:10px;margin:6px 0}summary{color:var(--lime);cursor:pointer}details p{white-space:pre-line}
     .register-page{min-height:calc(100dvh - 72px);display:flex;align-items:center;width:min(500px,calc(100% - 28px));margin:auto;padding:28px 0}.register-card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:36px 42px;display:flex;flex-direction:column;width:100%}.register-card h2{font-size:30px;margin:0 0 5px}.register-card>p{color:var(--muted);font-size:13px;margin:0 0 23px}.register-card label{display:flex;flex-direction:column;gap:7px;font-size:11px;font-weight:700;margin-bottom:14px}.register-card input{background:var(--surface-2);border:1px solid var(--line);color:var(--text);border-radius:11px;padding:13px 14px;outline:none}.register-card input:focus{border-color:var(--lime)}.button{margin-top:7px;width:100%;justify-content:space-between}.button:disabled{opacity:.55}.form-error{background:rgba(248,113,113,.1);color:#fca5a5;border-radius:10px;padding:11px;font-size:12px}.switch{text-align:center;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:18px;margin-top:20px}.switch a{color:var(--lime);font-weight:700}@media(max-width:800px){.register-page{min-height:calc(100dvh - 72px);display:flex;align-items:center;width:min(500px,calc(100% - 28px));margin:auto;padding:28px 0}.register-card{padding:28px 24px;width:100%}}
