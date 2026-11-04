@@ -189,7 +189,8 @@ export async function requestRecovery(email){
   if((process.env.NODE_ENV==='production'&&base.protocol!=='https:')||base.username||base.password)throw Object.assign(Error('La recuperación por correo no está configurada correctamente.'),{status:503});
   if(!recoveryLimiter.allow(email))return;
   // Consulta parametrizada de Sequelize, sin distinguir mayúsculas del correo.
-  const user=await User.findOne({where:where(fn('lower',col('email')),email.toLowerCase())});
+  // col() recibe el nombre físico: Sequelize no traduce atributos dentro de fn().
+  const user=await User.findOne({where:where(fn('lower',col(User.getAttributes().email.field)),email.toLowerCase())});
   // La ruta devuelve la misma respuesta 202 aunque no se encuentre la cuenta.
   if(!user)return;
 

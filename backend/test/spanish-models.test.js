@@ -34,3 +34,17 @@ test('modelos español: insertar y actualizar conservan atributos API sin escrib
  assert.match(sql[0],/"generaciones_ia_semana"/);assert.match(sql[0],/"correo_electronico"/);
  assert.doesNotMatch(sql[0],/"ai_weekly_used"|"email"/);
 });
+
+test('recuperación en español: busca el correo sin mayúsculas usando la columna traducida',async t=>{
+ const {requestRecovery,recoveryDelivery,recoveryLimiter}=await import('../src/services/password-recovery.js');
+ const sql=[];
+ t.mock.method(recoveryDelivery,'configured',()=>true);
+ t.mock.method(recoveryLimiter,'allow',()=>true);
+ t.mock.method(recoveryDelivery,'send',()=>assert.fail('Esta prueba no debe enviar correos'));
+ t.mock.method(sequelize,'query',async (query,options)=>{sql.push(typeof query==='string'?query:query.query);return options?.plain?null:[];});
+ await requestRecovery('Prueba@Example.invalid');
+ assert.equal(sql.length,1);
+ assert.match(sql[0],/lower\("correo_electronico"\)/);
+ assert.doesNotMatch(sql[0],/lower\("email"\)/);
+ assert.match(sql[0],/prueba@example\.invalid/);
+});

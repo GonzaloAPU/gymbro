@@ -6,7 +6,7 @@
     "android:sync": "npm run build && cap sync android",
     "android:open": "cap open android",
     "android:apk": "npm run android:sync && node ../tools/build-android.cjs",
-    "start": "ng serve --proxy-config proxy.conf.json --poll 1000",
+    "start": "node --use-system-ca ../node_modules/@angular/cli/bin/ng.js serve --proxy-config proxy.conf.json --poll 1000",
     "build": "ng build",
     "test": "node ../tools/verify-frontend.cjs",
     "typecheck": "tsc -p tsconfig.app.json --noEmit"

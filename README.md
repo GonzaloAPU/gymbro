@@ -34,6 +34,10 @@ npm.cmd run dev
 
 Vista de desarrollo en PC: `http://localhost:4200` (no es el destino de distribución).
 
+`npm run dev:frontend` usa los certificados de confianza del sistema operativo
+para que el proxy HTTPS hacia Render funcione también con certificados locales
+de antivirus o redes corporativas. La verificación HTTPS permanece activada.
+
 API: `http://localhost:3000/api`  
 Health check: `http://localhost:3000/api/health`
 pgAdmin: `http://localhost:5050`
