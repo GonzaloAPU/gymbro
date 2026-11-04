@@ -42,7 +42,7 @@ El compilador busca `ANDROID_HOME`, `ANDROID_SDK_ROOT`, el SDK habitual de Windo
 3. Para cambiar el servidor de producción por uno local, abrir Conexión desde el ingreso e indicar `http://IP-DE-TU-PC:3000`. Podés encontrar la IPv4 del adaptador Wi-Fi con `ipconfig`. En un emulador Android de esa PC, usar `http://10.0.2.2:3000`.
 4. Comprobar la conexión e ingresar con una cuenta existente. Si Windows bloquea el acceso, permitir únicamente el puerto 3000 en la red privada para las pruebas. No abrir PostgreSQL a Internet.
 
-`localhost` en el teléfono significa el propio teléfono. La dirección configurada es la del backend Express, nunca la de Firebase ni la de PostgreSQL. Se puede volver a cambiar desde «Configurar conexión al servidor» en el ingreso; cerrar sesión antes de cambiarla evita enviar credenciales a otro servidor.
+`localhost` en el teléfono significa el propio teléfono. La dirección configurada es la del backend Express, nunca la de PostgreSQL. Se puede volver a cambiar desde «Configurar conexión al servidor» en el ingreso; cerrar sesión antes de cambiarla evita enviar credenciales a otro servidor.
 
 HTTP está permitido únicamente en el APK debug para la red de pruebas. La variante release exige HTTPS. La dirección HTTPS de Render ya está preconfigurada. La app no contiene contraseñas de la base ni claves administrativas.
 

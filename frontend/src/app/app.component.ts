@@ -22,11 +22,11 @@ import { AlarmSettingsComponent } from './components/alarm-settings.component';
   // HTML Angular: {{ }} muestra datos, [propiedad] enlaza valores y (evento) llama métodos.
   // @if y @for controlan bloques visibles y listas; #nombre referencia un elemento del formulario.
   template: `
-    @if(initialLoading()) {<div class="startup-screen" role="status" aria-live="polite"><span class="startup-mark" aria-hidden="true">SG</span><strong>Gymbro</strong>@if(initialError()){<p>No pudimos abrir Gymbro.</p><button class="button primary" type="button" (click)="retryStartup()">Reintentar</button>}@else{<span class="startup-spinner" aria-hidden="true"></span><p>Preparando tu espacio…</p>}</div>}
+    @if(initialLoading()) {<div class="startup-screen" role="status" aria-live="polite"><span class="startup-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g transform="rotate(-35 16 16)"><path d="M11 16h10"/><rect x="6" y="8" width="5" height="16" rx="1.5"/><rect x="21" y="8" width="5" height="16" rx="1.5"/><path d="M3 12v8m26-8v8"/></g></svg></span><strong>Gymbro AI</strong>@if(initialError()){<p>No pudimos abrir Gymbro.</p><button class="button primary" type="button" (click)="retryStartup()">Reintentar</button>}@else{<span class="startup-spinner" aria-hidden="true"></span><p>Preparando tu espacio…</p>}</div>}
     <header class="topbar">
       <a class="brand" routerLink="/">
-        <span class="brand-mark">SG</span>
-        <span>SmartGymBro <small>AI</small></span>
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g transform="rotate(-35 16 16)"><path d="M11 16h10"/><rect x="6" y="8" width="5" height="16" rx="1.5"/><rect x="21" y="8" width="5" height="16" rx="1.5"/><path d="M3 12v8m26-8v8"/></g></svg></span>
+        <span>Gymbro <small>AI</small></span>
       </a>
       @if (auth.isAuthenticated()) {
         <div class="account">
@@ -82,7 +82,7 @@ import { AlarmSettingsComponent } from './components/alarm-settings.component';
   // CSS de este componente: disposición, colores y estados; @media adapta la vista a pantallas pequeñas.
   changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
-    .startup-screen{position:fixed;inset:0;z-index:100;background:#090d18;color:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}.startup-mark{display:grid;place-items:center;width:70px;height:70px;border-radius:22px;background:#a3e635;color:#08110d;font-weight:900;font-size:24px}.startup-screen strong{font-size:28px}.startup-screen p{color:#94a3b8;font-size:14px}.startup-spinner{width:28px;height:28px;border:3px solid #263244;border-top-color:#a3e635;border-radius:50%;animation:startup-spin 1s linear infinite}@keyframes startup-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.startup-spinner{animation:none}}
+    .startup-screen{position:fixed;inset:0;z-index:100;background:#090d18;color:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}.startup-mark{display:grid;place-items:center;width:70px;height:70px;border-radius:22px;background:#a3e635;color:#08110d;font-weight:900;font-size:24px}.brand-mark svg{width:26px;height:26px}.startup-mark svg{width:44px;height:44px}.startup-screen strong{font-size:28px}.startup-screen p{color:#94a3b8;font-size:14px}.startup-spinner{width:28px;height:28px;border:3px solid #263244;border-top-color:#a3e635;border-radius:50%;animation:startup-spin 1s linear infinite}@keyframes startup-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.startup-spinner{animation:none}}
     .tabbed{padding-bottom:0!important}.tab-viewport{position:relative;overflow:hidden;height:calc(100dvh - 144px - env(safe-area-inset-bottom));touch-action:pan-y pinch-zoom}
     .tab-pane{position:absolute;inset:0;width:100%;height:100%;box-sizing:border-box;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;background:var(--bg,#090d18);touch-action:pan-y pinch-zoom;z-index:1}
     .tab-pane.current{z-index:2}.dragging{cursor:grabbing;user-select:none}.settling .tab-pane{transition:transform 220ms cubic-bezier(.2,.75,.2,1)}

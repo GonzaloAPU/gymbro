@@ -1,9 +1,8 @@
 # Guía para estudiar Gymbro
 
-Esta guía acompaña los comentarios en español del código de la rama
-`codex/firebase-sql-prototype`. Los comentarios describen el comportamiento actual.
-La aplicación principal continúa usando Angular, Express, Sequelize y PostgreSQL;
-Firebase SQL Connect es una prueba local independiente.
+Esta guía acompaña los comentarios en español del código de Gymbro AI.
+La aplicación usa Angular, Express, Sequelize y PostgreSQL, con Supabase y Render
+para el despliegue y una base local opcional para desarrollo.
 
 ## 1. Cómo funciona una acción de principio a fin
 
@@ -43,7 +42,6 @@ distintos: no hay que confundir guardar en el navegador con guardar en el servid
 | 12 | `workout.component.ts` y `backend/src/routes/sessions.js` | Relojes y registro del entrenamiento |
 | 13 | `progress.component.ts` y `backend/src/routes/progress.js` | Resúmenes, totales y ranking SQL |
 | 14 | `backend/test/` y `tools/verify-*.cjs` | Diferencias entre pruebas y simulaciones |
-| 15 | `dataconnect/` y `tools/firebase-smoke.mjs` | Experimento separado con SQL Connect |
 
 Las rutas de esta guía son relativas a la raíz del repositorio. En el editor se
 pueden buscar con Ctrl+P. Un buen ejercicio es seguir una función desde el evento
@@ -177,7 +175,7 @@ HTTP 200 indica éxito; 201 creación; 400 datos inválidos; 401 autenticación 
 
 `profile-photo.ts` detecta firmas JPEG/PNG, abre la imagen, la dibuja en canvas y
 reduce calidad y dimensiones. Devuelve una URL de datos JPEG Base64; actualmente
-se almacena en `User.photoUrl`, no en una carpeta de fotos ni en Firebase Storage.
+se almacena en `User.photoUrl`, no en una carpeta de fotos ni en un almacenamiento externo de imágenes.
 `URL.revokeObjectURL` libera la referencia temporal usada para abrir la imagen.
 
 El resumen limita las listas recientes, pero calcula calorías y cantidad total de
@@ -215,8 +213,6 @@ Se documentan aquí para conservar archivos válidos.
 | `frontend/tsconfig.json` | Reglas del compilador TypeScript |
 | `frontend/tsconfig.app.json` | Configuración específica para compilar la aplicación |
 | `frontend/proxy.conf.json` | Reenvío de `/api` al backend durante el desarrollo |
-| `firebase.json` | Emulador SQL Connect local en 9399 y PostgreSQL interno en 55432 |
-| `.firebaserc` | Proyecto ficticio `demo-gymbro-local` usado por la CLI |
 
 Los `.env.example` muestran qué variables configurar; `.env` contiene los valores
 locales que no se suben a Git. `.gitignore` excluye dependencias, archivos compilados,
@@ -253,25 +249,11 @@ verificaciones de interfaz que simulan la conexión, las fotos, el perfil, las r
 el calendario, el entrenamiento, su recuperación y las alarmas. Se retiraron los
 `.spec.ts` que solo comprobaban creación y no tenían un ejecutor configurado.
 
-## 11. Firebase local
+## 11. Base de datos y despliegue
 
-`dataconnect/schema/schema.gql` define tablas de prueba con GraphQL. `@table`
-crea una entidad; el signo `!` exige un valor. Los campos de tipo Routine o Exercise
-crean relaciones. SQL Connect genera entradas y operaciones a partir del esquema.
-
-`dataconnect/prototype/operations.gql` declara consultas del conector. `NO_ACCESS`
-cierra su uso habitual desde clientes; la prueba utiliza el endpoint administrativo
-del emulador, que debe mantenerse local. No representa permisos terminados para
-usuarios, coaches ni gimnasios.
-
-`npm run firebase:emulators` inicia el entorno demo con importación/exportación
-local. En otra terminal, `npm run firebase:test` prueba escritura, relaciones y
-lectura, y elimina sus datos. No ejecuta una migración de las cuentas de Gymbro.
-
-Los archivos de `dataconnect/.dataconnect`, `.firebase`, `node_modules` y `dist`
-son generados por herramientas: no se comentan manualmente. El detalle de arranque
-está en [FIREBASE-PROTOTYPE.md](FIREBASE-PROTOTYPE.md).
-
+El esquema y sus migraciones están en `backend/sql/supabase/`.
+Consultar [RENDER.md](RENDER.md) para configurar el backend y su conexión con Supabase.
+Los secretos pertenecen al entorno de ejecución y no deben incluirse en Git.
 
 ## 12. Normalización y ejercicios privados
 
@@ -288,7 +270,7 @@ sinónimos todavía requieren revisión humana. No hay una tabla por usuario.
 
 El diccionario y diagrama actualizados están en [BASE-DE-DATOS-2026-10-20.md](BASE-DE-DATOS-2026-10-20.md).
 La integración de normalización se prueba en una copia independiente, no sobre cuentas reales.
-Firebase conserva su esquema previo: debe migrarse y revisarse Data Connect antes de usar el backend nuevo allí.
+Las migraciones incrementales de Supabase deben aplicarse antes de desplegar un backend que dependa de sus campos.
 
 
 ## 13. Recuperación de Entrenar y cola local

@@ -1,6 +1,12 @@
 /** Familias de ejercicios: una sola mejor serie por persona, aunque cambie la variante. */
+import {reportTable} from './database-names.js';
 export const leaderboardDefinitions = [{key:'bench',name:'Press de banca'}, {key:'squat',name:'Sentadilla'}, {key:'deadlift',name:'Peso muerto'}];
 export function leaderboardSql({sets,performed,exercises,sessions,users}) {
+  sets=reportTable(sets,['id','performed_exercise_id','weight_kg','repetitions','completed_at','deleted_at']);
+  performed=reportTable(performed,['id','session_id','exercise_id','deleted_at']);
+  exercises=reportTable(exercises,['id','name','created_by_user_id','deleted_at']);
+  sessions=reportTable(sessions,['id','user_id','status','deleted_at']);
+  users=reportTable(users,['id','name','leaderboard_opt_in','deleted_at']);
   // Solo se interpolan tablas del ORM. Repeticiones y fecha resuelven empates entre series.
   return `
     WITH candidates AS (

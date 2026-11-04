@@ -1,4 +1,4 @@
-# SmartGymBro
+# Gymbro AI
 
 Aplicación Android para planificar rutinas, registrar entrenamientos y medir progreso.
 
@@ -9,12 +9,12 @@ Para estudiar el código comentado en español, comenzar por la
 [guía de estudio](docs/GUIA-DE-ESTUDIO.md): incluye orden de lectura, conceptos,
 mapa de tablas y el recorrido de una acción desde Angular hasta PostgreSQL.
 
-La configuración de la base en la nube y las opciones de backend se documentan en
-[Firebase Cloud](docs/FIREBASE-CLOUD.md). La prueba local sigue separada del destino real.
+La aplicación usa PostgreSQL en Supabase y el backend en Render. Consultar
+[la guía de despliegue](docs/RENDER.md). Docker Compose conserva la opción de PostgreSQL local.
 
 ## Stack
 
-- App Android: Capacitor 8 + Angular 19.2 standalone + TypeScript + SCSS
+- App Android: Capacitor 8 + Angular 22.2.4 standalone + TypeScript + SCSS
 - Backend: Node.js + Express en JavaScript ESM
 - Base de datos: PostgreSQL
 - ORM: Sequelize

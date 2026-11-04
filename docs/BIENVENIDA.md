@@ -45,4 +45,4 @@ Las rutinas anteriores no se borran. Al aceptar se cambia la bandera de rutina a
 - `npm run db:verify:welcome --workspace backend`: prueba con PostgreSQL en `gymbro_normalization_test`. Crea una cuenta ficticia, verifica rollback por fallo de calendario, aislamiento, persistencia y reintento; elimina su cuenta al finalizar. Nunca escribe en `smartgymbro`.
 - `npm run typecheck` y `npm run android:apk`: tipos y paquete instalable.
 
-La base principal local recibió únicamente la nueva tabla y el registro de migración, después de crear un dump en `backups/`. No se aplicaron planes a cuentas reales ni se desplegó nada en Firebase.
+La base principal local recibió únicamente la nueva tabla y el registro de migración, después de crear un dump en `backups/`. No se aplicaron planes a cuentas reales ni se desplegó nada en servicios externos.

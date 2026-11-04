@@ -11,7 +11,7 @@ import {databaseDiagnostic} from './database-diagnostic.js';
 let server;
 try {
   await sequelize.authenticate();
-  server=app.listen(config.port,'0.0.0.0',()=>console.log(`SmartGymBro API lista en puerto ${config.port}`));
+  server=app.listen(config.port,'0.0.0.0',()=>console.log(`Gymbro AI API lista en puerto ${config.port}`));
 } catch(error) {
   console.error(databaseDiagnostic(error));
   await closeDatabase();process.exitCode=1;

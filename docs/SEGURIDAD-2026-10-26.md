@@ -24,7 +24,7 @@ Se actualizaron versiones compatibles en `package-lock.json`: `body-parser` del 
 3. **Login y registro sin limitador de intentos:** `auth.js` no limita solicitudes antes de ejecutar bcrypt. Implementar límites de abuso, contemplando el proxy de Render, sin confiar arbitrariamente en `X-Forwarded-For`. Probar con cuentas ficticias; no aplicar pruebas de fuerza bruta contra usuarios reales. Los límites de recuperación y Gemini no protegen el login.
 4. **`qs` 6.15.3 usado por Express:** queda un aviso moderado; otras copias ya usan 6.16.1. Resolver esa dependencia con una versión de Express corregida o una resolución transitiva revisada y probada.
 5. **`uuid` 8.3.2 vía Sequelize 6.37.8:** queda el aviso moderado sobre v3/v5/v6 con buffer. En el código inspeccionado de Sequelize se observaron llamadas v1/v4, no las APIs indicadas por el aviso. Esto reduce la exposición observada, no certifica ausencia de riesgo. No bajar Sequelize a 3.30.0 siguiendo automáticamente el remedio sugerido por npm; revisar una actualización/resolución compatible.
-6. **Herramientas de desarrollo:** quedan alertas críticas en el árbol completo, incluidas bibliotecas de compilación/extracción/ejecución de comandos. Revisar Angular CLI/build, `firebase-tools`, `concurrently` y transitivas. Mantener los servidores de desarrollo fuera de Internet.
+6. **Herramientas de desarrollo:** quedan alertas críticas en el árbol completo, incluidas bibliotecas de compilación/extracción/ejecución de comandos. Revisar Angular CLI/build, `concurrently` y transitivas. Mantener los servidores de desarrollo fuera de Internet.
 
 ## Problemas reproducidos y corregidos localmente
 

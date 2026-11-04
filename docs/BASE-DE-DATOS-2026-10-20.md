@@ -1,6 +1,6 @@
 # Base de datos Gymbro — esquema normalizado (20/10/2026)
 
-Estado: aplicado a PostgreSQL local. Firebase Cloud SQL y los esquemas Data Connect conservan su versión anterior; no se desplegaron estos cambios a Google.
+Estado histórico: aplicado a PostgreSQL local. Para el esquema actual, consultar DIAGRAMA-BASE-DE-DATOS.md y las migraciones de backend/sql/supabase/.
 
 Hay 12 tablas de negocio y dos tablas técnicas: schema_migrations y session_mutations. El diagrama muestra las 14 tablas.
 

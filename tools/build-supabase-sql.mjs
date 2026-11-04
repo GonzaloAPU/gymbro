@@ -1,4 +1,5 @@
 import {aiQuotaSql} from '../backend/src/services/ai-quota-schema.js';
+import './build-spanish-schema.mjs';
 /** Genera un instalador limpio desde los modelos actuales. No conecta a ninguna base. */
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
@@ -12,6 +13,7 @@ import {passwordRecoverySql} from '../backend/src/services/password-recovery-sch
 import {exerciseGuidesSql} from '../backend/src/services/exercise-guides-schema.js';
 // Solo este proceso generador usa esta conexión ficticia, nunca abre un socket.
 process.env.DB_CONNECTION_MODE='LOCAL';process.env.DATABASE_URL='postgresql://unused:unused@localhost/unused';
+process.env.DB_NAMES_LANGUAGE='en'; // Instalador histórico; SQL 08 realiza la traducción.
 const {sequelize}=await import('../backend/src/db.js');
 await import('../backend/src/models/index.js');
 const generator=sequelize.dialect.queryGenerator;

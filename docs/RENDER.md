@@ -4,20 +4,19 @@ Todo este trabajo vive en la rama `render`. La rama `codex/android` no se modifi
 La arquitectura final es **APK → Express en Render → PostgreSQL en Supabase**.
 Conservamos las cuentas, contraseñas cifradas y permisos de Gymbro: no usamos Supabase Auth.
 
-Este documento reemplaza la guía anterior de Cloud SQL. No se necesita Google Cloud,
-activar facturación en Firebase ni archivos de cuentas de servicio de Google.
-No se ha creado ni desplegado ningún proyecto de Supabase o Render.
+Esta guía describe la configuración de Supabase y Render usada por Gymbro AI.
+Los secretos se configuran en el entorno del backend.
 
 ## Qué vas a aprender y crear
 
 1. Un proyecto gratuito de Supabase con una base PostgreSQL.
-2. Un esquema `gymbro` con 15 tablas, relaciones, índices y restricciones.
+2. Un esquema `gymbro` con 16 tablas, relaciones, índices y restricciones.
 3. Un catálogo de 190 ejercicios oficiales.
 4. Un usuario SQL que puede operar los datos, pero no modificar las tablas.
 5. Una API Express desplegada en Render, conectada con TLS y certificados verificados.
 
 El instalador crea una base **limpia**: no copia usuarios, fotos, pesos ni sesiones
-anteriores. Las copias locales y Firebase se conservan. Si querés migrar esas cuentas
+anteriores. Las copias locales se conservan. Si querés migrar esas cuentas
 más adelante, primero habrá que preparar una migración de datos, conservando sus UUID.
 
 ## 1. Crear el proyecto Supabase

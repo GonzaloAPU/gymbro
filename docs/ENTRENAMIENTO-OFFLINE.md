@@ -51,4 +51,4 @@ Las pruebas habituales del backend usan modelos simulados y no modifican Postgre
 
 `db:verify:sync` es una integración contra la copia llamada `gymbro_normalization_test`. Requiere una copia previamente normalizada y un catálogo oficial. Crea sus propios datos de prueba y los elimina al terminar. No apunta a la base principal.
 
-La migración local se ejecuta con `npm run db:migrate`. Firebase y el APK instalado requieren su actualización por separado; compilar Angular no regenera el APK.
+La migración local se ejecuta con `npm run db:migrate`. El backend desplegado y el APK instalado requieren su actualización por separado; compilar Angular no regenera el APK.

@@ -1,5 +1,10 @@
 /** Marcas personales derivadas del historial real, sin una tabla duplicada que pueda quedar vacía. */
+import {reportTable} from './database-names.js';
 export function personalRecordsSql({sets,performed,exercises,sessions}){
+  sets=reportTable(sets,['id','performed_exercise_id','weight_kg','repetitions','completed_at','deleted_at']);
+  performed=reportTable(performed,['id','session_id','exercise_id','deleted_at']);
+  exercises=reportTable(exercises,['id','name','training_type']);
+  sessions=reportTable(sessions,['id','user_id','status','deleted_at']);
   // Los nombres de tabla los proporciona el generador SQL del ORM, nunca el cliente.
   // Mayor carga; las repeticiones y la fecha resuelven los empates de forma estable.
   return `WITH ranked AS (

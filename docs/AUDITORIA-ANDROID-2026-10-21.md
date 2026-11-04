@@ -9,7 +9,7 @@ El producto se distribuye como APK con la interfaz Angular instalada dentro de C
 - Eliminada la navegación superior duplicada de escritorio. La navegación inferior sirve también para tablets; se conserva el acceso flotante a Entrenar.
 - Retirados cinco tests de creación de servicios sin runner configurado. El comando de pruebas de interfaz ahora ejecuta nueve verificaciones existentes de comportamiento; el comando raíz ejecuta backend e interfaz.
 - Activadas las comprobaciones TypeScript de declaraciones y parámetros sin uso. Los efectos que mantienen alarmas y respaldo se registran en los constructores, sin referencias privadas innecesarias; conservan su ciclo de vida de Angular.
-- Retirada la configuración opcional de Google Services del proyecto Android: no hay plugin nativo de Firebase ni notificaciones push remotas. Las alarmas actuales son locales. La infraestructura SQL Connect de desarrollo y backend no depende de ese plugin.
+- Retirada la configuración opcional de Google Services del proyecto Android: las alarmas actuales son locales y no requieren notificaciones push remotas.
 - Retirado el test Android de ejemplo de Capacitor que no verificaba Gymbro. No se presenta como cobertura nativa.
 - Desactivada la telemetría del CLI Angular y actualizada la documentación de JDK 21, perfil, pruebas, recuperación y alarmas.
 
@@ -18,7 +18,7 @@ El producto se distribuye como APK con la interfaz Angular instalada dentro de C
 - El servidor Express/PostgreSQL: una APK sigue necesitando API para autenticación y datos compartidos.
 - La pantalla Conexión: el prototipo todavía necesita configurar el backend de pruebas. Cuando exista una dirección HTTPS definitiva podrá sustituirse por configuración de distribución.
 - `ng serve` y el proxy: permiten desarrollar y revisar cambios en PC sin reinstalar el APK; no añaden un servidor al paquete Android.
-- Firebase, semillas, migraciones, pruebas y herramientas: son infraestructura del proyecto, no código incluido en el bundle de la app. No se eliminaron datos, respaldos ni proyectos de base de datos.
+- Semillas, migraciones, pruebas y herramientas: son infraestructura del proyecto, no código incluido en el bundle de la app. No se eliminaron datos, respaldos ni proyectos de base de datos.
 - Diseños adaptables: Android también se usa en tablets y horizontal. No se fijó toda la interfaz a un único ancho de teléfono.
 - Respaldo local, cola offline y alarmas: funciones vigentes con verificaciones de recuperación y aislamiento por cuenta/servidor.
 

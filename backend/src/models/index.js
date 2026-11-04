@@ -4,6 +4,7 @@
  */
 import { DataTypes } from "sequelize";
 import { sequelize } from "../db.js";
+import {applySpanishModelNames} from '../services/database-names.js';
 
 // Cuenta y perfil: el email es único y passwordHash guarda el hash. Peso actual y descansos se consultan desde sus tablas. photoUrl contiene la imagen comprimida como texto Base64.
 export const User = sequelize.define("User", {
@@ -210,3 +211,4 @@ export const models = {
   WelcomePlan, SessionMutation, User, UserRestDay, Exercise, Routine, RoutineDay, RoutineExercise, RoutineSchedule, TrainingSession,
   PerformedExercise, PerformedSet, BodyWeightHistory, StrengthRecord,
 };
+applySpanishModelNames(models);

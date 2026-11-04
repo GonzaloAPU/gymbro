@@ -19,20 +19,15 @@
     "db:generate": "npm run db:generate --workspace backend",
     "db:migrate": "npm run db:migrate --workspace backend --",
     "db:seed": "npm run db:seed --workspace backend",
-    "firebase:emulators": "node --use-system-ca node_modules/firebase-tools/lib/bin/firebase.js emulators:start --only dataconnect --project demo-gymbro-local --import=.firebase/local-data --export-on-exit=.firebase/local-data",
-    "firebase:test": "node tools/firebase-smoke.mjs",
-    "firebase:cloud:status": "node --use-system-ca tools/cloud-postgres.cjs --status",
-    "firebase:cloud:verify": "node --use-system-ca tools/cloud-sql-https.cjs --verify",
-    "firebase:cloud:compile": "node --use-system-ca node_modules/firebase-tools/lib/bin/firebase.js dataconnect:compile --config firebase.cloud.json --project gymbro-569e3 --non-interactive",
-    "firebase:cloud:tables": "node --use-system-ca tools/cloud-sql-https.cjs --tables",
     "test:recovery": "node tools/verify-workout-recovery.cjs",
     "test:alarms": "node tools/verify-alarms.cjs",
     "supabase:sql": "node tools/build-supabase-sql.mjs",
-    "supabase:test": "node --test tools/supabase-schema.test.mjs tools/personal-records-sql.test.mjs tools/leaderboard-sql.test.mjs"
+    "supabase:test": "node --test tools/supabase-schema.test.mjs tools/personal-records-sql.test.mjs tools/leaderboard-sql.test.mjs tools/spanish-schema.test.mjs",
+    "db:diagrama": "node tools/build-database-diagram.mjs",
+    "db:espanol:sql": "node tools/build-spanish-schema.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.16",
-    "concurrently": "^9.1.2",
-    "firebase-tools": "^15.34.0"
+    "concurrently": "^9.1.2"
   }
 }
