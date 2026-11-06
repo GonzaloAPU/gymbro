@@ -9,11 +9,6 @@ coverage/
 *.log
 .DS_Store
 backups/
-.firebase/
-firebase-debug.log*
-dataconnect-debug.log*
-dataconnect/.dataconnect/
-dataconnect-cloud/.dataconnect/
 .android-tools/
 *.jks
 *.keystore

@@ -240,7 +240,6 @@ nombrados conservan los datos al recrear contenedores.
 | `backend/scripts/seed-accounts.js` | Genera los cinco perfiles y sus historiales ficticios |
 | `backend/scripts/verify-schedule-persistence.js` | Guarda, consulta y restaura horarios de prueba contra la API/base |
 | `tools/verify-*.cjs` | Verificaciones locales con TypeScript y dependencias simuladas |
-| `tools/update_presentation_stack.js` | Edición histórica de texto dentro de una presentación PPTX |
 
 Las pruebas del backend sustituyen métodos de modelos cuando corresponde y abren
 servidores HTTP temporales. `assert` expresa qué resultado se espera; `t.after`
