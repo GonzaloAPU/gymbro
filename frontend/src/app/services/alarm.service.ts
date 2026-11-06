@@ -28,8 +28,10 @@ export class AlarmService implements OnDestroy {
   readonly message=signal('');
   readonly notice=signal('');
   readonly settings=signal<Settings>({reminder:true,work:true,rest:true});
+  private readonly guestActive=signal(false);
+  setGuestActive(active:boolean):void {this.guestActive.set(active);}
   private readonly scope=computed(()=>{
-    const id=this.auth.user()?.id;
+    const id=this.auth.user()?.id||(this.guestActive()?'guest':null);
     return id?`${this.endpoint.native?this.endpoint.server():window.location.origin}:${id}`:null;
   });
   private owner:string|null=null;

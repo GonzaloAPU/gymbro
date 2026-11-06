@@ -5,7 +5,7 @@
 import { Component, Input, inject, OnChanges, OnDestroy, OnInit, SimpleChanges, signal, effect, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { map, of, switchMap } from 'rxjs';
-import { Routine, RoutineDay, ScheduleSlot, RoutineService } from '../services/routine.service';
+import { Exercise, Routine, RoutineDay, ScheduleSlot, RoutineService } from '../services/routine.service';
 import { AlarmService } from '../services/alarm.service';
 import { SessionService } from '../services/session.service';
 import { WorkoutStorageService, WorkoutCommand } from '../services/workout-storage.service';
@@ -79,10 +79,10 @@ interface WorkoutExercise {
           <details class="linked-settings"><summary>Encadenar de 2 a 4 ejercicios</summary><p>Elegí el orden: una serie de A, después B (y C o D si los agregás). Descansás al cerrar la ronda. Cada serie empieza al tocar Iniciar.</p>@for(exercise of exercises; track exercise.id; let i=$index) {<label><input type="checkbox" [checked]="linkedExercises().includes(i)" [attr.aria-label]="exercise.name" (change)="toggleLinkedExercise(i)" [disabled]="phase() !== 'idle' || saving() || chainRoundActive() || (!linkedExercises().includes(i) && linkedExercises().length >= 4)">{{exercise.name}} @if(linkedExercises().includes(i)) {<b>{{linkedExercises().indexOf(i)+1}}</b>}</label>}<p>@if(linkedExercises().length === 1) {Elegí otro ejercicio para activar el grupo.} @else if(linkedExercises().length >= 2) {Se omiten los ejercicios que ya completaron todas sus series.}</p><label>Descanso entre rondas (segundos)<input type="number" min="0" max="3600" step="1" [value]="linkedRestSeconds()" (change)="configureLinkedRest($any($event.target).value)" [disabled]="phase() !== 'idle' || saving() || chainRoundActive()"></label><button type="button" class="repeat-record" (click)="clearLinkedExercises()" [disabled]="phase() !== 'idle' || saving() || chainRoundActive()">Quitar grupo</button></details>
         </div>
       }
-      @if (sessionFinished()) {<p role="status" class="saved-message">Sesión guardada. Podés revisar tus series o iniciar una nueva sesión.</p>}
+      @if (sessionFinished()) {<p role="status" class="saved-message">{{guestMode ? 'Entrenamiento finalizado. Tus series quedan en este dispositivo hasta preparar otro entrenamiento. Creá una cuenta para llevar un historial.' : 'Sesión guardada. Podés revisar tus series o iniciar una nueva sesión.'}}</p>}
       @if (error()) {<div class="error" role="alert">{{error()}}</div>}
       @if (planNotice()) {<p class="plan-notice" role="status">{{planNotice()}}</p>}
-      @if (todayPlan().length) {<div class="today-plan"><label>Tu plan de hoy<select [value]="selectedPlanKey" (change)="selectPlannedWorkout($any($event.target).value)" [disabled]="saving() || (!!sessionId() && !sessionFinished())">@for (entry of todayPlan(); track entry.key) {<option [value]="entry.key" [selected]="selectedPlanKey===entry.key">{{entry.slot.start}} – {{entry.slot.end}} · {{entry.day.name}} · {{entry.routine.name}}</option>}</select></label></div>}
+      @if (!guestMode && todayPlan().length) {<div class="today-plan"><label>Tu plan de hoy<select [value]="selectedPlanKey" (change)="selectPlannedWorkout($any($event.target).value)" [disabled]="saving() || (!!sessionId() && !sessionFinished())">@for (entry of todayPlan(); track entry.key) {<option [value]="entry.key" [selected]="selectedPlanKey===entry.key">{{entry.slot.start}} – {{entry.slot.end}} · {{entry.day.name}} · {{entry.routine.name}}</option>}</select></label></div>}
       @if (exercises.length) {
         <div class="session-log">
 
@@ -92,7 +92,7 @@ interface WorkoutExercise {
           </article>
         </div>
       } @else { <div class="empty">@if(loadingPlan()) {<p>Consultando tu plan…</p>} @else if(error()) {<p>No pudimos consultar tus rutinas. Revisá la conexión.</p><button type="button" class="button primary" (click)="refreshPlan()">Reintentar</button>} @else {<h2>Elegí qué vas a entrenar hoy</h2><p>No hay una rutina asignada para hoy. Podés asignar una desde tu biblioteca.</p><a class="button primary" routerLink="/" fragment="library-title">Elegir una rutina</a><a class="button ghost" routerLink="/rutinas/nueva">Crear una rutina</a>}</div> }
-      @if(exercises.length) {<button type="button" class="save-session finish-session-bottom" (click)="finishSession(true)" [disabled]="!sessionId() || saving() || sessionFinished() || phase() === 'work'">Guardar y finalizar sesión</button>}
+      @if(exercises.length) {<button type="button" class="save-session finish-session-bottom" (click)="finishSession(true)" [disabled]="!sessionId() || saving() || sessionFinished() || phase() === 'work'">{{guestMode ? 'Finalizar entrenamiento' : 'Guardar y finalizar sesión'}}</button>}
     </section>
   `,
   // CSS de este componente: disposición, colores y estados; @media adapta la vista a pantallas pequeñas.
@@ -116,6 +116,7 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
   readonly descriptionFor=signal<string|null>(null);
   // Dependencias y estado de la clase: inject obtiene servicios; signal conserva valores reactivos.
   @Input() visible = true;
+  @Input() guestMode = false;
   readonly todayPlan = signal<Array<{key:string; routine:Routine; day:RoutineDay; slot:ScheduleSlot}>>([]);
   readonly loadingPlan = signal(false);
   readonly planNotice = signal('');
@@ -228,7 +229,7 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
   private readonly setDrafts = signal(new Map<string, {weight:string; reps:string}>());
   /** La tarjeta y la tabla comparten los mismos valores, sin perderlos al pausar o volver de otra pestaña. */
   setDraft(index: number): {weight:string; reps:string} {
-    return this.setDrafts().get(`${this.current()?.id}:${index}`) || (this.current()?.trainingType && this.current().trainingType !== 'POWER' ? {weight:'0',reps:'1'} : {weight:'60',reps:'8'});
+    return this.setDrafts().get(`${this.current()?.id}:${index}`) || (this.current()?.trainingType && this.current().trainingType !== 'POWER' ? {weight:'0',reps:'1'} : {weight:this.guestMode?'0':'60',reps:'8'});
   }
   updateSetDraft(index: number, field:'weight'|'reps', value:string): void {
     const drafts = new Map(this.setDrafts());
@@ -399,6 +400,21 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
 
   /** Devuelve el ejercicio seleccionado por el índice activo. */
   current(): WorkoutExercise { return this.exercises[this.active()]; }
+  /** El invitado solo reemplaza ejercicios sin series registradas ni ronda en curso. */
+  canReplaceGuestExercise(index:number):boolean {
+    return this.guestMode && !!this.exercises[index] && this.exercises[index].done===0 && this.phase()==='idle' && !this.saving() && !this.sessionFinished() && !this.chainRoundActive();
+  }
+  replaceGuestExercise(index:number,exercise:Exercise):boolean {
+    if(!this.canReplaceGuestExercise(index)||this.exercises.some((item,i)=>i!==index&&item.id===exercise.id))return false;
+    const previous=this.exercises[index];
+    this.completedByExercise.delete(previous.id);this.performedIds.delete(previous.id);
+    this.setCountOverrides.delete(previous.id);this.repeatByExercise.delete(previous.id);
+    this.setDrafts.update(drafts=>new Map([...drafts].filter(([key])=>!key.startsWith(previous.id+':'))));
+    this.linkedExercises.set([]);this.descriptionFor.set(null);
+    this.exercises[index]={...previous,id:exercise.id,name:exercise.name,muscle:exercise.muscleGroup,description:exercise.description,videoUrl:exercise.videoUrl,trainingType:exercise.trainingType,done:0};
+    if(this.active()===index)this.completed.set(new Set());
+    this.persist();return true;
+  }
   tutorialUrl():string|null {
     const link=this.current()?.videoUrl;
     return link&&/^https:\/\/(?:www\.tiktok\.com\/@[\w.-]+\/video\/\d+|www\.youtube\.com\/(?:shorts\/[\w-]{11}|watch\?v=[\w-]{11})|youtu\.be\/[\w-]{11})$/.test(link)?link:null;
@@ -682,7 +698,7 @@ export class WorkoutComponent implements OnInit, OnChanges, OnDestroy {
       next: () => {
         if (this.phase() === 'rest') this.endRest();
         this.sessionFinished.set(true); this.saving.set(false); this.persist();
-        if (!stayOnPage) this.router.navigateByUrl('/progreso');
+        if (!stayOnPage && !this.guestMode) this.router.navigateByUrl('/progreso');
       },
       error: () => { this.error.set('No pudimos finalizar la sesión. Podés reintentar o reanudar.'); this.saving.set(false); },
     });

@@ -25,6 +25,7 @@ import { ApiEndpointService } from '../services/api-endpoint.service';
         <a class="forgot-password" routerLink="/recuperar-contrasena">Olvidé mi contraseña</a>
         @if (error()) { <div class="form-error">{{ error() }}</div> }
         <button class="button primary" type="submit" [disabled]="loading()">{{ loading() ? 'Ingresando…' : 'Iniciar sesión' }} <span>→</span></button>
+        <div class="switch"><a class="button primary" routerLink="/entrenar-libre">Entrenar sin cuenta</a></div>
         <div class="switch">¿Es tu primera vez? <a class="button ghost" routerLink="/registro">Crear una cuenta nueva</a></div>
         <p class="switch"><a routerLink="/terminos">Términos</a> · <a routerLink="/privacidad">Privacidad</a></p>
         @if (endpoint.native) { <a class="connection-link" routerLink="/conexion">Configurar conexión al servidor</a> }

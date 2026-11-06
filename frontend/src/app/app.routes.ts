@@ -13,8 +13,10 @@ import { RoutineBuilderComponent } from './components/routine-builder.component'
 import { ConnectionComponent } from './components/connection.component';
 import {welcomeGuard} from './guards/welcome.guard';
 import {legalGuard} from './guards/legal.guard';
+import {guestEntryGuard} from './guards/guest-entry.guard';
 
 export const routes: Routes = [
+  {path:'entrenar-libre',loadComponent:()=>import('./components/guest-workout.component').then(m=>m.GuestWorkoutComponent)},
   {path:'recuperar-contrasena',loadComponent:()=>import('./components/forgot-password.component').then(m=>m.ForgotPasswordComponent)},
   {path:'privacidad/ajustes',loadComponent:()=>import('./components/privacy-settings.component').then(m=>m.PrivacySettingsComponent),canActivate:[authGuard,legalGuard]},
   {path:'terminos',loadComponent:()=>import('./components/legal.component').then(m=>m.LegalComponent)},
@@ -24,7 +26,9 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'registro', component: RegisterComponent },
   { path: 'bienvenida',data:{sports:true}, loadComponent:()=>import('./components/welcome.component').then(module=>module.WelcomeComponent),canActivate:[authGuard,legalGuard] },
+  {path:'',pathMatch:'full',canMatch:[guestEntryGuard],loadComponent:()=>import('./components/guest-workout.component').then(m=>m.GuestWorkoutComponent)},
   { path: '',data:{tab:0}, component: TabRouteComponent, canActivate: [authGuard,legalGuard,welcomeGuard] },
+  {path:'entrenamiento',canMatch:[guestEntryGuard],loadComponent:()=>import('./components/guest-workout.component').then(m=>m.GuestWorkoutComponent)},
   { path: 'entrenamiento',data:{sports:true}, component: WorkoutRouteComponent, canActivate: [authGuard,legalGuard] },
   { path: 'progreso',data:{tab:2}, component: TabRouteComponent, canActivate: [authGuard,legalGuard] },
   { path: 'perfil',data:{tab:3}, component: TabRouteComponent, canActivate: [authGuard,legalGuard] },
