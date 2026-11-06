@@ -27,6 +27,7 @@ export class WorkoutStorageService implements OnDestroy {
   readonly actionRequired=signal(false);
   readonly storageError=signal('');
   private activeSync=false;
+  private readonly retryAfter=new Map<string,number>();
   private readonly delivered=new Map<string,Set<string>>();
   private readonly blocked=new Set<string>();
   private readonly fallbackLocks=new Map<string,Promise<unknown>>();
@@ -145,7 +146,7 @@ export class WorkoutStorageService implements OnDestroy {
   /** Procesa en orden. Una respuesta perdida conserva el mismo operationId para el reintento. */
   async flush():Promise<void> {
     const scope=this.scope();
-    if(!scope||this.activeSync||navigator.onLine===false) return;
+    if(!scope||this.activeSync||navigator.onLine===false||(this.retryAfter.get(scope)||0)>Date.now()) return;
     this.activeSync=true;this.syncing.set(true);
     try {
       await this.lock(`workout-sync:${scope}`,async()=>{
@@ -163,8 +164,13 @@ export class WorkoutStorageService implements OnDestroy {
         }
       });
     } catch(error:any) {
+      if(error?.status===429){
+        const suggested=Number(error.headers?.get?.('Retry-After')||error.error?.retryAfter||60);
+        const seconds=Number.isFinite(suggested)?Math.max(1,Math.min(3600,suggested)):60;
+        this.retryAfter.set(scope,Date.now()+seconds*1000);
+      }
       if(this.scope()===scope)this.actionRequired.set(error?.status>=400&&error?.status<500&&![408,429].includes(error.status));
-      if(this.scope()===scope) this.syncError.set(error?.status===401?'Tu sesión de acceso venció. Volvé a ingresar con esta cuenta para sincronizar.':error?.status>=400&&error?.status<500&&![408,429].includes(error.status)?`El servidor rechazó un cambio: ${error.error?.message||'revisá los datos'}. El respaldo local se conserva.`:'Sin conexión con el servidor. Los cambios siguen guardados en este dispositivo.');
+      if(this.scope()===scope) this.syncError.set(error?.status===429?'El servidor pidió una pausa. Tus cambios están guardados y se reintentarán automáticamente.':error?.status===401?'Tu sesión de acceso venció. Volvé a ingresar con esta cuenta para sincronizar.':error?.status>=400&&error?.status<500&&![408,429].includes(error.status)?`El servidor rechazó un cambio: ${error.error?.message||'revisá los datos'}. El respaldo local se conserva.`:'Sin conexión con el servidor. Los cambios siguen guardados en este dispositivo.');
     } finally {
       this.activeSync=false;this.syncing.set(false);
     }

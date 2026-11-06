@@ -5,6 +5,7 @@ import {randomUUID} from 'node:crypto';
 import {exerciseData} from '../src/data/exercise-catalog.js';
 import {welcomeSchema,makeLocalPlan,allowedCatalog,scheduleSessions,validateAIPlan,estimateMinutes} from '../src/services/welcome-planner.js';
 import {generateGeminiPlan} from '../src/services/gemini-plan.js';
+import {geminiBudget} from '../src/services/gemini-safety.js';
 const catalog=exerciseData.map(e=>({...e,id:randomUUID(),createdByUserId:null}));
 const input=(changes={})=>welcomeSchema.parse({age:30,heightCm:170,weightKg:70,goal:'GENERAL',experience:'BEGINNER',place:'HOME',equipment:[],sessions:3,minutes:45,availability:[1,3,5].map(weekday=>({weekday,start:'18:00',end:'20:00'})),hasRestrictions:false,mode:'LOCAL',...changes});
 const aiShape=plan=>({sessions:plan.sessions.map(({exercises})=>({exercises}))});
@@ -94,8 +95,9 @@ test('Gemini: sin configuración no llama a la red',async t=>{
   const data=input(),plan=makeLocalPlan(data,catalog);await assert.rejects(generateGeminiPlan(data,catalog,plan,()=>assert.fail('No llamar proveedor')),{status:503});
 });
 test('Gemini: envía solo parámetros deportivos y valida la respuesta',async t=>{
-  const old={key:process.env.GEMINI_API_KEY,enabled:process.env.GEMINI_ENABLED};process.env.GEMINI_API_KEY='fake-test-key';process.env.GEMINI_ENABLED='true';
-  t.after(()=>{for(const [key,value]of [['GEMINI_API_KEY',old.key],['GEMINI_ENABLED',old.enabled]])if(value===undefined)delete process.env[key];else process.env[key]=value;});
+  const old={key:process.env.GEMINI_API_KEY,enabled:process.env.GEMINI_ENABLED,confirmed:process.env.GEMINI_BUDGET_CONFIRMED,model:process.env.GEMINI_MODEL};process.env.GEMINI_API_KEY='fake-test-key';process.env.GEMINI_ENABLED='true';process.env.GEMINI_BUDGET_CONFIRMED='true';process.env.GEMINI_MODEL='gemini-2.5-flash';
+  t.mock.method(geminiBudget,'reserve',async()=>{});
+  t.after(()=>{for(const [key,value]of [['GEMINI_API_KEY',old.key],['GEMINI_ENABLED',old.enabled],['GEMINI_BUDGET_CONFIRMED',old.confirmed],['GEMINI_MODEL',old.model]])if(value===undefined)delete process.env[key];else process.env[key]=value;});
   const data=input({mode:'GEMINI',aiConsent:true}),plan=makeLocalPlan(data,catalog);
   const result=await generateGeminiPlan(data,catalog,plan,async(url,options)=>{
     assert.ok(url.startsWith('https://generativelanguage.googleapis.com/'));const body=JSON.parse(options.body);

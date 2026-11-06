@@ -1,10 +1,12 @@
 /** Adaptador Gemini: clave solo en backend, salida estructurada y validación posterior. */
 import {allowedCatalog,planningError,validateAIPlan,sessionGroups} from './welcome-planner.js';
-export const geminiAvailable=()=>process.env.GEMINI_ENABLED==='true'&&Boolean(process.env.GEMINI_API_KEY);
+import {geminiSafetyConfig,geminiBudget} from './gemini-safety.js';
+export const geminiAvailable=()=>Boolean(geminiSafetyConfig());
 const schema={type:'object',required:['sessions'],properties:{sessions:{type:'array',items:{type:'object',required:['exercises'],properties:{exercises:{type:'array',minItems:4,maxItems:4,items:{type:'object',required:['exerciseId','targetSets','minReps','maxReps','restSeconds'],properties:{exerciseId:{type:'string'},targetSets:{type:'integer',minimum:3,maximum:3},minReps:{type:'integer'},maxReps:{type:'integer'},restSeconds:{type:'integer'}}}}}}}}};
 export async function generateGeminiPlan(input,catalog,base,fetchImpl=fetch){
   if(!geminiAvailable())throw planningError('La IA todavía no está configurada. Podés generar tu plan local.',503);
   if(!input.aiConsent)throw planningError('Confirmá el envío de los parámetros deportivos para usar la IA.',400);
+  const safety=geminiSafetyConfig();
   // Lista explícita de parámetros generales: nunca copiar el formulario completo.
   // Edad, medidas corporales y restricciones permanecen dentro de Gymbro.
   const profile={goal:input.goal,experience:input.experience,place:input.place,equipment:input.equipment,sessions:input.sessions,minutes:input.minutes};
@@ -21,11 +23,15 @@ El calendario ya está calculado por el backend: no lo cambies. La duración est
 Devolvé solamente sessions con exercises y los campos del esquema.
 Parámetros: ${JSON.stringify(profile)}
 Catálogo: ${JSON.stringify(allowedCatalog(input,catalog))}`;
+  if(Buffer.byteLength(prompt,'utf8')>safety.maxPromptBytes)throw planningError('La propuesta supera el tamaño permitido. Usá el plan local.',400);
+  // Se confirma ANTES de la red y fuera de la transacción deportiva. No se devuelve
+  // presupuesto tras un timeout/error: Google podría haber procesado la solicitud.
+  await geminiBudget.reserve(safety);
   let response;
   try {
-    response=await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(process.env.GEMINI_MODEL||'gemini-2.5-flash')}:generateContent`,{
+    response=await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${safety.model}:generateContent`,{
       method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':process.env.GEMINI_API_KEY},
-      body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',responseJsonSchema:schema,maxOutputTokens:6000,temperature:0.3}}),
+      body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',responseJsonSchema:schema,maxOutputTokens:safety.maxOutputTokens,candidateCount:1,...(safety.model==='gemini-3.5-flash-lite'?{thinkingConfig:{thinkingLevel:'minimal'}}:{thinkingConfig:{thinkingBudget:0},temperature:0.3})}}),
       signal:AbortSignal.timeout(30000),
     });
   }catch{throw planningError('La IA no respondió a tiempo. Reintentá o usá el plan local.',503);}

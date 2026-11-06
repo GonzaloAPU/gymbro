@@ -24,3 +24,13 @@ services:
         value: https://localhost
       - key: GEMINI_ENABLED
         value: false
+      - key: TRUST_PROXY_HOPS
+        value: 1
+      - key: SECURITY_STORE
+        value: postgres
+      - key: GEMINI_BUDGET_CONFIRMED
+        value: false
+      - key: GEMINI_MAX_REQUESTS_PER_DAY
+        value: 20
+      - key: GEMINI_MAX_REQUESTS_PER_MONTH
+        value: 100

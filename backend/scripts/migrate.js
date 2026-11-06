@@ -11,6 +11,7 @@ import {migrateExerciseGuides} from './migrations/20261025-exercise-guides.js';
 import {migrateAiQuota} from './migrations/20261026-ai-quota.js';
 import {migrateSpanishNames} from './migrations/20261103-spanish-names.js';
 import {databaseLanguage} from '../src/services/database-names.js';
+import {migrateSecurity} from './migrations/20261106-security.js';
 try {
  await sequelize.authenticate();
  const schema=sequelize.options.define.schema||'public';
@@ -31,4 +32,6 @@ try {
   await migrateSpanishNames();
   console.log('Migraciones verificadas: esquema normalizado.');
  }
+ await migrateSecurity();
+ console.log('Contadores persistentes de seguridad verificados.');
 } finally { await sequelize.close(); }

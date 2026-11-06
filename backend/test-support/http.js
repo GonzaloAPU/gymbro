@@ -4,8 +4,11 @@ import jwt from 'jsonwebtoken';
 import {app} from '../src/app.js';
 import {config} from '../src/config.js';
 import {accountAccess} from '../src/middleware/active-account.js';
+import {requestProtection} from '../src/middleware/ip-rate-limit.js';
 
 export async function httpClient(t) {
+  // Los límites reales se prueban aparte; estas pruebas aíslan reglas de negocio.
+  t.mock.method(requestProtection,'consume',async()=>({allowed:true,remaining:9,resetAfter:60}));
   t.mock.method(accountAccess,'isActive',async()=>true);
   t.mock.method(legalAccess,'status',async()=>({needsAcceptance:false,sportsDataConsent:true}));
   t.mock.method(console,'error',()=>{});

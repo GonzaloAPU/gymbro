@@ -15,14 +15,15 @@ function apiServer(value=DEFAULT_API){
 }
 function configureIndex(html,api){
   const origin=apiServer(api);
-  if(!html.includes('</head>'))throw Error('La compilación no contiene un index.html válido.');
+  if(!/<head(?:\s[^>]*)?>/i.test(html)||!html.includes('</head>'))throw Error('La compilación no contiene un index.html válido.');
   if(html.includes('name="gymbro-api-server"'))throw Error('El index ya fue configurado; compilar de nuevo antes de prepararlo.');
-  return html.replace('</head>',`<meta name="gymbro-api-server" content="${origin}"><meta name="gymbro-routing" content="hash"></head>`);
+  const policy=`default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ${origin}; media-src 'self' blob:; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests`;
+  return html.replace(/<head(?:\s[^>]*)?>/i,head=>`${head}<meta http-equiv="Content-Security-Policy" content="${policy}"><meta name="referrer" content="no-referrer"><meta name="gymbro-api-server" content="${origin}"><meta name="gymbro-routing" content="hash">`);
 }
 function build(){
   const base=basePath(process.env.GYMBRO_WEB_BASE_PATH||'/gymbro/');
   const api=apiServer(process.env.GYMBRO_WEB_API_URL||DEFAULT_API);
-  const result=spawnSync(process.execPath,[path.join(root,'node_modules/@angular/cli/bin/ng.js'),'build','--configuration','production','--base-href',base,'--output-path','dist/gymbro-web'],{cwd:path.join(root,'frontend'),stdio:'inherit'});
+  const result=spawnSync(process.execPath,[path.join(root,'node_modules/@angular/cli/bin/ng.js'),'build','--configuration','production,web','--base-href',base,'--output-path','dist/gymbro-web'],{cwd:path.join(root,'frontend'),stdio:'inherit'});
   if(result.error)throw result.error;
   if(result.status!==0){process.exitCode=result.status??1;return;}
   const output=path.join(root,'frontend/dist/gymbro-web/browser');

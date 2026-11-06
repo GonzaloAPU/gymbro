@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const ts=require('typescript');
 const {randomUUID}=require('node:crypto');
 const {of,throwError,firstValueFrom,Subject,map}=require('rxjs');
-let now=Date.UTC(2026,9,20,12),account='account-a',server='https://gymbro.test',quota=false,loseResponse=false;
+let now=Date.UTC(2026,9,20,12),account='account-a',server='https://gymbro.test',quota=false,loseResponse=false,rateLimited=false;
 const data=new Map(),timers=new Map(),events=new Map(),requests=[],receipts=new Map(),remoteSets=new Map();
 let store,sessions,workout;
 const auth={user:()=>account?{id:account}:null,get token(){return account?'token':null;}};
@@ -18,6 +18,7 @@ const exerciseId='11111111-1111-4111-8111-111111111111';
 const routine={getAll:()=>of([{id:'routine',name:'Rutina',days:[{id:'22222222-2222-4222-8222-222222222222',name:'Prueba',schedule:[{weekday:new Date(now).getDay(),start:'08:00',end:'09:00'}],exercises:[{exercise:{id:exerciseId,name:'Press banca',muscleGroup:'Pecho'},targetSets:3,minReps:8,maxReps:12,restSeconds:90}]}]}])};
 const http={request:(method,url,{body})=>{
   requests.push({method,url,body});
+  if(rateLimited)return throwError(()=>({status:429,headers:{get:()=> '60'}}));
   const id=body.operationId;
   if(receipts.has(id))return of(receipts.get(id));
   const response={ok:true};receipts.set(id,response);
@@ -130,6 +131,13 @@ function reopen(){if(workout)workout.ngOnDestroy();if(store)store.ngOnDestroy();
   workout.visible=true;workout.ngOnChanges({visible:{currentValue:true,firstChange:false}});
   assert.equal(workout.phaseMilliseconds(),4321,'Volver recupera los milisegundos aunque no hubo repintados ocultos');
   assert.ok([...timers.values()].some(timer=>timer.period===16));
+  // Una pausa del servidor conserva la cola y respeta Retry-After sin martillar la API.
+  account='account-rate-limit';browserNavigator.onLine=false;reopen();
+  await firstValueFrom(sessions.start('22222222-2222-4222-8222-222222222222'));await settle();
+  rateLimited=true;browserNavigator.onLine=true;await store.flush();
+  const limitedCalls=requests.length;assert.equal(store.pending(),1);assert.equal(store.actionRequired(),false);assert.match(store.syncError(),/pausa/);
+  await store.flush();advance(59000);await store.flush();assert.equal(requests.length,limitedCalls,'Esperar el plazo del servidor');
+  advance(1000);rateLimited=false;await store.flush();assert.equal(store.pending(),0);
   // Corrupción: se bloquea el respaldo y nunca se reemplaza silenciosamente.
   server='https://corrupt.test';const corruptScope=store.scope();data.set(corruptScope,'invalid JSON');
   await assert.rejects(firstValueFrom(sessions.finish(randomUUID(),10)));assert.equal(data.get(corruptScope),'invalid JSON');

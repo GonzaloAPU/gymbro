@@ -9,9 +9,10 @@ import {exerciseData} from '../src/data/exercise-catalog.js';
 import {aiQuota} from '../src/services/ai-quota.js';
 
 test('cupo API: bloquea cuarta generación, exige bloqueo de fila y permite plan local sin descontar',async t=>{
- const oldEnabled=process.env.GEMINI_ENABLED,oldKey=process.env.GEMINI_API_KEY;
+ const oldEnabled=process.env.GEMINI_ENABLED,oldKey=process.env.GEMINI_API_KEY,oldConfirmed=process.env.GEMINI_BUDGET_CONFIRMED;
  process.env.GEMINI_ENABLED='true';process.env.GEMINI_API_KEY='fake-test-key';
- t.after(()=>{for(const [k,v]of [['GEMINI_ENABLED',oldEnabled],['GEMINI_API_KEY',oldKey]])if(v===undefined)delete process.env[k];else process.env[k]=v;});
+ process.env.GEMINI_BUDGET_CONFIRMED='true';
+ t.after(()=>{for(const [k,v]of [['GEMINI_ENABLED',oldEnabled],['GEMINI_API_KEY',oldKey],['GEMINI_BUDGET_CONFIRMED',oldConfirmed]])if(v===undefined)delete process.env[k];else process.env[k]=v;});
  const transaction={LOCK:{UPDATE:'UPDATE'}};
  const row={aiWeekStart:aiQuota({}).weekStart,aiWeeklyUsed:3,update:()=>assert.fail('No descontar')};
  t.mock.method(sequelize,'transaction',async fn=>fn(transaction));

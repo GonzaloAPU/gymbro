@@ -16,9 +16,9 @@ export const authRouter = Router();
 // POST /register: Valida los campos, crea el hash bcrypt y devuelve un JWT con siete días de vigencia.
 authRouter.post("/register", async (req, res) => {
   const input = z.object({
-    name: z.string().min(2),
-    email: z.string().email(),
-    password: z.string().min(8),
+    name: z.string().trim().min(2).max(120),
+    email: z.string().email().max(254),
+    password: z.string().min(8).max(72).refine(value=>Buffer.byteLength(value,'utf8')<=72,'Usá como máximo 72 bytes de contraseña.'),
     legal: legalInput,
   }).parse(req.body);
   const { password, legal, ...profile } = input;
@@ -34,7 +34,7 @@ authRouter.post("/register", async (req, res) => {
 
 // POST /login: Busca el email y compara la contraseña con su hash; devuelve el mismo error para cuenta ausente o contraseña incorrecta.
 authRouter.post("/login", async (req, res) => {
-  const input = z.object({ email: z.string().email(), password: z.string().min(1) }).parse(req.body);
+  const input = z.object({ email: z.string().email().max(254), password: z.string().min(1).max(72).refine(value=>Buffer.byteLength(value,'utf8')<=72) }).parse(req.body);
   const user = await User.findOne({ where: { email: input.email } });
   if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
     return res.status(401).json({ message: "Email o contrasena incorrectos" });

@@ -4,6 +4,8 @@
  */
 import express from "express";
 import cors from "cors";
+import helmet from 'helmet';
+import {ipRateLimit} from './middleware/ip-rate-limit.js';
 import { config } from "./config.js";
 import { authRouter } from "./routes/auth.js";
 import { routinesRouter } from "./routes/routines.js";
@@ -20,6 +22,8 @@ import {passwordRecoveryRouter} from './routes/password-recovery.js';
 
 export const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy',config.trustProxyHops);
+app.use(helmet());
 app.use('/api',(_req,res,next)=>{
   res.set({'X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY','Referrer-Policy':'no-referrer','Cache-Control':'no-store'});
   next();
@@ -27,6 +31,9 @@ app.use('/api',(_req,res,next)=>{
 // Capacitor sirve los archivos instalados desde https://localhost dentro de Android.
 // Conservamos una lista explícita para no abrir la API a cualquier sitio.
 app.use(cors({ origin: [config.frontendUrl, 'https://localhost'] }));
+// Antes de analizar JSON, consultar usuarios o ejecutar bcrypt/Google.
+app.use('/api',ipRateLimit);
+app.use(/^\/api\/auth\/(login|register|forgot-password|reset-password)\/?$/,express.json({limit:'8kb'}));
 // Las fotos se comprimen en el navegador a un máximo de 650.000 caracteres Base64.
 // El límite de 1 MB deja margen para el resto de los campos del perfil en el JSON.
 app.use(express.json({ limit: '1mb' }));

@@ -49,7 +49,7 @@ No se requieren secretos de PostgreSQL, EmailJS, Gemini ni claves personales de 
 - Cortar la conexión con una sesión ya abierta, guardar una serie y restablecerla: comprobar la sincronización sin duplicar registros.
 - Probar sonido/notificaciones con la página abierta. Cerrar la pestaña no equivale al comportamiento de las alarmas Android.
 
-Los tests simulan correo y Gemini; compilar correctamente no confirma la entrega real de correos ni el estado de servicios externos. La revisión de seguridad pendiente sigue siendo necesaria antes del lanzamiento público.
+Los tests simulan correo y Gemini; compilar correctamente no confirma la entrega real de correos ni el estado de servicios externos. Antes del lanzamiento público, aplicar la migración 09 y desplegar las protecciones del backend siguiendo [la revisión de seguridad](SEGURIDAD-2026-11-06.md). Sus cambios preparados en web todavía requieren despliegue en Render.
 
 Preparación comprobada el 06/11/2026: 229 pruebas backend, 173 frontend y 31 SQL aprobadas (433 en total), más verificadores de flujos; tipos y ambas compilaciones correctos. La navegación y recarga de una ruta hash se comprobaron en un navegador con la salida estática. El sitio público y sus integraciones se verifican después de configurar Render y Pages.
 

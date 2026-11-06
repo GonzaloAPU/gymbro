@@ -22,10 +22,16 @@
     "db:seed": "npm run db:seed --workspace backend",
     "test:recovery": "node tools/verify-workout-recovery.cjs",
     "test:alarms": "node tools/verify-alarms.cjs",
-    "supabase:sql": "node tools/build-supabase-sql.mjs",
-    "supabase:test": "node --test tools/supabase-schema.test.mjs tools/personal-records-sql.test.mjs tools/leaderboard-sql.test.mjs tools/spanish-schema.test.mjs",
+    "test:security:postgres": "node tools/security-postgres-smoke.mjs",
+    "supabase:sql": "node tools/build-supabase-sql.mjs && node tools/build-security-sql.mjs",
+    "supabase:test": "node --test tools/supabase-schema.test.mjs tools/personal-records-sql.test.mjs tools/leaderboard-sql.test.mjs tools/spanish-schema.test.mjs tools/security-sql.test.mjs",
     "db:diagrama": "node tools/build-database-diagram.mjs",
     "db:espanol:sql": "node tools/build-spanish-schema.mjs"
+  },
+  "overrides": {
+    "sequelize": {
+      "uuid": "^11.1.1"
+    }
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.16",

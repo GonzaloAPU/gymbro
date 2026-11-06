@@ -8,8 +8,10 @@ import {app} from '../src/app.js';
 import {config} from '../src/config.js';
 import {sequelize} from '../src/db.js';
 import {User,UserRestDay,BodyWeightHistory,RoutineSchedule} from '../src/models/index.js';
+import {requestProtection} from '../src/middleware/ip-rate-limit.js';
 
 test('perfil normalizado e historial corporal con dependencias simuladas', async t => {
+  t.mock.method(requestProtection,'consume',async()=>({allowed:true,remaining:9,resetAfter:60}));
   let days,weights,updates,conflicts;
   const reset=()=>{days=[2,4];weights=[{id:'baseline',weightKg:'70.00',recordedAt:'2025-01-01T12:00:00Z'}];updates=[];conflicts=0;};
   reset();
