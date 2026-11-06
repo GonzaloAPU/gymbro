@@ -1,0 +1,60 @@
+name: Publicar Gymbro web
+
+on:
+  push:
+    branches: [web]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/web'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    env:
+      NODE_ENV: test
+      DB_CONNECTION_MODE: LOCAL
+      DB_NAMES_LANGUAGE: en
+      DATABASE_URL: postgresql://unused:unused@127.0.0.1:5432/unused
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+      - name: Leer configuración de Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Compilar sitio web
+        run: npm run build:web
+        env:
+          GYMBRO_WEB_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+          GYMBRO_WEB_API_URL: ${{ vars.GYMBRO_WEB_API_URL || 'https://gymbro-api-t7mg.onrender.com' }}
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: frontend/dist/gymbro-web/browser
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar
+        id: deployment
+        uses: actions/deploy-pages@v4

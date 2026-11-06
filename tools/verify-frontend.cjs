@@ -22,6 +22,8 @@ const checks = [
   'frontend-navigation-cache.test.cjs',
   'frontend-local-persistence.test.cjs',
   'frontend-session-isolation.test.cjs',
+  'frontend-web-deployment.test.cjs',
+  'web-build.test.cjs',
 ];
 for (const check of checks) {
   const args = check.endsWith('.test.cjs') ? ['--test', resolve(__dirname, check)] : [resolve(__dirname, check)];

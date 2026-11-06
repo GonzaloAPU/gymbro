@@ -4,17 +4,17 @@
  */
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
-import { provideRouter, withInMemoryScrolling } from '@angular/router';
+import { provideRouter, withHashLocation, withInMemoryScrolling } from '@angular/router';
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
 import { authInterceptor } from './app/interceptors/auth.interceptor';
 import {readCacheInterceptor} from './app/interceptors/read-cache.interceptor';
 import { initializeMobile } from './app/mobile';
 import {inject, provideAppInitializer, provideZoneChangeDetection} from '@angular/core';
-import {ApiEndpointService} from './app/services/api-endpoint.service';
+import {ApiEndpointService,webHashRouting} from './app/services/api-endpoint.service';
 
 bootstrapApplication(AppComponent, {
   // Conserva Zone.js y XHR tras migrar a Angular 22: temporizadores, formularios y
   // respuestas HTTP actualizan el DOM como antes. Configura la API antes de navegar.
-  providers: [provideZoneChangeDetection(),provideAppInitializer(()=>{inject(ApiEndpointService);}),provideHttpClient(withXhr(), withInterceptors([readCacheInterceptor,authInterceptor])), provideRouter(routes, withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }))],
+  providers: [provideZoneChangeDetection(),provideAppInitializer(()=>{inject(ApiEndpointService);}),provideHttpClient(withXhr(), withInterceptors([readCacheInterceptor,authInterceptor])), provideRouter(routes,...(webHashRouting()?[withHashLocation()]:[]), withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }))],
 }).then(initializeMobile).catch(console.error);

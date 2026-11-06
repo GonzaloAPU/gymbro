@@ -1,4 +1,4 @@
-/** Configuración del servidor: el navegador usa el proxy y Android una dirección accesible desde el teléfono. */
+/** Servidor: proxy en desarrollo, API HTTPS fija en la web publicada y configuración propia de Android. */
 import { Injectable, signal } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
 export const DEFAULT_API_SERVER='https://gymbro-api-t7mg.onrender.com';
@@ -12,14 +12,27 @@ export function normalizeServer(value: string): string {
   return url.origin;
 }
 
+/** Solo la compilación web agrega estos metadatos públicos; no contienen claves. */
+export function webApiServer():string {
+  const value=typeof document==='undefined'?'':document.querySelector('meta[name="gymbro-api-server"]')?.getAttribute('content')||'';
+  if(!value)return '';
+  const server=normalizeServer(value);
+  if(!server.startsWith('https://'))throw new Error('La versión web requiere una API HTTPS.');
+  return server;
+}
+export function webHashRouting():boolean {
+  return typeof document!=='undefined'&&document.querySelector('meta[name="gymbro-routing"]')?.getAttribute('content')==='hash';
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiEndpointService {
   readonly native = Capacitor.isNativePlatform();
+  readonly webServer = this.native?'':webApiServer();
   readonly server = signal(this.initialServer());
   /** Primera instalación/actualización: usa Render y no mezcla credenciales del servidor anterior. */
   private initialServer():string {
     const saved=localStorage.getItem('gymbro.api-server')||'';
-    if(!this.native)return saved;
+    if(!this.native)return this.webServer||saved;
     if(localStorage.getItem('gymbro.default-api-version')!==DEFAULT_API_SERVER){
       if(saved!==DEFAULT_API_SERVER){
         localStorage.removeItem('smartgymbro_token');
@@ -33,6 +46,7 @@ export class ApiEndpointService {
   }
   /** Guarda únicamente la dirección pública del backend, nunca credenciales de PostgreSQL. */
   save(value: string): void {
+    if(this.webServer)throw new Error('La conexión del sitio web se configura automáticamente.');
     const server = normalizeServer(value);
     if (server !== this.server()) {
       // Un token emitido por otro servidor no debe enviarse a la nueva dirección.
@@ -41,5 +55,5 @@ export class ApiEndpointService {
       this.server.set(server);
     }
   }
-  url(path: string): string { return this.native ? `${this.server()}${path}` : path; }
+  url(path: string): string { return this.native ? `${this.server()}${path}` : this.webServer?`${this.webServer}${path}`:path; }
 }

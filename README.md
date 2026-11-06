@@ -1,6 +1,9 @@
 # Gymbro AI
 
-Aplicación Android para planificar rutinas, registrar entrenamientos y medir progreso.
+Aplicación Android y web para planificar rutinas, registrar entrenamientos y medir progreso.
+
+La versión web para GitHub Pages se prepara en la rama `web`: ver [despliegue web](docs/WEB.md).
+Compilar con `npm run build:web`; el backend sigue en Render y los datos en Supabase.
 
 La aplicación Android está en `frontend/android`, integrada con Capacitor. Consultar
 [la guía Android](docs/ANDROID.md) para compilar el APK y conectarlo al backend de pruebas.
