@@ -25,7 +25,7 @@ import { ApiEndpointService } from '../services/api-endpoint.service';
         <a class="forgot-password" routerLink="/recuperar-contrasena">Olvidé mi contraseña</a>
         @if (error()) { <div class="form-error">{{ error() }}</div> }
         <button class="button primary" type="submit" [disabled]="loading()">{{ loading() ? 'Ingresando…' : 'Iniciar sesión' }} <span>→</span></button>
-        <div class="switch"><a class="button primary" routerLink="/entrenar-libre">Entrenar sin cuenta</a></div>
+        <a class="button guest-entry" routerLink="/entrenar-libre"><span>Entrenar como invitado</span><span aria-hidden="true">→</span></a>
         <div class="switch">¿Es tu primera vez? <a class="button ghost" routerLink="/registro">Crear una cuenta nueva</a></div>
         <p class="switch"><a routerLink="/terminos">Términos</a> · <a routerLink="/privacidad">Privacidad</a></p>
         @if (endpoint.native) { <a class="connection-link" routerLink="/conexion">Configurar conexión al servidor</a> }
@@ -34,7 +34,7 @@ import { ApiEndpointService } from '../services/api-endpoint.service';
   `,
   // CSS de este componente: disposición, colores y estados; @media adapta la vista a pantallas pequeñas.
   changeDetection: ChangeDetectionStrategy.Eager,
-  styles: [loginStyles()],
+  styles: [loginStyles(),`.auth-card a.guest-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;box-sizing:border-box;margin-top:16px;padding:14px 20px;background:#a3e635;color:#0b130d;border:1px solid #a3e635;border-radius:12px;font-weight:800;text-decoration:none}.auth-card a.guest-entry span{color:inherit}.auth-card a.guest-entry:hover{background:#bef264}.auth-card a.guest-entry:focus-visible{outline:3px solid var(--text);outline-offset:3px}`],
 })
 export class LoginComponent {
   readonly endpoint = inject(ApiEndpointService);
